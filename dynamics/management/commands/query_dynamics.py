@@ -1,4 +1,4 @@
-"""Utility script for investigating Dynamics API"""
+"""Utility script for investigating Dynamics API. Requires environment variables to be set properly."""
 
 import json
 

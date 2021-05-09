@@ -25,7 +25,7 @@ Query with no table nor query options set to get a list of tables in the databas
 Use 'fetch_schema' for an xml representation of the relational ascpects of the data.
 
 Author: Matti Lamppu.
-Date: April 5th, 2021.
+Date: May 9th, 2021.
 """
 
 import os
