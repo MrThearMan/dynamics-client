@@ -36,18 +36,10 @@ from operator import attrgetter
 from xml.dom.minidom import parseString as pretty_xml
 from typing import List, Dict, Optional, Any, Literal, Union, Set
 
-from rest_framework import status
-from rest_framework.exceptions import (
-    ParseError,
-    AuthenticationFailed,
-    PermissionDenied,
-    NotFound,
-    MethodNotAllowed,
-)
-
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
+from . import status
 from .exceptions import (
     DynamicsException,
     DuplicateRecordError,
@@ -55,6 +47,11 @@ from .exceptions import (
     APILimitsExceeded,
     OperationNotImplemented,
     WebAPIUnavailable,
+    ParseError,
+    AuthenticationFailed,
+    PermissionDenied,
+    NotFound,
+    MethodNotAllowed,
 )
 
 
@@ -79,14 +76,7 @@ expand_subcommands = Dict[expand_keys, expand_values]
 class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
-    def __init__(
-        self,
-        api_url: str,
-        token_url: str,
-        client_id: str,
-        client_secret: str,
-        scope: List[str],
-    ):
+    def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection.
 
         :param api_url: Url in form: 'https://[Organization URI]/api/data/v{api_version}'
@@ -105,12 +95,7 @@ class DynamicsClient:
         self.api = OAuth2Session(client=client)
 
         # Fetch token
-        self.api.fetch_token(
-            token_url=token_url,
-            client_id=client_id,
-            client_secret=client_secret,
-            scope=scope,
-        )
+        self.api.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
 
         # Query options
         self._select = ""
@@ -294,31 +279,29 @@ class DynamicsClient:
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
         """
-        message = f"[API {method.upper()} REQUEST FAILED] {error_message}"
-        logger.error(message)
 
         if status_code == status.HTTP_400_BAD_REQUEST:
-            raise ParseError()
+            raise ParseError(message=error_message)
         elif status_code == status.HTTP_401_UNAUTHORIZED:
-            raise AuthenticationFailed()
+            raise AuthenticationFailed(message=error_message)
         elif status_code == status.HTTP_403_FORBIDDEN:
-            raise PermissionDenied()
+            raise PermissionDenied(message=error_message)
         elif status_code == status.HTTP_404_NOT_FOUND:
-            raise NotFound()
+            raise NotFound(message=error_message)
         elif status_code == status.HTTP_405_METHOD_NOT_ALLOWED:
-            raise MethodNotAllowed(method=method)
+            raise MethodNotAllowed(method=method, message=error_message)
         elif status_code == status.HTTP_412_PRECONDITION_FAILED:
-            raise DuplicateRecordError()
+            raise DuplicateRecordError(message=error_message)
         elif status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE:
-            raise PayloadTooLarge()
+            raise PayloadTooLarge(message=error_message)
         elif status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            raise APILimitsExceeded(error_message=error_message)
+            raise APILimitsExceeded(message=error_message)
         elif status_code == status.HTTP_501_NOT_IMPLEMENTED:
-            raise OperationNotImplemented()
+            raise OperationNotImplemented(message=error_message)
         elif status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
-            raise WebAPIUnavailable()
+            raise WebAPIUnavailable(message=error_message)
         else:
-            raise DynamicsException()
+            raise DynamicsException(message=error_message)
 
     def GET(self, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.

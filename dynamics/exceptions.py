@@ -1,13 +1,15 @@
 import logging
 
-from django.utils.translation import gettext_lazy as _
-
-from rest_framework import status
-from rest_framework.exceptions import APIException
+from . import status
 
 
 __all__ = [
     "DynamicsException",
+    "ParseError",
+    "AuthenticationFailed",
+    "PermissionDenied",
+    "NotFound",
+    "MethodNotAllowed",
     "DuplicateRecordError",
     "PayloadTooLarge",
     "APILimitsExceeded",
@@ -19,57 +21,86 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class DynamicsException(APIException):
+class DynamicsException(Exception):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    default_detail = _("Dynamics Web API call failed.")
-    default_code = "dynamics_link_failed"
+    error_detail = "Dynamics Web API call failed."
+
+    def __init__(self, message: str = None):
+        self.detail = f"[{self.status_code}] {self.error_detail}"
+        if message is not None:
+            self.detail += f" - {message}"
+
+        logger.error(self.detail)
+
+    def __str__(self):
+        return str(self.detail)
 
 
-class DuplicateRecordError(APIException):
+class ParseError(DynamicsException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    error_detail = "Malformed request."
+
+
+class AuthenticationFailed(DynamicsException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    error_detail = "Incorrect authentication credentials."
+
+
+class PermissionDenied(DynamicsException):
+    status_code = status.HTTP_403_FORBIDDEN
+    error_detail = "You do not have permission to perform this action."
+
+
+class NotFound(DynamicsException):
+    status_code = status.HTTP_404_NOT_FOUND
+    error_detail = "Not found."
+
+
+class MethodNotAllowed(DynamicsException):
+    status_code = status.HTTP_405_METHOD_NOT_ALLOWED
+    error_detail = 'Method "{method}" not allowed.'
+
+    def __init__(self, method: str, message: str = None):
+        if message is None:
+            self.error_detail = self.error_detail.format(method=method)
+        super().__init__(message)
+
+
+class DuplicateRecordError(DynamicsException):
     # Could also be a concurrency mismatch, but this is much more common
     status_code = status.HTTP_412_PRECONDITION_FAILED
-    default_detail = _("Trying to save a duplicate record.")
-    default_code = "dynamics_duplicate_record"
+    error_detail = "Trying to save a duplicate record."
 
 
-class PayloadTooLarge(APIException):
+class PayloadTooLarge(DynamicsException):
     status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-    default_detail = _("Request length is too large.")
-    default_code = "dynamics_request_too_large"
+    error_detail = "Request length is too large."
 
 
-class APILimitsExceeded(APIException):
-    """Error when API protection limits are exceeded. Creates a log entry."""
+class APILimitsExceeded(DynamicsException):
+    """Error when API protection limits are exceeded."""
+
+    # Dynamics Web API service protection limits were exceeded.
+    # This can be due to any of the following reasons:
+    #
+    # 1. Over 6000 requests within a 5 minute sliding window.
+    # 2. Combined request execution time exceeded 20 minutes within a 5 minute sliding window.
+    # 3. Over 52 concurrent request.
+    # 4. Maximum number of API requests per 24 hours exceeded (depends on Dynamics licence).
+    #
+    # You can read more here:
+    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/api-limits
+    # https://docs.microsoft.com/en-us/power-platform/admin/api-request-limits-allocations
 
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
-    default_detail = _("Dynamics Web API limits were exceeded.")
-    default_code = "dynamics_api_limits_exceeded"
-
-    def __init__(self, error_message: str, detail=None, code=None):
-        super().__init__(detail=detail, code=code)
-        #
-        # Dynamics Web API service protection limits were exceeded.
-        # This can be due to any of the following reasons:
-        #
-        # 1. Over 6000 requests within a 5 minute sliding window.
-        # 2. Combined request execution time exceeded 20 minutes within a 5 minute sliding window.
-        # 3. Over 52 concurrent request.
-        # 4. Maximum number of API requests per 24 hours exceeded (depends on Dynamics licence).
-        #
-        # You can read more here:
-        # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/api-limits
-        # https://docs.microsoft.com/en-us/power-platform/admin/api-request-limits-allocations
-        #
-        logger.error(f"API limits exceeded. Reason given by the server: {error_message}.")
+    error_detail = "Dynamics Web API limits were exceeded."
 
 
-class OperationNotImplemented(APIException):
+class OperationNotImplemented(DynamicsException):
     status_code = status.HTTP_501_NOT_IMPLEMENTED
-    default_detail = _("Requested operation isn't implemented.")
-    default_code = "dynamics_operation_not_implemented"
+    error_detail = "Requested operation isn't implemented."
 
 
-class WebAPIUnavailable(APIException):
+class WebAPIUnavailable(DynamicsException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    default_detail = _("Web API service isn't available.")
-    default_code = "dynamics_link_down"
+    error_detail = "Web API service isn't available."
