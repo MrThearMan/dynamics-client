@@ -108,6 +108,7 @@ class DynamicsClient:
         self._table = ""
         self._row_id = ""
         self._add_ref_to_property = ""
+        self._pre_expand = ""
 
         self.headers = {}
 
@@ -140,7 +141,9 @@ class DynamicsClient:
 
         if self.row_id:
             query += f"({self.row_id})"
-        if self.add_ref_to_property:
+        if self.pre_expand:
+            query += f"/{self.pre_expand}"
+        if self.add_ref_to_property and not self.pre_expand:
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self.compile_query_options()) and not self.add_ref_to_property:
             query += qo
@@ -205,6 +208,7 @@ class DynamicsClient:
             ('IsFlags="', 'is_flags="'),
             ('Action="', 'action="'),
             ('Value="', 'value="'),
+            ('="Variable"', '="variable"'),
             #
             # Types
             ("Edm.Guid", "uuid"),
@@ -237,6 +241,7 @@ class DynamicsClient:
         self._table = ""
         self._row_id = ""
         self._add_ref_to_property = ""
+        self._pre_expand = ""
 
         self.headers = {}
 
@@ -453,6 +458,19 @@ class DynamicsClient:
     @add_ref_to_property.setter
     def add_ref_to_property(self, value: str):
         self._add_ref_to_property = value
+
+    @property
+    def pre_expand(self):
+        """Expand/navigate to some linked table in this table
+        before taking any queryoptions into account.
+        This will save you having to use the expand statement itself,
+        if all you are looking for is under this table anyway.
+        """
+        return self._pre_expand
+
+    @pre_expand.setter
+    def pre_expand(self, value: str):
+        self._pre_expand = value
 
     @property
     def show_annotations(self) -> bool:

@@ -146,11 +146,11 @@ class OPS:
 
     @staticmethod
     def and_(op1: str, op2: str, group: bool = False) -> str:
-        return OPS._comp_operator(op1, op2, "and", group)
+        return OPS._comp_operator(op1, op2, "and", group, False)
 
     @staticmethod
     def or_(op1: str, op2: str, group: bool = False) -> str:
-        return OPS._comp_operator(op1, op2, "or", group)
+        return OPS._comp_operator(op1, op2, "or", group, False)
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:
