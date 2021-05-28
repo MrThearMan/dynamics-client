@@ -25,7 +25,7 @@ def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
                           to account for daylight savings time!
     """
 
-    if from_timezone is not None:
+    if from_timezone is not None and date.tzinfo is None:
         tz = pytz.timezone(from_timezone)
         date: datetime = tz.localize(date)
 
@@ -40,8 +40,8 @@ def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
 
     :param date: Date string in form: YYYY-mm-ddTHH:MM:SSZ
     :param to_timezone: Name of the timezone, from 'pytz.all_timezones', to convert the date to.
-                        This won't add 'tzinfo', instead the actual time part will be changed from UCT,
-                        which the server stores, to what the time is at 'to_timezone'.
+                        This won't add 'tzinfo', instead the actual time part will be changed from UTC
+                        to what the time is at 'to_timezone'.
     """
     tz = pytz.timezone(to_timezone)
     local_time: datetime = tz.localize(datetime.fromisoformat(date.replace("Z", "")))

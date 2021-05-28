@@ -31,9 +31,6 @@ Date: May 9th, 2021.
 import os
 import json
 import logging
-import xml.etree.ElementTree as ET
-from operator import attrgetter
-from xml.dom.minidom import parseString as pretty_xml
 from typing import List, Dict, Optional, Any, Literal, Union, Set
 
 from oauthlib.oauth2 import BackendApplicationClient
@@ -76,6 +73,8 @@ expand_subcommands = Dict[expand_keys, expand_values]
 class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
+    request_counter = 0
+
     def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection.
 
@@ -106,6 +105,7 @@ class DynamicsClient:
         self._count = ""
 
         self._table = ""
+        self._action = ""
         self._row_id = ""
         self._add_ref_to_property = ""
         self._pre_expand = ""
@@ -143,91 +143,14 @@ class DynamicsClient:
             query += f"({self.row_id})"
         if self.pre_expand:
             query += f"/{self.pre_expand}"
-        if self.add_ref_to_property and not self.pre_expand:
+        if self.action:
+            query += self.action
+        if self.add_ref_to_property and not self.pre_expand and not self.action:
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self.compile_query_options()) and not self.add_ref_to_property:
             query += qo
 
         return query
-
-    def fetch_schema(self) -> str:
-        """Fetches Dynamics schema for observation."""
-
-        def sortchildrenby(parent, attr):
-            parent[:] = sorted(parent, key=lambda child: child.get(attr, ""))
-            parent[:] = sorted(parent, key=attrgetter("tag"))
-
-        ET.register_namespace("edmx", "http://docs.oasis-open.org/odata/ns/edmx")
-        ET.register_namespace("", "http://docs.oasis-open.org/odata/ns/edm")
-
-        request = self.api.get(self.api_url + "$metadata")
-        xml_string = pretty_xml(request.text).toprettyxml(indent="  ")
-
-        tree = ET.ElementTree(ET.fromstring(xml_string))
-        root = (
-            tree.getroot()
-            .find("edmx:DataServices", namespaces={"edmx": "http://docs.oasis-open.org/odata/ns/edmx"})
-            .find("Schema", namespaces={"": "http://docs.oasis-open.org/odata/ns/edm"})
-        )
-
-        sortchildrenby(root, "Name")
-        for child in root:
-            sortchildrenby(child, "Name")
-
-        xml_prettyfied = pretty_xml(ET.tostring(root)).toprettyxml(indent="  ")
-        xml_prettyfied = "\n".join([e for e in xml_prettyfied.split("\n") if e.strip()])
-
-        to_replace = [
-            #
-            # Namespace
-            ("mscrm.", ""),
-            #
-            # Attributes
-            ('Name="', 'name="'),
-            ('Type="', 'type="'),
-            ('Property="', 'property="'),
-            ('Referencedproperty="', 'referenced_property="'),
-            ('Nullable="', 'nullable="'),
-            ('Unicode="', 'unicode="'),
-            ('Scale="', 'scale="'),
-            ('Basetype="', 'basetype="'),
-            ('Term="', 'term="'),
-            ('Path="', 'path="'),
-            ('Target="', 'target="'),
-            ('Partner="', 'partner="'),
-            ('Namespace="', 'namespace="'),
-            ('Entitytype="', 'entity_type="'),
-            ('Propertypath="', 'property_path="'),
-            ('Containstarget="', 'contains_target="'),
-            ('IsBound="', 'is_bound="'),
-            ('String="', 'string="'),
-            ('Alias="', 'alias="'),
-            ('AppliesTo="', 'applies_to="'),
-            ('IsComposable="', 'is_composable="'),
-            ('Opentype="', 'open_type="'),
-            ('IsFlags="', 'is_flags="'),
-            ('Action="', 'action="'),
-            ('Value="', 'value="'),
-            ('="Variable"', '="variable"'),
-            #
-            # Types
-            ("Edm.Guid", "uuid"),
-            ("Edm.Int64", "int"),
-            ("Edm.Int32", "int"),
-            ("Edm.Int16", "int"),
-            ("Edm.Decimal", "float"),
-            ("Edm.Double", "float"),
-            ("Edm.Boolean", "bool"),
-            ("Edm.Binary", "bytes"),
-            ("Edm.DateTimeOffset", "datetime"),
-            ("Edm.Date", "date"),
-            ("Edm.String", "str"),
-        ]
-
-        for new, old in to_replace:
-            xml_prettyfied = xml_prettyfied.replace(new, old)
-
-        return xml_prettyfied
 
     def reset_query(self):
         """Resets the query options and table selection."""
@@ -239,6 +162,7 @@ class DynamicsClient:
         self._count = ""
 
         self._table = ""
+        self._action = ""
         self._row_id = ""
         self._add_ref_to_property = ""
         self._pre_expand = ""
@@ -279,6 +203,8 @@ class DynamicsClient:
             self.headers.setdefault("If-None-Match", "null")
             self.headers.setdefault("If-Match", "*")
 
+        self.headers.setdefault("Prefer", "odata.maxpagesize=1000")
+
     @staticmethod
     def error_handling(status_code: int, error_message: str, method: method_type):
         """Error handling based on these expected error statuses:
@@ -308,13 +234,14 @@ class DynamicsClient:
         else:
             raise DynamicsException(message=error_message)
 
-    def GET(self, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
+    def GET(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
 
+        :param not_found_ok: Not found should not raise error, but return empty list instead.
         :param next_link: Request the next set of records from this link instead.
-        :raises ValueError: API fetch failed or no data in request.
         """
 
+        self.request_counter += 1
         self.set_default_headers("get")
 
         if next_link is not None:
@@ -324,37 +251,40 @@ class DynamicsClient:
 
         data = response.json()
 
-        # [sic] Separate cases where 'row_id' is provided,
-        # without breaking query_dynamics (which puts everything in self.table)
-        entities = [data] if "@odata.etag" in data else data.get("value")
-        errors = data.get("error")
+        # Always returns a list, even if only one row is selected
+        entities = data.get("value", [data])
+        errors = data.get("error", {})
         count = data.get("@odata.count", "")
 
-        if not errors and not entities:
+        if errors:
+            self.error_handling(response.status_code, errors.get("message"), method="get")
+        elif not entities:
+            if not_found_ok:
+                return []
             message = "No records matching the given criteria."
             self.error_handling(status.HTTP_404_NOT_FOUND, message, method="get")
-
-        if errors:
-            self.error_handling(response.status_code, errors["message"], method="get")
 
         # Fetch more data if needed
         for i, row in enumerate(entities):
             for column_key in list(row.keys()):
                 if "@odata.nextLink" in column_key:
 
-                    # TODO: Remove later?, in UAT there is some bad links(?) which have to be skipped.
+                    # Sometimes @odata.next links will appear even if all items were fetched.
+                    # We set odata.maxpagesize to 1000 so the first 1000 items should be fetched.
+                    # Therefore, if the @odata.next link appears before that, we can ignore it.
+                    #
                     key = column_key[:-15]
-                    if not entities[i][key]:
+                    if len(entities[i][key]) < 1000:
+                        row.pop(column_key)
                         continue
 
                     # When fetching the next page of results, it can include the last
                     # page of data as well, so we filter those out. Although, This doesn't seem
                     # to be the intended way this should work, based on this:
                     #
-                    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/
-                    # webapi/query-data-web-api#limits-on-number-of-entities-returned
+                    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#specify-the-number-of-tables-to-return-in-a-page
                     #
-                    extra = self.GET(next_link=row.pop(column_key))
+                    extra = self.GET(not_found_ok=not_found_ok, next_link=row.pop(column_key))
                     id_tags = [value["@odata.etag"] for value in entities[i][key]]
                     extra = [value for value in extra if value["@odata.etag"] not in id_tags]
 
@@ -366,57 +296,71 @@ class DynamicsClient:
         return entities
 
     def POST(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create new row in a table.
-        Must have 'table' attribute set.
+        """Create new row in a table. Must have 'table' attribute set.
         Use expand and select to reduce returned data.
+
+        :param data: POST data.
         """
 
+        self.request_counter += 1
         self.set_default_headers("post")
 
         # [sic] POSTing data in dict form doesn't work for some reason...
         data = json.dumps(data).encode()
         response = self.api.post(self.current_query, data=data, headers=self.headers)
+
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return {}
+
         data = response.json()
 
         if errors := data.get("error"):
+            if errors["code"] == "0x80040265":
+                raise OverlappingBooking()  # No logging since this likely happens a lot
             self.error_handling(response.status_code, errors["message"], method="post")
 
         return data
 
     def PATCH(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Update row in a table.
-        Must have 'table' and 'row_id' attributes set.
+        """Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
+
+        :param data: PATCH data.
         """
 
+        self.request_counter += 1
         self.set_default_headers("patch")
 
         data = json.dumps(data).encode()
         response = self.api.patch(self.current_query, data=data, headers=self.headers)
+
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return {}
+
         data = response.json()
 
         if errors := data.get("error"):
+            if errors["code"] == "0x80040265":
+                raise OverlappingBooking()  # No logging since this likely happens a lot
             self.error_handling(response.status_code, errors["message"], method="patch")
 
         return data
 
     def DELETE(self):
-        """Delete row in a table.
-        Must have 'table' and 'row_id' attributes set.
-        """
+        """Delete row in a table. Must have 'table' and 'row_id' attributes set."""
 
+        self.request_counter += 1
         self.set_default_headers("delete")
 
         response = self.api.delete(self.current_query, headers=self.headers)
 
-        try:
-            data = response.json()
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return {}
 
-            if errors := data.get("error"):
-                self.error_handling(response.status_code, errors["message"], method="delete")
+        data = response.json()
 
-        except json.JSONDecodeError:
-            pass  # no errors, no response data
+        if errors := data.get("error"):
+            self.error_handling(response.status_code, errors["message"], method="delete")
 
     @property
     def table(self) -> str:
@@ -425,13 +369,26 @@ class DynamicsClient:
 
     @table.setter
     def table(self, value: str):
-        self._table = value
+        self._table =
+
+    @property
+    def action(self) -> str:
+        """API action to take.
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions
+        """
+        return self._action
+
+    @action.setter
+    def action(self, value: str):
+        self._action = value
 
     @property
     def row_id(self) -> str:
-        """Search only from the row with this id. If the table supports other row id's,
-        you can use 'foo=bar' or 'foo=bar,fizz=buzz' to filter by them,
-        but using the 'filter' query option is recommended.
+        """Search only from the row with this id.
+        If the table has an alternate key defined, you can use
+        'foo=bar' or 'foo=bar,fizz=buzz' to retrive a single row:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/retrieve-entity-using-web-api#retrieve-using-an-alternate-key
+        Alternate keys are not on by default in Dynamics, so those might not work at all.
         """
         return self._row_id
 
