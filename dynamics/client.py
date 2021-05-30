@@ -61,19 +61,18 @@ logger = logging.getLogger(__name__)
 
 method_type = Literal["get", "post", "patch", "delete"]
 orderby_type = Dict[str, Literal["desc", "asc"]]
+filter_type = Union[Set[str], List[str]]
 
-# $select takes List[str], $fitler takes List[str] or Set[str],
-# $top takes int, and $orderby takes orderby_type.
-# Nested $expand takes a dict like defined here
 expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
 expand_values = Union[List[str], Set[str], int, orderby_type, Dict]
-expand_subcommands = Dict[expand_keys, expand_values]
+expand_type = Dict[str, Dict[expand_keys, expand_values]]
 
 
 class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
-    request_counter = 0
+    request_counter: int = 0
+    pagesize: int = 1000
 
     def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection.
@@ -97,12 +96,12 @@ class DynamicsClient:
         self.api.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
 
         # Query options
-        self._select = ""
-        self._expand = ""
-        self._top = ""
-        self._filter = ""
-        self._orderby = ""
-        self._count = ""
+        self._select: List[str] = []
+        self._expand: expand_type = {}
+        self._filter: filter_type = []
+        self._orderby: orderby_type = {}
+        self._top: int = 0
+        self._count: bool = False
 
         self._table = ""
         self._action = ""
@@ -110,7 +109,13 @@ class DynamicsClient:
         self._add_ref_to_property = ""
         self._pre_expand = ""
 
-        self.headers = {}
+        self._headers: Dict[str, str] = {}
+
+    def __getitem__(self, key):
+        return self.headers[key]
+
+    def __setitem__(self, key, value):
+        self.headers[key] = value
 
     @classmethod
     def from_environment(cls):
@@ -144,7 +149,9 @@ class DynamicsClient:
         if self.pre_expand:
             query += f"/{self.pre_expand}"
         if self.action:
-            query += self.action
+            if query[-1] != "/":
+                query += "/"
+            query += {self.action}
         if self.add_ref_to_property and not self.pre_expand and not self.action:
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self.compile_query_options()) and not self.add_ref_to_property:
@@ -152,14 +159,19 @@ class DynamicsClient:
 
         return query
 
+    @property
+    def headers(self) -> Dict[str, str]:
+        """HTTP request headers."""
+        return self._headers
+
     def reset_query(self):
         """Resets the query options and table selection."""
-        self._select = ""
-        self._expand = ""
-        self._top = ""
-        self._filter = ""
-        self._orderby = ""
-        self._count = ""
+        self._select: List[str] = []
+        self._expand: expand_type = {}
+        self._filter: filter_type = []
+        self._orderby: orderby_type = {}
+        self._top: int = 0
+        self._count: bool = False
 
         self._table = ""
         self._action = ""
@@ -167,19 +179,19 @@ class DynamicsClient:
         self._add_ref_to_property = ""
         self._pre_expand = ""
 
-        self.headers = {}
+        self._headers = {}
 
     def compile_query_options(self) -> str:
         query_options = "&".join(
             [
                 statement
                 for statement in [
-                    self._expand,
-                    self._select,
-                    self._filter,
-                    self._top,
-                    self._count,
-                    self._orderby,
+                    self._compile_expand(),
+                    self._compile_select(),
+                    self._compile_filter(),
+                    self._compile_top(),
+                    self._compile_count(),
+                    self._compile_orderby(),
                 ]
                 if statement
             ]
@@ -203,7 +215,7 @@ class DynamicsClient:
             self.headers.setdefault("If-None-Match", "null")
             self.headers.setdefault("If-Match", "*")
 
-        self.headers.setdefault("Prefer", "odata.maxpagesize=1000")
+        self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
 
     @staticmethod
     def error_handling(status_code: int, error_message: str, method: method_type):
@@ -212,27 +224,27 @@ class DynamicsClient:
         """
 
         if status_code == status.HTTP_400_BAD_REQUEST:
-            raise ParseError(message=error_message)
+            raise ParseError(detail=error_message)
         elif status_code == status.HTTP_401_UNAUTHORIZED:
-            raise AuthenticationFailed(message=error_message)
+            raise AuthenticationFailed(detail=error_message)
         elif status_code == status.HTTP_403_FORBIDDEN:
-            raise PermissionDenied(message=error_message)
+            raise PermissionDenied(detail=error_message)
         elif status_code == status.HTTP_404_NOT_FOUND:
-            raise NotFound(message=error_message)
+            raise NotFound(detail=error_message)
         elif status_code == status.HTTP_405_METHOD_NOT_ALLOWED:
-            raise MethodNotAllowed(method=method, message=error_message)
+            raise MethodNotAllowed(method=method, detail=error_message)
         elif status_code == status.HTTP_412_PRECONDITION_FAILED:
-            raise DuplicateRecordError(message=error_message)
+            raise DuplicateRecordError(detail=error_message)
         elif status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE:
-            raise PayloadTooLarge(message=error_message)
+            raise PayloadTooLarge(detail=error_message)
         elif status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            raise APILimitsExceeded(message=error_message)
+            raise APILimitsExceeded(detail=error_message)
         elif status_code == status.HTTP_501_NOT_IMPLEMENTED:
-            raise OperationNotImplemented(message=error_message)
+            raise OperationNotImplemented(detail=error_message)
         elif status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
-            raise WebAPIUnavailable(message=error_message)
+            raise WebAPIUnavailable(detail=error_message)
         else:
-            raise DynamicsException(message=error_message)
+            raise DynamicsException(detail=error_message)
 
     def GET(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
@@ -315,8 +327,6 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            if errors["code"] == "0x80040265":
-                raise OverlappingBooking()  # No logging since this likely happens a lot
             self.error_handling(response.status_code, errors["message"], method="post")
 
         return data
@@ -340,13 +350,11 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            if errors["code"] == "0x80040265":
-                raise OverlappingBooking()  # No logging since this likely happens a lot
             self.error_handling(response.status_code, errors["message"], method="patch")
 
         return data
 
-    def DELETE(self):
+    def DELETE(self) -> Dict[str, Any]:
         """Delete row in a table. Must have 'table' and 'row_id' attributes set."""
 
         self.request_counter += 1
@@ -362,6 +370,8 @@ class DynamicsClient:
         if errors := data.get("error"):
             self.error_handling(response.status_code, errors["message"], method="delete")
 
+        return data
+
     @property
     def table(self) -> str:
         """Table to search in."""
@@ -369,7 +379,7 @@ class DynamicsClient:
 
     @table.setter
     def table(self, value: str):
-        self._table =
+        self._table = value
 
     @property
     def action(self) -> str:
@@ -417,7 +427,7 @@ class DynamicsClient:
         self._add_ref_to_property = value
 
     @property
-    def pre_expand(self):
+    def pre_expand(self) -> str:
         """Expand/navigate to some linked table in this table
         before taking any queryoptions into account.
         This will save you having to use the expand statement itself,
@@ -445,7 +455,7 @@ class DynamicsClient:
             self.headers.pop("Prefer")
 
     @property
-    def select(self) -> str:
+    def select(self) -> List[str]:
         """Get current $select statement"""
         return self._select
 
@@ -454,50 +464,21 @@ class DynamicsClient:
         """Set $select statement. Limits the properties returned from the current entity.
         Use expand to limit properties in related items
         """
-        self._select = "$select=" + ",".join([key for key in items])
+        self._select = items
+
+    def _compile_select(self, values: List[str] = None) -> str:
+        if values is None:
+            values = self._select
+
+        return "$select=" + ",".join([key for key in values]) if values else ""
 
     @property
-    def expand(self) -> str:
-        """Get current $expand statement"""
+    def expand(self) -> expand_type:
+        """Get current $expand statement."""
         return self._expand
 
-    def _nested_commands(self, name: expand_keys, values: expand_values) -> str:
-
-        assert name in (
-            "expand",
-            "select",
-            "top",
-            "filter",
-            "orderby",
-        ), f"'{name}' is not a valid command!"
-
-        if name == "select":
-            return "$select=" + ",".join([key for key in values])
-
-        elif name == "filter":
-            return "$filter=" + " and ".join([key.strip() for key in values])
-
-        elif name == "orderby":
-            return f"$orderby=" + ",".join([f"{key} {order}" for key, order in values.items()])
-
-        elif name == "top":
-            return f"$top={values}"
-
-        else:  # nested expand
-            return self._recursive_expand(values)
-
-    def _recursive_expand(self, items: Dict[str, Optional[expand_subcommands]]) -> str:
-        return "$expand=" + ",".join(
-            [
-                f"{key}(" + ";".join([self._nested_commands(name, values) for name, values in value.items()]) + f")"
-                if value
-                else f"{key}"
-                for key, value in items.items()
-            ]
-        )
-
     @expand.setter
-    def expand(self, items: Dict[str, Optional[expand_subcommands]]):
+    def expand(self, items: expand_type):
         """Set $expand statement, with possible nested statements.
         Controls what data from related entities is returned.
 
@@ -520,15 +501,47 @@ class DynamicsClient:
         expand statements, so long as the total is 10.
         """
 
-        self._expand = self._recursive_expand(items)
+        self._expand = items
+
+    def _compile_expand(self, items: expand_type = None) -> str:
+        if items is None:
+            items = self._expand
+
+        if not items:
+            return ""
+
+        return "$expand=" + ",".join(
+            [
+                f"{key}(" + ";".join([self._expand_commands(name, values) for name, values in value.items()]) + f")"
+                if value
+                else f"{key}"
+                for key, value in items.items()
+            ]
+        )
+
+    def _expand_commands(self, name: expand_keys, values: expand_values) -> str:
+        """Compile commands inside an expand statement."""
+
+        if name == "select":
+            return self._compile_select(values)
+        elif name == "filter":
+            return self._compile_filter(values)
+        elif name == "orderby":
+            return self._compile_orderby(values)
+        elif name == "top":
+            return self._compile_top(values)
+        elif name == "expand":
+            return self._compile_expand(values)
+        else:
+            raise KeyError(f"'{name}' is not a valid command!")
 
     @property
-    def filter(self) -> str:
+    def filter(self) -> filter_type:
         """Get current $filter statement"""
         return self._filter
 
     @filter.setter
-    def filter(self, items: Union[Set[str], List[str]]):
+    def filter(self, items: filter_type):
         """Set $filter statement. Sets the criteria for which entities will be returned.
 
         Input a list-object to 'and' the items. Input a set-object to 'or' the items.
@@ -551,15 +564,27 @@ class DynamicsClient:
         - **startswith(key,'value')** = Key starts with string: '*startswith(foo,'bar')*'
         """
 
-        if isinstance(items, set):
-            self._filter = "$filter=" + " or ".join([key.strip() for key in items])
-        elif isinstance(items, list):
-            self._filter = "$filter=" + " and ".join([key.strip() for key in items])
-        else:
+        if not isinstance(items, (set, list)):
             raise TypeError("Filter items must be either a set or a list.")
+        elif not items:
+            raise ValueError("Filter list cannot be empty.")
+
+        self._filter = items
+
+    def _compile_filter(self, values: filter_type = None):
+        if values is None:
+            values = self._filter
+
+        if not values:
+            return ""
+
+        if isinstance(values, set):
+            return "$filter=" + " or ".join([key.strip() for key in values])
+        elif isinstance(values, list):
+            return "$filter=" + " and ".join([key.strip() for key in values])
 
     @property
-    def top(self) -> str:
+    def top(self) -> int:
         """Get current $top statement"""
         return self._top
 
@@ -568,20 +593,41 @@ class DynamicsClient:
         """Set $top statement. Limits the number of results returned.
         Note: You should not use 'top' with 'count'.
         """
-        self._top = f"$top={number}"
+        self._top = number
+
+    def _compile_top(self, number: int = None) -> str:
+        if number is None:
+            number = self._top
+
+        return f"$top={number}" if number != 0 else ""
 
     @property
-    def orderby(self) -> str:
+    def orderby(self) -> orderby_type:
         """Get current $orderby statement"""
         return self._orderby
 
     @orderby.setter
     def orderby(self, items: orderby_type):
         """Set $orderby statement. Specifies the order in which items are returned."""
-        self._orderby = f"$orderby=" + ",".join([f"{key} {order}" for key, order in items.items()])
+
+        if isinstance(items, dict):
+            raise TypeError("Orderby items must be a dict.")
+        elif not items:
+            raise ValueError("Orderby dict must not be empty.")
+
+        self._orderby = items
+
+    def _compile_orderby(self, values: orderby_type = None) -> str:
+        if values is None:
+            values = self._orderby
+
+        if not values:
+            return ""
+
+        return f"$orderby=" + ",".join([f"{key} {order}" for key, order in values.items()])
 
     @property
-    def count(self) -> str:
+    def count(self) -> bool:
         """Get current $count statement"""
         return self._count
 
@@ -591,7 +637,13 @@ class DynamicsClient:
         Count will be the first item in the list of results.
         Note: You should not use 'count' with 'top'.
         """
-        self._count = f"$count=true" if value else ""
+        self._count = value
+
+    def _compile_count(self, value: bool = None) -> str:
+        if value is None:
+            value = self._count
+
+        return f"$count=true" if value else ""
 
     # TODO: apply-statement
     # TODO: Any and all statements

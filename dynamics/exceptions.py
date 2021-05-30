@@ -2,6 +2,24 @@ import logging
 
 from . import status
 
+try:
+    from rest_framework.exceptions import APIException
+
+except ImportError:
+    class APIException(Exception):
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        default_detail = "A server error occurred."
+
+        def __init__(self, detail: str = None):
+            if detail is None:
+                detail = self.default_detail
+
+            self.detail = f"[{self.status_code}] {detail}"
+            logger.error(self.detail)
+
+        def __str__(self):
+            return str(self.detail)
+
 
 __all__ = [
     "DynamicsException",
@@ -21,19 +39,9 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class DynamicsException(Exception):
+class DynamicsException(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    error_detail = "Dynamics Web API call failed."
-
-    def __init__(self, message: str = None):
-        self.detail = f"[{self.status_code}] {self.error_detail}"
-        if message is not None:
-            self.detail += f" - {message}"
-
-        logger.error(self.detail)
-
-    def __str__(self):
-        return str(self.detail)
+    default_detail = "Dynamics Web API call failed."
 
 
 class ParseError(DynamicsException):
@@ -60,10 +68,10 @@ class MethodNotAllowed(DynamicsException):
     status_code = status.HTTP_405_METHOD_NOT_ALLOWED
     error_detail = 'Method "{method}" not allowed.'
 
-    def __init__(self, method: str, message: str = None):
-        if message is None:
+    def __init__(self, method: str, detail: str = None):
+        if detail is None:
             self.error_detail = self.error_detail.format(method=method)
-        super().__init__(message)
+        super().__init__(detail)
 
 
 class DuplicateRecordError(DynamicsException):
