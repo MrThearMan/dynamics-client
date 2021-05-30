@@ -60,7 +60,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 method_type = Literal["get", "post", "patch", "delete"]
-orderby_type = Dict[str, Literal["desc", "asc"]]
+orderby_type = Dict[str, Literal["asc", "desc"]]
 filter_type = Union[Set[str], List[str]]
 
 expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
@@ -68,11 +68,17 @@ expand_values = Union[List[str], Set[str], int, orderby_type, Dict]
 expand_type = Dict[str, Dict[expand_keys, expand_values]]
 
 
+class _sentinel:
+    """Sentinel value."""
+
+    def __bool__(self):
+        return False
+
+
 class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
-    pagesize: int = 1000
 
     def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection.
@@ -86,14 +92,13 @@ class DynamicsClient:
         """
 
         # [sic] Assure that url ends in forward slash
-        self.api_url = api_url.rstrip("/") + "/"
+        self._api_url = api_url.rstrip("/") + "/"
 
         # [sic] Scope not given here, since we don't have a token yet
-        client = BackendApplicationClient(client_id=client_id)
-        self.api = OAuth2Session(client=client)
+        self._api = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
 
         # Fetch token
-        self.api.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
+        self._api.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
 
         # Query options
         self._select: List[str] = []
@@ -110,6 +115,7 @@ class DynamicsClient:
         self._pre_expand = ""
 
         self._headers: Dict[str, str] = {}
+        self._pagesize: int = 1000
 
     def __getitem__(self, key):
         return self.headers[key]
@@ -138,32 +144,6 @@ class DynamicsClient:
 
         return cls(base_url, token_url, client_id, client_secret, scope)
 
-    @property
-    def current_query(self) -> str:
-        """Constructs query from current options, leaving out empty ones."""
-
-        query = self.api_url + self.table
-
-        if self.row_id:
-            query += f"({self.row_id})"
-        if self.pre_expand:
-            query += f"/{self.pre_expand}"
-        if self.action:
-            if query[-1] != "/":
-                query += "/"
-            query += {self.action}
-        if self.add_ref_to_property and not self.pre_expand and not self.action:
-            query += f"/{self.add_ref_to_property}/$ref"
-        if (qo := self.compile_query_options()) and not self.add_ref_to_property:
-            query += qo
-
-        return query
-
-    @property
-    def headers(self) -> Dict[str, str]:
-        """HTTP request headers."""
-        return self._headers
-
     def fetch_schema(self, to_file: bool = False) -> Optional[str]:
         """Fetch Dynamics schema for observation."""
 
@@ -179,7 +159,7 @@ class DynamicsClient:
         ET.register_namespace("", "http://docs.oasis-open.org/odata/ns/edm")
 
         logger.info("Fetching Schema.")
-        request = self.api.get(self.api_url + "$metadata")
+        request = self._api.get(self._api_url + "$metadata")
         logger.info("Schema fetched. Formatting...")
         xml_string = pretty_xml(request.text).toprettyxml(indent="  ")
 
@@ -203,24 +183,28 @@ class DynamicsClient:
         with open(f"dynamics_schema.xml", "w+") as f:
             f.write(xml_prettyfied)
 
-    def reset_query(self):
-        """Resets the query options and table selection."""
-        self._select: List[str] = []
-        self._expand: expand_type = {}
-        self._filter: filter_type = []
-        self._orderby: orderby_type = {}
-        self._top: int = 0
-        self._count: bool = False
+    @property
+    def current_query(self) -> str:
+        """Constructs query from current options, leaving out empty ones."""
 
-        self._table = ""
-        self._action = ""
-        self._row_id = ""
-        self._add_ref_to_property = ""
-        self._pre_expand = ""
+        query = self._api_url + self.table
 
-        self._headers = {}
+        if self.row_id:
+            query += f"({self.row_id})"
+        if self.pre_expand:
+            query += f"/{self.pre_expand}"
+        if self.action:
+            if query[-1] != "/":
+                query += "/"
+            query += {self.action}
+        if self.add_ref_to_property and not self.pre_expand and not self.action:
+            query += f"/{self.add_ref_to_property}/$ref"
+        if (qo := self._compile_query_options()) and not self.add_ref_to_property:
+            query += qo
 
-    def compile_query_options(self) -> str:
+        return query
+
+    def _compile_query_options(self) -> str:
         query_options = "&".join(
             [
                 statement
@@ -238,26 +222,49 @@ class DynamicsClient:
 
         return f"?{query_options}" if query_options else ""
 
-    def set_default_headers(self, operation: method_type):
+    @property
+    def headers(self) -> Dict[str, str]:
+        """HTTP request headers."""
+        return self._headers
+
+    def reset_query(self):
+        """Resets all client options and headers."""
+        self._select: List[str] = []
+        self._expand: expand_type = {}
+        self._filter: filter_type = []
+        self._orderby: orderby_type = {}
+        self._top: int = 0
+        self._count: bool = False
+
+        self._table = ""
+        self._action = ""
+        self._row_id = ""
+        self._add_ref_to_property = ""
+        self._pre_expand = ""
+
+        self._headers: Dict[str, str] = {}
+
+    def set_default_headers(self, method: method_type):
+        """Sets per method default headers. Does not override user added headers."""
+
         self.headers.setdefault("OData-MaxVersion", "4.0")
         self.headers.setdefault("OData-Version", "4.0")
         self.headers.setdefault("Accept", "application/json; odata.metadata=minimal")
 
-        if operation in ["post", "patch", "delete"]:
+        if method in ["post", "patch", "delete"]:
             self.headers.setdefault("Content-Type", "application/json; charset=utf-8")
 
-        if operation in ["post", "patch"]:
+        if method in ["post", "patch"]:
             self.headers.setdefault("Prefer", "return=representation")
             self.headers.setdefault("MSCRM.SuppressDuplicateDetection", "false")
 
-        if operation in ["patch"]:
+        if method in ["patch"]:
             self.headers.setdefault("If-None-Match", "null")
             self.headers.setdefault("If-Match", "*")
 
         self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
 
-    @staticmethod
-    def error_handling(status_code: int, error_message: str, method: method_type):
+    def _error_handling(self, status_code: int, error_message: str, method: method_type):
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
         """
@@ -296,9 +303,9 @@ class DynamicsClient:
         self.set_default_headers("get")
 
         if next_link is not None:
-            response = self.api.get(next_link, headers=self.headers)
+            response = self._api.get(next_link, headers=self.headers)
         else:
-            response = self.api.get(self.current_query, headers=self.headers)
+            response = self._api.get(self.current_query, headers=self.headers)
 
         data = response.json()
 
@@ -308,12 +315,12 @@ class DynamicsClient:
         count = data.get("@odata.count", "")
 
         if errors:
-            self.error_handling(response.status_code, errors.get("message"), method="get")
+            self._error_handling(response.status_code, errors.get("message"), method="get")
         elif not entities:
             if not_found_ok:
                 return []
             message = "No records matching the given criteria."
-            self.error_handling(status.HTTP_404_NOT_FOUND, message, method="get")
+            self._error_handling(status.HTTP_404_NOT_FOUND, message, method="get")
 
         # Fetch more data if needed
         for i, row in enumerate(entities):
@@ -325,7 +332,7 @@ class DynamicsClient:
                     # Therefore, if the @odata.next link appears before that, we can ignore it.
                     #
                     key = column_key[:-15]
-                    if len(entities[i][key]) < 1000:
+                    if len(entities[i][key]) < self.pagesize:
                         row.pop(column_key)
                         continue
 
@@ -358,7 +365,7 @@ class DynamicsClient:
 
         # [sic] POSTing data in dict form doesn't work for some reason...
         data = json.dumps(data).encode()
-        response = self.api.post(self.current_query, data=data, headers=self.headers)
+        response = self._api.post(self.current_query, data=data, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -366,7 +373,7 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self.error_handling(response.status_code, errors["message"], method="post")
+            self._error_handling(response.status_code, errors["message"], method="post")
 
         return data
 
@@ -381,7 +388,7 @@ class DynamicsClient:
         self.set_default_headers("patch")
 
         data = json.dumps(data).encode()
-        response = self.api.patch(self.current_query, data=data, headers=self.headers)
+        response = self._api.patch(self.current_query, data=data, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -389,7 +396,7 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self.error_handling(response.status_code, errors["message"], method="patch")
+            self._error_handling(response.status_code, errors["message"], method="patch")
 
         return data
 
@@ -399,7 +406,7 @@ class DynamicsClient:
         self.request_counter += 1
         self.set_default_headers("delete")
 
-        response = self.api.delete(self.current_query, headers=self.headers)
+        response = self._api.delete(self.current_query, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -407,7 +414,7 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self.error_handling(response.status_code, errors["message"], method="delete")
+            self._error_handling(response.status_code, errors["message"], method="delete")
 
         return data
 
@@ -422,8 +429,21 @@ class DynamicsClient:
 
     @property
     def action(self) -> str:
-        """API action to take.
-        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions
+        """Set the Dynamics Web API action or function to use.
+
+        It is recommended to read the API Function Reference:
+        https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions
+
+        ...and how to Use Web API Functions:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-functions
+
+        ...as well as the API Action Reference
+        https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions
+
+        ...and how to Use Web API Actions:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions.
+
+        You can input the action/function as a string, or use the included `act` and `fnc` objects construct it.
         """
         return self._action
 
@@ -437,7 +457,7 @@ class DynamicsClient:
         If the table has an alternate key defined, you can use
         'foo=bar' or 'foo=bar,fizz=buzz' to retrive a single row:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/retrieve-entity-using-web-api#retrieve-using-an-alternate-key
-        Alternate keys are not on by default in Dynamics, so those might not work at all.
+        Alternate keys are not enabled by default in Dynamics, so those might not work at all.
         """
         return self._row_id
 
@@ -448,7 +468,7 @@ class DynamicsClient:
     @property
     def add_ref_to_property(self) -> str:
         """Add reference for this navigation property. This indicates,
-        that POST data will contain the API url to a matching rowid
+        that POST data will contain the API url to a matching row id
         in the table this navigation property is meant to link to,
         like this: "@odata.id": "<API URI>/<table>(<id>)".
 
@@ -500,13 +520,11 @@ class DynamicsClient:
 
     @select.setter
     def select(self, items: List[str]):
-        """Set $select statement. Limits the properties returned from the current entity.
-        Use expand to limit properties in related items
-        """
+        """Set $select statement. Limits the properties returned from the current table."""
         self._select = items
 
-    def _compile_select(self, values: List[str] = None) -> str:
-        if values is None:
+    def _compile_select(self, values: List[str] = _sentinel) -> str:
+        if values is _sentinel:
             values = self._select
 
         return "$select=" + ",".join([key for key in values]) if values else ""
@@ -521,16 +539,7 @@ class DynamicsClient:
         """Set $expand statement, with possible nested statements.
         Controls what data from related entities is returned.
 
-        Keys in 'items' indicate entities to expand.
-        Values in 'items' set to None expands to everything *immidiately* under that entity.
-
-        Otherwise, values in 'items' is a dict, which contains the statements inside the expand statement.
-        Valid keys for these are 'select', 'filter', 'top', 'orderby', and 'expand'.
-        Values under these keys should be constructed in the same manner as they are
-        when outside the expand statement, e.g. 'select' takes a List[str], 'top' an int, etc.
-
-        A nested expand statement takes another similar dict to 'items',
-        but it has some limitations (WEB API v9.1):
+        Nested expand statement limitations (WEB API v9.1):
 
         1. Nested expand statements can *only* be applied to **many-to-one/single-valued** relationships.
         This means nested expands for collections do not work!
@@ -538,12 +547,19 @@ class DynamicsClient:
         2. Each request can include a maximum of 10 expand statements.
         This applies to non-nested statements as well! There is no limit on the depth of nested
         expand statements, so long as the total is 10.
+
+        :param items: What linked tables (a.k.a. naviagation properties) to expand and
+                      what statements to apply inside the expanded tables.
+                      If items-dict value is set to an empty dict, no query options are used.
+                      Otherwise, valid keys for the items-dict are 'select', 'filter', 'top', 'orderby', and 'expand'.
+                      Values under these keys should be constructed in the same manner as they are
+                      when outside the expand statement, e.g. 'select' takes a List[str], 'top' an int, etc.
         """
 
         self._expand = items
 
-    def _compile_expand(self, items: expand_type = None) -> str:
-        if items is None:
+    def _compile_expand(self, items: expand_type = _sentinel) -> str:
+        if items is _sentinel:
             items = self._expand
 
         if not items:
@@ -583,10 +599,15 @@ class DynamicsClient:
     def filter(self, items: filter_type):
         """Set $filter statement. Sets the criteria for which entities will be returned.
 
-        Input a list-object to 'and' the items. Input a set-object to 'or' the items.
+        It is recommended to read the API Query Function Reference:
+        https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions
 
-        Below is a list of the standard operators. ":func:`dynamics.ftr`" object can be used to create these,
-        and a bunch of special operators. All filter conditions for string values are case insensitive.
+        ...and how to Query data using the Web API:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api.
+
+        You can input the filters as strings, or use the included `ftr` object to construct them.
+
+        Below is a list of the standard operators:
 
         - **eq** = Equal: 'foo *eq* bar'
         - **ne** = Not Equal: 'foo *ne* bar'
@@ -601,6 +622,8 @@ class DynamicsClient:
         - **contains(key,'value')** = Key contains string: '*contains(foo,'bar')*'
         - **endswith(key,'value')** = Key ends with string: '*endswith(foo,'bar')*'
         - **startswith(key,'value')** = Key starts with string: '*startswith(foo,'bar')*'
+
+        :param items: If a list-object, 'and' the items. If a set-object, 'or' the items.
         """
 
         if not isinstance(items, (set, list)):
@@ -610,8 +633,8 @@ class DynamicsClient:
 
         self._filter = items
 
-    def _compile_filter(self, values: filter_type = None):
-        if values is None:
+    def _compile_filter(self, values: filter_type = _sentinel):
+        if values is _sentinel:
             values = self._filter
 
         if not values:
@@ -630,12 +653,12 @@ class DynamicsClient:
     @top.setter
     def top(self, number: int):
         """Set $top statement. Limits the number of results returned.
-        Note: You should not use 'top' with 'count'.
+        Note: You should not use 'top' and 'count' in the same query.
         """
         self._top = number
 
-    def _compile_top(self, number: int = None) -> str:
-        if number is None:
+    def _compile_top(self, number: int = _sentinel) -> str:
+        if number is _sentinel:
             number = self._top
 
         return f"$top={number}" if number != 0 else ""
@@ -656,8 +679,8 @@ class DynamicsClient:
 
         self._orderby = items
 
-    def _compile_orderby(self, values: orderby_type = None) -> str:
-        if values is None:
+    def _compile_orderby(self, values: orderby_type = _sentinel) -> str:
+        if values is _sentinel:
             values = self._orderby
 
         if not values:
@@ -674,15 +697,31 @@ class DynamicsClient:
     def count(self, value: bool):
         """Set $count statement. Include the count of entities that match the filter criteria in the results.
         Count will be the first item in the list of results.
-        Note: You should not use 'count' with 'top'.
+        Note: You should not use 'count' and 'top' in the same query.
         """
         self._count = value
 
-    def _compile_count(self, value: bool = None) -> str:
-        if value is None:
+    def _compile_count(self, value: bool = _sentinel) -> str:
+        if value is _sentinel:
             value = self._count
 
         return f"$count=true" if value else ""
+
+    @property
+    def pagesize(self) -> int:
+        """Return currently set pagesize."""
+        return self._pagesize
+
+    @pagesize.setter
+    def pagesize(self, value: int):
+        """Specify the number of tables to return in a page. By default, this is set to 1000. Maximum is 5000."""
+
+        if value < 1:
+            ValueError(f"Value must be bigger than 0. Got {value}.")
+        elif value > 5000:
+            ValueError(f"Max pagesize is 5000. Got {value}.")
+
+        self._pagesize = value
 
     # TODO: apply-statement
     # TODO: Any and all statements

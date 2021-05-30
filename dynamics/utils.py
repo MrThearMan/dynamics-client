@@ -35,10 +35,10 @@ def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
     return date.replace(tzinfo=None).isoformat(timespec="seconds") + "Z"
 
 
-def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
+def from_dynamics_date_format(date: str, to_timezone: str = "UTC") -> datetime:
     """Convert a Dynamics compatible ISO formatted date string to a datetime-object.
 
-    :param date: Date string in form: YYYY-mm-ddTHH:MM:SSZ
+    :param date: ISO datestring from Dynamics database, in form: YYYY-mm-ddTHH:MM:SSZ.
     :param to_timezone: Name of the timezone, from 'pytz.all_timezones', to convert the date to.
                         This won't add 'tzinfo', instead the actual time part will be changed from UTC
                         to what the time is at 'to_timezone'.

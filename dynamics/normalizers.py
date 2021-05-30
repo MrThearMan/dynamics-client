@@ -14,24 +14,28 @@ __all__ = [
 
 
 def as_int(value, default: int = 0) -> int:
-    if not value:
+    try:
+        return int(value)
+    except Exception:  # noqa
         return default
-    return int(value)
 
 
 def as_float(value, default: float = 0.0) -> float:
-    if not value:
+    try:
+        return float(str(value).replace(",", "."))
+    except Exception:  # noqa
         return default
-    return float(str(value).replace(",", "."))
 
 
 def as_str(value, default: str = "") -> str:
-    if not value:
+    try:
+        return str(value)
+    except Exception:  # noqa
         return default
-    return str(value)
 
 
 def as_bool(value, default: bool = False) -> bool:
-    if value is not True and value is not False:
+    try:
+        return bool(value)
+    except Exception:  # noqa
         return default
-    return bool(value)

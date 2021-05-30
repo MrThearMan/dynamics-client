@@ -105,13 +105,13 @@ class OPS:
         values: List[field_type],
         operator: str,
         group: bool,
-        entity_quotes: bool = True,
+        column_quotes: bool = True,
         values_quotes: bool = True,
     ) -> str:
 
         result = (
             f"Microsoft.Dynamics.CRM.{operator}"
-            f"(PropertyName={OPS._type(name, entity_quotes)},"
+            f"(PropertyName={OPS._type(name, column_quotes)},"
             f"PropertyValues={OPS._listify(values, values_quotes)})"
         )
         return OPS._group(result, group)
@@ -119,166 +119,176 @@ class OPS:
     # Comparison operations
 
     @staticmethod
-    def eq(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "eq", group, quotes)
+    def eq(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is equal to value."""
+        return OPS._comp_operator(column, value, "eq", group, quotes)
 
     @staticmethod
-    def ne(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "ne", group, quotes)
+    def ne(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is not equal to value."""
+        return OPS._comp_operator(column, value, "ne", group, quotes)
 
     @staticmethod
-    def gt(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "gt", group, quotes)
+    def gt(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is greater than value."""
+        return OPS._comp_operator(column, value, "gt", group, quotes)
 
     @staticmethod
-    def ge(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "ge", group, quotes)
+    def ge(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is greater than or equal to value."""
+        return OPS._comp_operator(column, value, "ge", group, quotes)
 
     @staticmethod
-    def lt(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "lt", group, quotes)
+    def lt(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is less than value."""
+        return OPS._comp_operator(column, value, "lt", group, quotes)
 
     @staticmethod
-    def le(key: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        return OPS._comp_operator(key, value, "le", group, quotes)
+    def le(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
+        """Evaluate whether the value in the given column is less than or equel to value."""
+        return OPS._comp_operator(column, value, "le", group, quotes)
 
     # Logical operations
 
     @staticmethod
     def and_(op1: str, op2: str, group: bool = False) -> str:
+        """Evaluate whether op1 AND op2 are valid."""
         return OPS._comp_operator(op1, op2, "and", group, False)
 
     @staticmethod
     def or_(op1: str, op2: str, group: bool = False) -> str:
+        """Evaluate whether op1 OR op2 is valid."""
         return OPS._comp_operator(op1, op2, "or", group, False)
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:
-        """Note: Only works on Standard Operators!"""
-        result = f"not {operation}"
-        return OPS._group(result, group)
+        """Invert the evaluation of an operation. Only works on standard operators!"""
+        return OPS._group(f"not {operation}", group)
 
     # Standard query functions
 
     @staticmethod
-    def contains(name: str, value: field_type, group: bool = False) -> str:
-        return OPS._query_operator(name, value, "contains", group)
+    def contains(column: str, value: field_type, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column contains value."""
+        return OPS._query_operator(column, value, "contains", group)
 
     @staticmethod
-    def endswith(name: str, value: field_type, group: bool = False) -> str:
-        return OPS._query_operator(name, value, "endswith", group)
+    def endswith(column: str, value: field_type, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column ends with value."""
+        return OPS._query_operator(column, value, "endswith", group)
 
     @staticmethod
-    def startswith(name: str, value: field_type, group: bool = False) -> str:
-        return OPS._query_operator(name, value, "startswith", group)
+    def startswith(column: str, value: field_type, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column starts with value."""
+        return OPS._query_operator(column, value, "startswith", group)
 
     # Special query functions - value checks
 
     @staticmethod
-    def in_(entity: str, values: List[field_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' exists in a list of values."""
-        return OPS._special_many_values(entity, values, "In", group)
+    def in_(column: str, values: List[field_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column exists in a list of values."""
+        return OPS._special_many_values(column, values, "In", group)
 
     @staticmethod
-    def not_in(entity: str, values: List[field_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' doesn't exists in a list of values."""
-        return OPS._special_many_values(entity, values, "NotIn", group)
+    def not_in(column: str, values: List[field_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column doesn't exists in a list of values."""
+        return OPS._special_many_values(column, values, "NotIn", group)
 
     @staticmethod
-    def between(entity: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' is between two values."""
-        return OPS._special_many_values(entity, list(values), "Between", group)
+    def between(column: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column is between two values."""
+        return OPS._special_many_values(column, list(values), "Between", group)
 
     @staticmethod
-    def not_between(entity: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' is not between two values."""
-        return OPS._special_many_values(entity, list(values), "NotBetween", group)
+    def not_between(column: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column is not between two values."""
+        return OPS._special_many_values(column, list(values), "NotBetween", group)
 
     @staticmethod
-    def contain_values(entity: str, values: List[field_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' contains the listed values."""
-        return OPS._special_many_values(entity, values, "ContainValues", group)
+    def contain_values(column: str, values: List[field_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column contains the listed values."""
+        return OPS._special_many_values(column, values, "ContainValues", group)
 
     @staticmethod
-    def not_contain_values(entity: str, values: List[field_type], group: bool = False) -> str:
-        """Evaluate whether the value of 'entity' doesn't contain the listed values."""
-        return OPS._special_many_values(entity, values, "DoesNotContainValues", group)
+    def not_contain_values(column: str, values: List[field_type], group: bool = False) -> str:
+        """Evaluate whether the value in the given column doesn't contain the listed values."""
+        return OPS._special_many_values(column, values, "DoesNotContainValues", group)
 
     # Special query functions - hierarchy checks
 
     @staticmethod
-    def above(entity: str, ref: field_type, group: bool = False) -> str:
-        """Evaluates whether the entity is above the referenced entity in the hierarchy."""
-        return OPS._special_single_value(entity, ref, "Above", group)
+    def above(column: str, ref: field_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is above ref in the hierarchy."""
+        return OPS._special_single_value(column, ref, "Above", group)
 
     @staticmethod
-    def above_or_equal(entity: str, ref: field_type, group: bool = False) -> str:
-        """Evaluates whether the entity is above or equal to the referenced entity in the hierarchy."""
-        return OPS._special_single_value(entity, ref, "AboveOrEqual", group)
+    def above_or_equal(column: str, ref: field_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is above or equal to ref in the hierarchy."""
+        return OPS._special_single_value(column, ref, "AboveOrEqual", group)
 
     @staticmethod
-    def under(entity: str, ref: field_type, group: bool = False) -> str:
-        """Evaluates whether the entity is below the referenced record in the hierarchy."""
-        return OPS._special_single_value(entity, ref, "Under", group)
+    def under(column: str, ref: field_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is below ref in the hierarchy."""
+        return OPS._special_single_value(column, ref, "Under", group)
 
     @staticmethod
-    def under_or_equal(entity: str, ref: field_type, group: bool = False) -> str:
-        """Evaluates whether the entity is under or equal to the referenced entity in the hierarchy."""
-        return OPS._special_single_value(entity, ref, "UnderOrEqual", group)
+    def under_or_equal(column: str, ref: field_type, group: bool = False) -> str:
+        """Evaluates whether the value in column is under or equal to ref in the hierarchy."""
+        return OPS._special_single_value(column, ref, "UnderOrEqual", group)
 
     @staticmethod
-    def not_under(entity: str, ref: field_type, group: bool = False) -> str:
-        """Evaluates whether the entity is not below the referenced record in the hierarchy."""
-        return OPS._special_single_value(entity, ref, "NotUnder", group)
+    def not_under(column: str, ref: field_type, group: bool = False) -> str:
+        """Evaluates whether the value in column is not below ref in the hierarchy."""
+        return OPS._special_single_value(column, ref, "NotUnder", group)
 
     # Special query functions - dates
 
     @staticmethod
-    def today(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals today’s date."""
-        return OPS._special_name_only(entity, "Today", group)
+    def today(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals today’s date."""
+        return OPS._special_name_only(column, "Today", group)
 
     @staticmethod
-    def tomorrow(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals tomorrow’s date."""
-        return OPS._special_name_only(entity, "Tomorrow", group)
+    def tomorrow(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals tomorrow’s date."""
+        return OPS._special_name_only(column, "Tomorrow", group)
 
     @staticmethod
-    def yesterday(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals yesterday’s date."""
-        return OPS._special_name_only(entity, "Yesterday", group)
+    def yesterday(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals yesterday’s date."""
+        return OPS._special_name_only(column, "Yesterday", group)
 
     # Special query functions - dates - on
 
     @staticmethod
-    def on(entity: str, ref: comp_type, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is on the specified date."""
-        return OPS._special_single_value(entity, ref, "On", group)
+    def on(column: str, date: comp_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is on the specified date."""
+        return OPS._special_single_value(column, date, "On", group)
 
     @staticmethod
-    def on_or_after(entity: str, ref: comp_type, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is on or after the specified date."""
-        return OPS._special_single_value(entity, ref, "OnOrAfter", group)
+    def on_or_after(column: str, date: comp_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is on or after the specified date."""
+        return OPS._special_single_value(column, date, "OnOrAfter", group)
 
     @staticmethod
-    def on_or_before(entity: str, ref: comp_type, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is on or before the specified date."""
-        return OPS._special_single_value(entity, ref, "OnOrBefore", group)
+    def on_or_before(column: str, date: comp_type, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is on or before the specified date."""
+        return OPS._special_single_value(column, date, "OnOrBefore", group)
 
     # Special query functions - dates - in
 
     @staticmethod
-    def in_fiscal_period(entity: str, ref: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the specified fiscal period."""
-        return OPS._special_single_value(entity, ref, "InFiscalPeriod", group, ref_quotes=False)
+    def in_fiscal_period(column: str, period: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the specified fiscal period."""
+        return OPS._special_single_value(column, period, "InFiscalPeriod", group, ref_quotes=False)
 
     @staticmethod
-    def in_fiscal_period_and_year(entity: str, ref1: int, ref2: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the specified fiscal period and year."""
+    def in_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the specified fiscal period and year."""
         return OPS._special_two_values(
-            entity,
-            ref1,
-            ref2,
+            column,
+            period,
+            year,
             "InFiscalPeriodAndYear",
             group,
             ref1_quotes=False,
@@ -286,17 +296,17 @@ class OPS:
         )
 
     @staticmethod
-    def in_fiscal_year(entity: str, ref: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the specified fiscal year."""
-        return OPS._special_single_value(entity, ref, "InFiscalYear", group, ref_quotes=False)
+    def in_fiscal_year(column: str, year: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the specified fiscal year."""
+        return OPS._special_single_value(column, year, "InFiscalYear", group, ref_quotes=False)
 
     @staticmethod
-    def in_or_after_fiscal_period_and_year(entity: str, ref1: int, ref2: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within or after the specified fiscal period and year."""
+    def in_or_after_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within or after the specified fiscal period and year."""
         return OPS._special_two_values(
-            entity,
-            ref1,
-            ref2,
+            column,
+            period,
+            year,
             "InOrAfterFiscalPeriodAndYear",
             group,
             ref1_quotes=False,
@@ -304,12 +314,12 @@ class OPS:
         )
 
     @staticmethod
-    def in_or_before_fiscal_period_and_year(entity: str, ref1: int, ref2: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within or before the specified fiscal period and year."""
+    def in_or_before_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within, or before the specified fiscal period and year."""
         return OPS._special_two_values(
-            entity,
-            ref1,
-            ref2,
+            column,
+            period,
+            year,
             "InOrBeforeFiscalPeriodAndYear ",
             group,
             ref1_quotes=False,
@@ -319,245 +329,246 @@ class OPS:
     # Special query functions - dates - this
 
     @staticmethod
-    def this_fiscal_period(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the current fiscal period."""
-        return OPS._special_name_only(entity, "ThisFiscalPeriod", group)
+    def this_fiscal_period(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the current fiscal period."""
+        return OPS._special_name_only(column, "ThisFiscalPeriod", group)
 
     @staticmethod
-    def this_fiscal_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the current fiscal year."""
-        return OPS._special_name_only(entity, "ThisFiscalYear", group)
+    def this_fiscal_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the current fiscal year."""
+        return OPS._special_name_only(column, "ThisFiscalYear", group)
 
     @staticmethod
-    def this_month(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the current month."""
-        return OPS._special_name_only(entity, "ThisMonth", group)
+    def this_month(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the current month."""
+        return OPS._special_name_only(column, "ThisMonth", group)
 
     @staticmethod
-    def this_week(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the current week."""
-        return OPS._special_name_only(entity, "ThisWeek", group)
+    def this_week(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the current week."""
+        return OPS._special_name_only(column, "ThisWeek", group)
 
     @staticmethod
-    def this_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the current year."""
-        return OPS._special_name_only(entity, "ThisYear", group)
+    def this_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the current year."""
+        return OPS._special_name_only(column, "ThisYear", group)
 
     # Special query functions - dates - last
 
     @staticmethod
-    def last_7_days(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last seven days including today."""
-        return OPS._special_name_only(entity, "Last7Days", group)
+    def last_7_days(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last seven days including today."""
+        return OPS._special_name_only(column, "Last7Days", group)
 
     @staticmethod
-    def last_fiscal_period(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last fiscal period."""
-        return OPS._special_name_only(entity, "LastFiscalPeriod", group)
+    def last_fiscal_period(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last fiscal period."""
+        return OPS._special_name_only(column, "LastFiscalPeriod", group)
 
     @staticmethod
-    def last_fiscal_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last fiscal year."""
-        return OPS._special_name_only(entity, "LastFiscalYear", group)
+    def last_fiscal_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last fiscal year."""
+        return OPS._special_name_only(column, "LastFiscalYear", group)
 
     @staticmethod
-    def last_month(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last month."""
-        return OPS._special_name_only(entity, "LastMonth", group)
+    def last_month(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last month."""
+        return OPS._special_name_only(column, "LastMonth", group)
 
     @staticmethod
-    def last_week(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last week."""
-        return OPS._special_name_only(entity, "LastWeek", group)
+    def last_week(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last week."""
+        return OPS._special_name_only(column, "LastWeek", group)
 
     @staticmethod
-    def last_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last year."""
-        return OPS._special_name_only(entity, "LastYear", group)
+    def last_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last year."""
+        return OPS._special_name_only(column, "LastYear", group)
 
     # Special query functions - dates - next
 
     @staticmethod
-    def next_fiscal_period(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is in the next fiscal period."""
-        return OPS._special_name_only(entity, "NextFiscalPeriod", group)
+    def next_fiscal_period(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is in the next fiscal period."""
+        return OPS._special_name_only(column, "NextFiscalPeriod", group)
 
     @staticmethod
-    def next_fiscal_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is in the next fiscal year."""
-        return OPS._special_name_only(entity, "NextFiscalYear", group)
+    def next_fiscal_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is in the next fiscal year."""
+        return OPS._special_name_only(column, "NextFiscalYear", group)
 
     @staticmethod
-    def next_month(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is in the next month."""
-        return OPS._special_name_only(entity, "NextMonth", group)
+    def next_month(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is in the next month."""
+        return OPS._special_name_only(column, "NextMonth", group)
 
     @staticmethod
-    def next_week(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is in the next week."""
-        return OPS._special_name_only(entity, "NextWeek", group)
+    def next_week(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is in the next week."""
+        return OPS._special_name_only(column, "NextWeek", group)
 
     @staticmethod
-    def next_year(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next year."""
-        return OPS._special_name_only(entity, "NextYear", group)
+    def next_year(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next year."""
+        return OPS._special_name_only(column, "NextYear", group)
 
     # Special query functions - dates - last x
 
     @staticmethod
-    def last_x_days(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X days."""
-        return OPS._special_single_value(entity, x, "LastXDays", group, ref_quotes=False)
+    def last_x_days(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X days."""
+        return OPS._special_single_value(column, x, "LastXDays", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_fiscal_periods(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X fiscal periods."""
-        return OPS._special_single_value(entity, x, "LastXFiscalPeriods", group, ref_quotes=False)
+    def last_x_fiscal_periods(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X fiscal periods."""
+        return OPS._special_single_value(column, x, "LastXFiscalPeriods", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_fiscal_years(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X fiscal years."""
-        return OPS._special_single_value(entity, x, "LastXFiscalYears", group, ref_quotes=False)
+    def last_x_fiscal_years(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X fiscal years."""
+        return OPS._special_single_value(column, x, "LastXFiscalYears", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_hours(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X hours."""
-        return OPS._special_single_value(entity, x, "LastXHours", group, ref_quotes=False)
+    def last_x_hours(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X hours."""
+        return OPS._special_single_value(column, x, "LastXHours", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_months(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X months."""
-        return OPS._special_single_value(entity, x, "LastXMonths", group, ref_quotes=False)
+    def last_x_months(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X months."""
+        return OPS._special_single_value(column, x, "LastXMonths", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_weeks(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X weeks."""
-        return OPS._special_single_value(entity, x, "LastXWeeks", group, ref_quotes=False)
+    def last_x_weeks(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X weeks."""
+        return OPS._special_single_value(column, x, "LastXWeeks", group, ref_quotes=False)
 
     @staticmethod
-    def last_x_years(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the last X years."""
-        return OPS._special_single_value(entity, x, "LastXYears", group, ref_quotes=False)
+    def last_x_years(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the last X years."""
+        return OPS._special_single_value(column, x, "LastXYears", group, ref_quotes=False)
 
     # Special query functions - dates - next x
 
     @staticmethod
-    def next_x_days(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X days."""
-        return OPS._special_single_value(entity, x, "NextXDays", group, ref_quotes=False)
+    def next_x_days(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X days."""
+        return OPS._special_single_value(column, x, "NextXDays", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_fiscal_periods(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X fiscal periods."""
-        return OPS._special_single_value(entity, x, "NextXFiscalPeriods", group, ref_quotes=False)
+    def next_x_fiscal_periods(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X fiscal periods."""
+        return OPS._special_single_value(column, x, "NextXFiscalPeriods", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_fiscal_years(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X fiscal years."""
-        return OPS._special_single_value(entity, x, "NextXFiscalYears", group, ref_quotes=False)
+    def next_x_fiscal_years(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X fiscal years."""
+        return OPS._special_single_value(column, x, "NextXFiscalYears", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_hours(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X hours."""
-        return OPS._special_single_value(entity, x, "NextXHours", group, ref_quotes=False)
+    def next_x_hours(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X hours."""
+        return OPS._special_single_value(column, x, "NextXHours", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_months(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X months."""
-        return OPS._special_single_value(entity, x, "NextXMonths", group, ref_quotes=False)
+    def next_x_months(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X months."""
+        return OPS._special_single_value(column, x, "NextXMonths", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_weeks(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X weeks."""
-        return OPS._special_single_value(entity, x, "NextXWeeks", group, ref_quotes=False)
+    def next_x_weeks(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X weeks."""
+        return OPS._special_single_value(column, x, "NextXWeeks", group, ref_quotes=False)
 
     @staticmethod
-    def next_x_years(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is within the next X years."""
-        return OPS._special_single_value(entity, x, "NextXYears", group, ref_quotes=False)
+    def next_x_years(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is within the next X years."""
+        return OPS._special_single_value(column, x, "NextXYears", group, ref_quotes=False)
 
     # Special query functions - dates - older than x
 
     @staticmethod
-    def older_than_x_days(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of days."""
-        return OPS._special_single_value(entity, x, "OlderThanXDays", group, ref_quotes=False)
+    def older_than_x_days(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of days."""
+        return OPS._special_single_value(column, x, "OlderThanXDays", group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_hours(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of hours."""
-        return OPS._special_single_value(entity, x, "OlderThanXHours", group, ref_quotes=False)
+    def older_than_x_hours(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of hours."""
+        return OPS._special_single_value(column, x, "OlderThanXHours", group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_minutes(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of minutes."""
-        return OPS._special_single_value(entity, x, "OlderThanXMinutes", group, ref_quotes=False)
+    def older_than_x_minutes(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of minutes."""
+        return OPS._special_single_value(column, x, "OlderThanXMinutes", group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_months(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of moths."""
-        return OPS._special_single_value(entity, x, "OlderThanXMonths", group, ref_quotes=False)
+    def older_than_x_months(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of moths."""
+        return OPS._special_single_value(column, x, "OlderThanXMonths", group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_weeks(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of weeks."""
-        return OPS._special_single_value(entity, x, "OlderThanXWeeks", group, ref_quotes=False)
+    def older_than_x_weeks(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of weeks."""
+        return OPS._special_single_value(column, x, "OlderThanXWeeks", group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_years(entity: str, x: int, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is older than the specified amount of years."""
-        return OPS._special_single_value(entity, x, "OlderThanXYears", group, ref_quotes=False)
+    def older_than_x_years(column: str, x: int, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is older than the specified amount of years."""
+        return OPS._special_single_value(column, x, "OlderThanXYears", group, ref_quotes=False)
 
     # Special query functions - business id checks
 
     @staticmethod
-    def equal_business_id(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is equal to the specified business ID."""
-        return OPS._special_name_only(entity, "EqualBusinessId", group)
+    def equal_business_id(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is equal to the specified business ID."""
+        return OPS._special_name_only(column, "EqualBusinessId", group)
 
     @staticmethod
-    def not_business_id(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is not equal to the specified business ID."""
-        return OPS._special_name_only(entity, "NotBusinessId", group)
+    def not_business_id(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is not equal to the specified business ID."""
+        return OPS._special_name_only(column, "NotBusinessId", group)
 
     # Special query functions - user id checks
 
     @staticmethod
-    def equal_user_id(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is equal to the ID of the user."""
-        return OPS._special_name_only(entity, "EqualUserId", group)
+    def equal_user_id(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is equal to the ID of the user."""
+        return OPS._special_name_only(column, "EqualUserId", group)
 
     @staticmethod
-    def not_user_id(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is not equal to the ID of the user."""
-        return OPS._special_name_only(entity, "NotUserId", group)
+    def not_user_id(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is not equal to the ID of the user."""
+        return OPS._special_name_only(column, "NotUserId", group)
 
     # Special query functions - misc
 
     @staticmethod
-    def equal_user_language(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' is equal to the language for the user."""
-        return OPS._special_name_only(entity, "EqualUserLanguage", group)
+    def equal_user_language(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column is equal to the language for the user."""
+        return OPS._special_name_only(column, "EqualUserLanguage", group)
 
     @staticmethod
-    def equal_user_or_user_hierarchy(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals current user or their reporting hierarchy."""
-        return OPS._special_name_only(entity, "EqualUserOrUserHierarchy", group)
+    def equal_user_or_user_hierarchy(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals current user or their reporting hierarchy."""
+        return OPS._special_name_only(column, "EqualUserOrUserHierarchy", group)
 
     @staticmethod
-    def equal_user_or_user_hierarchy_and_teams(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals current user or their reporting hierarchy and teams."""
-        return OPS._special_name_only(entity, "EqualUserOrUserHierarchyAndTeams", group)
+    def equal_user_or_user_hierarchy_and_teams(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals current user,
+        or their reporting hierarchy and teams."""
+        return OPS._special_name_only(column, "EqualUserOrUserHierarchyAndTeams", group)
 
     @staticmethod
-    def equal_user_or_user_teams(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals current user or user teams."""
-        return OPS._special_name_only(entity, "EqualUserOrUserTeams", group)
+    def equal_user_or_user_teams(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals current user or user teams."""
+        return OPS._special_name_only(column, "EqualUserOrUserTeams", group)
 
     @staticmethod
-    def equal_user_teams(entity: str, group: bool = False) -> str:
-        """Evaluates whether the value of 'entity' equals current user teams."""
-        return OPS._special_name_only(entity, "EqualUserTeams", group)
+    def equal_user_teams(column: str, group: bool = False) -> str:
+        """Evaluates whether the value in the given column equals current user teams."""
+        return OPS._special_name_only(column, "EqualUserTeams", group)
 
 
 ftr = OPS()
