@@ -164,6 +164,45 @@ class DynamicsClient:
         """HTTP request headers."""
         return self._headers
 
+    def fetch_schema(self, to_file: bool = False) -> Optional[str]:
+        """Fetch Dynamics schema for observation."""
+
+        import xml.etree.ElementTree as ET
+        from operator import attrgetter
+        from xml.dom.minidom import parseString as pretty_xml
+
+        def sortchildrenby(parent, attr):
+            parent[:] = sorted(parent, key=lambda child: child.get(attr, ""))
+            parent[:] = sorted(parent, key=attrgetter("tag"))
+
+        ET.register_namespace("edmx", "http://docs.oasis-open.org/odata/ns/edmx")
+        ET.register_namespace("", "http://docs.oasis-open.org/odata/ns/edm")
+
+        logger.info("Fetching Schema.")
+        request = self.api.get(self.api_url + "$metadata")
+        logger.info("Schema fetched. Formatting...")
+        xml_string = pretty_xml(request.text).toprettyxml(indent="  ")
+
+        tree = ET.ElementTree(ET.fromstring(xml_string))
+        root = (
+            tree.getroot()
+                .find("edmx:DataServices", namespaces={"edmx": "http://docs.oasis-open.org/odata/ns/edmx"})
+                .find("Schema", namespaces={"": "http://docs.oasis-open.org/odata/ns/edm"})
+        )
+
+        sortchildrenby(root, "Name")
+        for child in root:
+            sortchildrenby(child, "Name")
+
+        xml_prettyfied = pretty_xml(ET.tostring(root)).toprettyxml(indent="  ")
+        xml_prettyfied = "\n".join([e for e in xml_prettyfied.split("\n") if e.strip()])
+
+        if not to_file:
+            return xml_prettyfied
+
+        with open(f"dynamics_schema.xml", "w+") as f:
+            f.write(xml_prettyfied)
+
     def reset_query(self):
         """Resets the query options and table selection."""
         self._select: List[str] = []

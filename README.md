@@ -55,4 +55,4 @@ client.reset_query()
 ```
 
 Query with no table nor query options set to get a list of tables in the database.
-Use `fetch_schema` for an xml representation of the relational ascpects of the data.
+Use `api.fetch_schema()` for an xml representation of the relational ascpects of the data.
