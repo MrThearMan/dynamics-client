@@ -77,7 +77,7 @@ class MethodNotAllowed(DynamicsException):
 
     def __init__(self, method: str, detail: str = None):
         if detail is None:
-            self.default_detail = self.error_detail.format(method=method)
+            self.default_detail = self.default_detail.format(method=method)
         super().__init__(detail)
 
 
