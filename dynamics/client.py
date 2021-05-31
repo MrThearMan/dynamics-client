@@ -39,16 +39,16 @@ from requests_oauthlib import OAuth2Session
 from . import status
 from .exceptions import (
     DynamicsException,
-    DuplicateRecordError,
-    PayloadTooLarge,
-    APILimitsExceeded,
-    OperationNotImplemented,
-    WebAPIUnavailable,
     ParseError,
     AuthenticationFailed,
     PermissionDenied,
     NotFound,
     MethodNotAllowed,
+    DuplicateRecordError,
+    PayloadTooLarge,
+    APILimitsExceeded,
+    OperationNotImplemented,
+    WebAPIUnavailable,
 )
 
 
@@ -520,7 +520,7 @@ class DynamicsClient:
 
     @select.setter
     def select(self, items: List[str]):
-        """Set $select statement. Limits the properties returned from the current table."""
+        """Set $select statement. Select which columns are returned from the table."""
         self._select = items
 
     def _compile_select(self, values: List[str] = _sentinel) -> str:
