@@ -199,7 +199,7 @@ class DynamicsClient:
         if self.action:
             if query[-1] != "/":
                 query += "/"
-            query += {self.action}
+            query += self.action
         if self.add_ref_to_property and not self.pre_expand and not self.action:
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self._compile_query_options()) and not self.add_ref_to_property:
