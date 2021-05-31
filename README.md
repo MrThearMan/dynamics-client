@@ -211,7 +211,7 @@ Helpful for development and debugging.
 
 - items: List[str] - Columns to select.
 
-Set `$select` statement. Limits the properties returned from the current table.
+Set `$select` statement. Select which columns are returned from the table.
 
 ---
 - expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
