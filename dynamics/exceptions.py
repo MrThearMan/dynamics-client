@@ -9,6 +9,7 @@ except ImportError:
     class APIException(Exception):
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         default_detail = "A server error occurred."
+        default_code = "error"
 
         def __init__(self, detail: str = None):
             if detail is None:
@@ -42,47 +43,55 @@ logger = logging.getLogger(__name__)
 class DynamicsException(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     default_detail = "Dynamics Web API call failed."
+    default_code = "dynamics_link_failed"
 
 
 class ParseError(DynamicsException):
     status_code = status.HTTP_400_BAD_REQUEST
-    error_detail = "Malformed request."
+    default_detail = "Malformed request."
+    default_code = "dynamics_parse_error"
 
 
 class AuthenticationFailed(DynamicsException):
     status_code = status.HTTP_401_UNAUTHORIZED
-    error_detail = "Incorrect authentication credentials."
+    default_detail = "Incorrect authentication credentials."
+    default_code = "dynamics_authentication_failed"
 
 
 class PermissionDenied(DynamicsException):
     status_code = status.HTTP_403_FORBIDDEN
-    error_detail = "You do not have permission to perform this action."
+    default_detail = "You do not have permission to perform this action."
+    default_code = "dynamics_permission_denied"
 
 
 class NotFound(DynamicsException):
     status_code = status.HTTP_404_NOT_FOUND
-    error_detail = "Not found."
+    default_detail = "Not found."
+    default_code = "dynamics_not_found"
 
 
 class MethodNotAllowed(DynamicsException):
     status_code = status.HTTP_405_METHOD_NOT_ALLOWED
-    error_detail = 'Method "{method}" not allowed.'
+    default_detail = 'Method "{method}" not allowed.'
+    default_code = "dynamics_method_not_allowed"
 
     def __init__(self, method: str, detail: str = None):
         if detail is None:
-            self.error_detail = self.error_detail.format(method=method)
+            self.default_detail = self.error_detail.format(method=method)
         super().__init__(detail)
 
 
 class DuplicateRecordError(DynamicsException):
     # Could also be a concurrency mismatch, but this is much more common
     status_code = status.HTTP_412_PRECONDITION_FAILED
-    error_detail = "Trying to save a duplicate record."
+    default_detail = "Trying to save a duplicate record."
+    default_code = "dynamics_duplicate_record"
 
 
 class PayloadTooLarge(DynamicsException):
     status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-    error_detail = "Request length is too large."
+    default_detail = "Request length is too large."
+    default_code = "dynamics_request_too_large"
 
 
 class APILimitsExceeded(DynamicsException):
@@ -101,14 +110,17 @@ class APILimitsExceeded(DynamicsException):
     # https://docs.microsoft.com/en-us/power-platform/admin/api-request-limits-allocations
 
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
-    error_detail = "Dynamics Web API limits were exceeded."
+    default_detail = "Dynamics Web API limits were exceeded."
+    default_code = "dynamics_api_limits_exceeded"
 
 
 class OperationNotImplemented(DynamicsException):
     status_code = status.HTTP_501_NOT_IMPLEMENTED
-    error_detail = "Requested operation isn't implemented."
+    default_detail = "Requested operation isn't implemented."
+    default_code = "dynamics_operation_not_implemented"
 
 
 class WebAPIUnavailable(DynamicsException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    error_detail = "Web API service isn't available."
+    default_detail = "Web API service isn't available."
+    default_code = "dynamics_link_down"
