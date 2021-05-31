@@ -81,14 +81,17 @@ class DynamicsClient:
     request_counter: int = 0
 
     def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
-        """Establish a Microsoft Dynamics 365 Dataverse API client connection.
+        """Establish a Microsoft Dynamics 365 Dataverse API client connection
+        using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
+        created in Dynamics, and granting it an appropriate security role.
 
-        :param api_url: Url in form: 'https://[Organization URI]/api/data/v{api_version}'
-        :param token_url: Url in form: 'https://[Dynamics Token URI]/path/to/token'
-        :param client_id: Client id (e.g. UUID).
-        :param client_secret: Client secret (e.g. OAuth password).
-        :param scope: List of urls in form: 'https://[Organization URI]/scope'.
-                      Defines the database records that the API connection has access to.
+        :param api_url: API root URL. Format: https://[Organization URI]/api/data/v{api_version}
+        :param token_url: URL to the Dynamics/Azure token endpoint.
+                          Format: https://[Dynamics Token URI]/path/to/token
+        :param client_id: Dynamics User ID.
+        :param client_secret: Dynamics User Secret that proves its identity when password is required.
+        :param scope: List of urls that define the database records that the API connection has access to.
+                      Most likely in this format: https://[Organization URI]/.default
         """
 
         # [sic] Assure that url ends in forward slash

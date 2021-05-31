@@ -28,6 +28,8 @@ def as_float(value, default: float = 0.0) -> float:
 
 
 def as_str(value, default: str = "") -> str:
+    if not value:
+        return default
     try:
         return str(value)
     except Exception:  # noqa
