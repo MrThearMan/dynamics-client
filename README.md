@@ -108,6 +108,52 @@ client = DynamicsClient(...)
 
 ---
 
+#### *client.GET(...) → List[Dict[str, Any]]*
+
+- not_found_ok: bool = False - No entities found should not raise NotFound error, 
+  but return empty list instead.
+- next_link: Optional[str] = None - Request the next set of records from this link instead.
+
+Make a GET request to the Dataverse API with currently added query options.
+
+**Error Simplification Available**: This and the other HTTP-method -functions are decorated with a decorator, 
+that can take some extra options: 'simplify_errors' (if set 'True' will simplify all errors occurring
+during the excecution of the function to just a single DynamicsException with a default 
+error message) and 'raise_separately' (A list Exception types to exclude from the simplification,
+if 'simplify_errors' is True, so that they can be handled separately). These are useful when you want to
+hide implementation details recieved in errors from frontend users.
+
+---
+
+#### *client.POST(...) → Dict[str, Any]*
+
+- data: Dict[str, Any] - POST data.
+
+Create new row in a table or execute an API action or function. 
+Must have 'table' query option set.
+
+**Error Simplification Available**: See client.GET()
+
+---
+
+#### *client.PATCH(...) → Dict[str, Any]*
+
+- data: Dict[str, Any] - PATCH data.
+
+Update row in a table. Must have 'table' and 'row_id' query option set.
+
+**Error Simplification Available**: See client.GET()
+
+---
+
+#### *client.DELETE() → Dict[str, Any]*
+
+Delete row in a table. Must have 'table' and 'row_id' query option set.
+
+**Error Simplification Available**: See client.GET()
+
+---
+
 #### *client.fetch_schema(...) → Optional[str]*
 
 - to_file: bool = False - Save to a file instead of returning as string.

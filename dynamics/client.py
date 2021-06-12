@@ -21,16 +21,14 @@ Make a DELETE request:                      result = client.DELETE()
 
 Remember to reset between queries:          client.reset_query()
 
-Query with no table nor query options set to get a list of tables in the database.
-Use 'fetch_schema' for an xml representation of the relational ascpects of the data.
-
 Author: Matti Lamppu.
-Date: May 9th, 2021.
+Date: April 5th, 2021.
 """
 
 import os
 import json
 import logging
+from functools import wraps
 from typing import List, Dict, Optional, Any, Literal, Union, Set
 
 from oauthlib.oauth2 import BackendApplicationClient
@@ -39,16 +37,16 @@ from requests_oauthlib import OAuth2Session
 from . import status
 from .exceptions import (
     DynamicsException,
-    DuplicateRecordError,
-    PayloadTooLarge,
-    APILimitsExceeded,
-    OperationNotImplemented,
-    WebAPIUnavailable,
     ParseError,
     AuthenticationFailed,
     PermissionDenied,
     NotFound,
     MethodNotAllowed,
+    DuplicateRecordError,
+    PayloadTooLarge,
+    APILimitsExceeded,
+    OperationNotImplemented,
+    WebAPIUnavailable,
 )
 
 
@@ -68,6 +66,34 @@ expand_values = Union[List[str], Set[str], int, orderby_type, Dict]
 expand_type = Dict[str, Dict[expand_keys, expand_values]]
 
 
+def error_simplification_available(func):
+    """Errors in the function decorated with this decorator can be simplified to just a
+    DynamicsException with default error message using the keyword: 'simplify_errors'.
+    This is useful if you want to hide error details from frontend users.
+
+    You can use the 'raise_separately' keyword to list exception types to exclude from this
+    simplification, if separate handling is needed.
+
+    :param func: Decorated function.
+    """
+
+    @wraps(func)
+    def inner(*args, **kwargs):
+        simplify_errors: bool = kwargs.pop("simplify_errors", False)
+        raise_separately: List[Exception] = kwargs.pop("raise_separately", [])
+
+        try:
+            return func(*args, **kwargs)
+        except Exception as error:
+            logger.error(error)
+            if not simplify_errors or type(error) in raise_separately:
+                raise error
+            else:
+                raise DynamicsException("There was a problem communicating with the server.")
+
+    return inner
+
+
 class _sentinel:
     """Sentinel value."""
 
@@ -79,16 +105,31 @@ class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
+    error_dict = {
+        status.HTTP_400_BAD_REQUEST: ParseError,
+        status.HTTP_401_UNAUTHORIZED: AuthenticationFailed,
+        status.HTTP_403_FORBIDDEN: PermissionDenied,
+        status.HTTP_404_NOT_FOUND: NotFound,
+        status.HTTP_405_METHOD_NOT_ALLOWED: MethodNotAllowed,
+        status.HTTP_412_PRECONDITION_FAILED: DuplicateRecordError,
+        status.HTTP_413_REQUEST_ENTITY_TOO_LARGE: PayloadTooLarge,
+        status.HTTP_429_TOO_MANY_REQUESTS: APILimitsExceeded,
+        status.HTTP_501_NOT_IMPLEMENTED: OperationNotImplemented,
+        status.HTTP_503_SERVICE_UNAVAILABLE: WebAPIUnavailable,
+    }
 
     def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
-        """Establish a Microsoft Dynamics 365 Dataverse API client connection.
+        """Establish a Microsoft Dynamics 365 Dataverse API client connection
+        using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
+        created in Dynamics, and granting it an appropriate security role.
 
-        :param api_url: Url in form: 'https://[Organization URI]/api/data/v{api_version}'
-        :param token_url: Url in form: 'https://[Dynamics Token URI]/path/to/token'
-        :param client_id: Client id (e.g. UUID).
-        :param client_secret: Client secret (e.g. OAuth password).
-        :param scope: List of urls in form: 'https://[Organization URI]/scope'.
-                      Defines the database records that the API connection has access to.
+        :param api_url: API root URL. Format: https://[Organization URI]/api/data/v{api_version}
+        :param token_url: URL to the Dynamics/Azure token endpoint.
+                          Format: https://[Dynamics Token URI]/path/to/token
+        :param client_id: Dynamics User ID.
+        :param client_secret: Dynamics User Secret that proves its identity when password is required.
+        :param scope: List of urls that define the database records that the API connection has access to.
+                      Most likely in this format: https://[Organization URI]/.default
         """
 
         # [sic] Assure that url ends in forward slash
@@ -144,45 +185,6 @@ class DynamicsClient:
 
         return cls(base_url, token_url, client_id, client_secret, scope)
 
-    def fetch_schema(self, to_file: bool = False) -> Optional[str]:
-        """Fetch Dynamics schema for observation."""
-
-        import xml.etree.ElementTree as ET
-        from operator import attrgetter
-        from xml.dom.minidom import parseString as pretty_xml
-
-        def sortchildrenby(parent, attr):
-            parent[:] = sorted(parent, key=lambda child: child.get(attr, ""))
-            parent[:] = sorted(parent, key=attrgetter("tag"))
-
-        ET.register_namespace("edmx", "http://docs.oasis-open.org/odata/ns/edmx")
-        ET.register_namespace("", "http://docs.oasis-open.org/odata/ns/edm")
-
-        logger.info("Fetching Schema.")
-        request = self._api.get(self._api_url + "$metadata")
-        logger.info("Schema fetched. Formatting...")
-        xml_string = pretty_xml(request.text).toprettyxml(indent="  ")
-
-        tree = ET.ElementTree(ET.fromstring(xml_string))
-        root = (
-            tree.getroot()
-                .find("edmx:DataServices", namespaces={"edmx": "http://docs.oasis-open.org/odata/ns/edmx"})
-                .find("Schema", namespaces={"": "http://docs.oasis-open.org/odata/ns/edm"})
-        )
-
-        sortchildrenby(root, "Name")
-        for child in root:
-            sortchildrenby(child, "Name")
-
-        xml_prettyfied = pretty_xml(ET.tostring(root)).toprettyxml(indent="  ")
-        xml_prettyfied = "\n".join([e for e in xml_prettyfied.split("\n") if e.strip()])
-
-        if not to_file:
-            return xml_prettyfied
-
-        with open(f"dynamics_schema.xml", "w+") as f:
-            f.write(xml_prettyfied)
-
     @property
     def current_query(self) -> str:
         """Constructs query from current options, leaving out empty ones."""
@@ -196,7 +198,7 @@ class DynamicsClient:
         if self.action:
             if query[-1] != "/":
                 query += "/"
-            query += {self.action}
+            query += self.action
         if self.add_ref_to_property and not self.pre_expand and not self.action:
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self._compile_query_options()) and not self.add_ref_to_property:
@@ -267,35 +269,23 @@ class DynamicsClient:
     def _error_handling(self, status_code: int, error_message: str, method: method_type):
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
+
+        :param status_code: Error status from dynamics
+        :param error_message: Error message from dynamics.
+        :param method: HTTP method in question.
         """
 
-        if status_code == status.HTTP_400_BAD_REQUEST:
-            raise ParseError(detail=error_message)
-        elif status_code == status.HTTP_401_UNAUTHORIZED:
-            raise AuthenticationFailed(detail=error_message)
-        elif status_code == status.HTTP_403_FORBIDDEN:
-            raise PermissionDenied(detail=error_message)
-        elif status_code == status.HTTP_404_NOT_FOUND:
-            raise NotFound(detail=error_message)
-        elif status_code == status.HTTP_405_METHOD_NOT_ALLOWED:
-            raise MethodNotAllowed(method=method, detail=error_message)
-        elif status_code == status.HTTP_412_PRECONDITION_FAILED:
-            raise DuplicateRecordError(detail=error_message)
-        elif status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE:
-            raise PayloadTooLarge(detail=error_message)
-        elif status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            raise APILimitsExceeded(detail=error_message)
-        elif status_code == status.HTTP_501_NOT_IMPLEMENTED:
-            raise OperationNotImplemented(detail=error_message)
-        elif status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
-            raise WebAPIUnavailable(detail=error_message)
-        else:
-            raise DynamicsException(detail=error_message)
+        logger.error(f"Dynamics client query {self.current_query} failed with status {status_code}: {error_message}")
+        error = self.error_dict.get(status_code, DynamicsException)
+        raise error(method=method, detail=error_message)
 
+    @error_simplification_available
     def GET(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
 
-        :param not_found_ok: Not found should not raise error, but return empty list instead.
+        Please also read the decorator's documentation!
+
+        :param not_found_ok: No entities found should not raise NotFound error, but return empty list instead.
         :param next_link: Request the next set of records from this link instead.
         """
 
@@ -315,12 +305,12 @@ class DynamicsClient:
         count = data.get("@odata.count", "")
 
         if errors:
-            self._error_handling(response.status_code, errors.get("message"), method="get")
+            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="get")
         elif not entities:
             if not_found_ok:
                 return []
             message = "No records matching the given criteria."
-            self._error_handling(status.HTTP_404_NOT_FOUND, message, method="get")
+            self._error_handling(status_code=status.HTTP_404_NOT_FOUND, error_message=message, method="get")
 
         # Fetch more data if needed
         for i, row in enumerate(entities):
@@ -353,9 +343,12 @@ class DynamicsClient:
 
         return entities
 
+    @error_simplification_available
     def POST(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create new row in a table. Must have 'table' attribute set.
-        Use expand and select to reduce returned data.
+        """Create new row in a table or execute an API action or function.
+        Must have 'table' query option set.
+
+        Please also read the decorator's documentation!
 
         :param data: POST data.
         """
@@ -373,13 +366,16 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self._error_handling(response.status_code, errors["message"], method="post")
+            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="post")
 
         return data
 
+    @error_simplification_available
     def PATCH(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Update row in a table. Must have 'table' and 'row_id' attributes set.
+        """Update row in a table. Must have 'table' and 'row_id' query option set.
         Use expand and select to reduce returned data.
+
+        Please also read the decorator's documentation!
 
         :param data: PATCH data.
         """
@@ -396,12 +392,16 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self._error_handling(response.status_code, errors["message"], method="patch")
+            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="patch")
 
         return data
 
+    @error_simplification_available
     def DELETE(self) -> Dict[str, Any]:
-        """Delete row in a table. Must have 'table' and 'row_id' attributes set."""
+        """Delete row in a table. Must have 'table' and 'row_id' query option set.
+
+        Please also read the decorator's documentation!
+        """
 
         self.request_counter += 1
         self.set_default_headers("delete")
@@ -414,7 +414,7 @@ class DynamicsClient:
         data = response.json()
 
         if errors := data.get("error"):
-            self._error_handling(response.status_code, errors["message"], method="delete")
+            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="delete")
 
         return data
 
@@ -515,12 +515,12 @@ class DynamicsClient:
 
     @property
     def select(self) -> List[str]:
-        """Get current $select statement"""
+        """Get current $select statement."""
         return self._select
 
     @select.setter
     def select(self, items: List[str]):
-        """Set $select statement. Limits the properties returned from the current table."""
+        """Set $select statement. Select which columns are returned from the table."""
         self._select = items
 
     def _compile_select(self, values: List[str] = _sentinel) -> str:
