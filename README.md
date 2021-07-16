@@ -86,11 +86,11 @@ Create a Dynamics client from the given arguments.
 
 Create a Dynamics client from environment variables:
 
-1. DYNAMICS_BASE_URL → api_url
-2. DYNAMICS_TOKEN_URL → token_url
-3. DYNAMICS_CLIENT_ID → client_id
-4. DYNAMICS_CLIENT_SECRET → client_secret
-5. DYNAMICS_SCOPE → scope
+1. DYNAMICS_API_URL
+2. DYNAMICS_TOKEN_URL
+3. DYNAMICS_CLIENT_ID
+4. DYNAMICS_CLIENT_SECRET
+5. DYNAMICS_SCOPE
 
 ---
 
@@ -117,10 +117,10 @@ client = DynamicsClient(...)
 Make a GET request to the Dataverse API with currently added query options.
 
 **Error Simplification Available**: This and the other HTTP-method -functions are decorated with a decorator, 
-that can take some extra options: 'simplify_errors' (if set 'True' will simplify all errors occurring
+that can take some extra options: `simplify_errors` (If set `True`, will simplify all errors occurring
 during the excecution of the function to just a single DynamicsException with a default 
-error message) and 'raise_separately' (A list Exception types to exclude from the simplification,
-if 'simplify_errors' is True, so that they can be handled separately). These are useful when you want to
+error message) and `raise_separately` (A list exception types to exclude from the simplification,
+if `simplify_errors=True`, so that they can be handled separately). These are useful when you want to
 hide implementation details recieved in errors from frontend users.
 
 ---
@@ -190,6 +190,24 @@ Resets all client options and headers.
 Sets per method default headers. Applied automatically on each request. 
 Does not override user added headers.
 
+___
+
+#### *client.actions: [Actions](dynamics/api_actions.py)*
+
+Injected instance of predefined Dynamics actions. Calling methods under this property execute the actions 
+without needing to use the POST, PATCH, or DELETE methods. It is recommended to read the 
+[API Action Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions)
+and how to [Use Web API Actions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions).
+
+___
+
+#### *client.functions: [Functions](dynamics/api_functions.py)*
+
+Injected instance of predefined Dynamics functions. Calling methods under this property run the functions 
+without needing to use the GET method. It is recommended to read the 
+[API Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions)
+and how to [Use Web API Functions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-functions).
+
 ---
 
 #### *client.table: str → str*
@@ -200,14 +218,8 @@ Set the table to search in.
 
 #### *client.action: str → str*
 
-Set the Dynamics Web API action or function to use.
-It is recommended to read the 
-[API Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions)
-and how to [Use Web API Functions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-functions), 
-as well as the 
-[API Action Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions)
-and how to [Use Web API Actions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions).
-You can input the action/function as a string, or use the included `act` and `fnc` objects construct it.
+Set the Dynamics Web API action or function to use. Most of the time you don't need to set this, 
+since you can use the `.actions` and `.functions` attributes to make these queries.
 
 ---
 
@@ -334,7 +346,7 @@ Note: You should not use `client.count(...)` and `client.top(...)` in the same q
 #### *client.pagesize: int*
 
 Specify the number of tables to return in a page. 
-By default, this is set to 1000. Maximum is 5000.
+By default, this is set to 5000, which is the maximum.
 
 ---
 
@@ -344,9 +356,9 @@ By default, this is set to 1000. Maximum is 5000.
 from dynamics.exceptions import *
 ```
 
-Exceptions subclass APIException from the 
-[Django REST framework](https://www.django-rest-framework.org/) library, if installed.
-Otherwise they work like regular exceptions.
+If [Django REST framework](https://www.django-rest-framework.org/) is installed, 
+exceptions subclass from rest_framework.exceptions.APIException, 
+otherwise a similar class is created and used instead.
 
 * DynamicsException - Dynamics Web API call failed
 * ParseError - Malformed request
@@ -368,35 +380,9 @@ Otherwise they work like regular exceptions.
 from dynamics import ftr
 ```
 
-Object that holds filter query string construction convenience methods. 
-It is recommended to read the 
+Object that holds filter query string construction convenience methods. It is recommended to read the 
 [API Query Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions)
 and how to [Query data using the Web API](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api).
-
----
-
-### API Functions:
-
-```python
-from dynamics import fnc
-```
-
-Object that holds API function string construction convenience methods.
-It is recommended to read the 
-[API Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions)
-and how to [Use Web API Functions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-functions).
-
----
-
-### API Actions:
-
-```python
-from dynamics import act
-```
-
-Object that holds API action string construction convenience methods.
-[API Action Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions)
-and how to [Use Web API Actions](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions).
 
 ---
 
@@ -456,47 +442,9 @@ Convert a datetime-object to Dynamics compatible ISO formatted date string.
 
 - date: str - ISO datestring from Dynamics database, in form: YYYY-mm-ddTHH:MM:SSZ.
 - to_timezone: str - Name of the timezone, from 'pytz.all_timezones', to convert the date to. 
-                     This won't add 'tzinfo', instead the actual time part will be changed from UTC
-                     to what the time is at 'to_timezone'. Default is "UTC".
+                     This won't add 'tzinfo', instead the actual time part will be changed from UCT
+                     to what the time is at 'to_timezone'. Default is "UCT".
   
 Convert a ISO datestring from Dynamics database to a datetime-object.
-
----
-
-#### *DateRange(...)*
-
-- start: str - Range start date in dynamics ISO string from. Optional.
-- end: str - Range end date in dynamics ISO string from. Optional.
-- start_key - Which dynamics table column has the start date. Only needed is start defined.
-- end_key - Which dynamics table column has the end date. Only needed is end defined.
-
-Class that can be used to create start and end dates from dynamics acceptable ISO datestrings
-and compile an appropriate dynamics 
-'[OnOrBefore](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/onorbefore?view=dynamics-ce-odata-9)' 
-and '[OnOrAfter](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/onorafter?view=dynamics-ce-odata-9)' 
--filters. The class also includes a membership test, that can be used to test
-if a (start, end) Dynamics ISO datestring tuple falls in the defined range.
-
-```python
-from dynamics import DynamicsClient
-from dynamics.utils import DateRange
-
-client = DynamicsClient(...)
-
-start = "2020-01-01T00:00:00Z"
-end = "2020-12-31T23:59:59Z"
-
-daterange = DateRange(start=start, end=end, start_key="begin_date", end_key="end_date")
-
-client.filter = daterange.filter_range
-
-...
-
-start = "2019-08-04T07:10:00Z"
-end = "2020-02-01T18:00:00Z"
-
-if (start, end) in daterange:
-    ...
-```
 
 ---
