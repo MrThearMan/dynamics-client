@@ -53,6 +53,11 @@ class OPS:
         return OPS._group(result, group)
 
     @staticmethod
+    def _join_multiple(*operations: str, **settings) -> str:
+        result = f" {settings['operator']} ".join(operations)
+        return OPS._group(result, settings["group"])
+
+    @staticmethod
     def _query_operator(param1: str, param2: field_type, operator: str, group: bool) -> str:
         result = f"{operator}({OPS._type(param1)},{OPS._type(param2, quotes=True)})"
         return OPS._group(result, group)
@@ -151,14 +156,14 @@ class OPS:
     # Logical operations
 
     @staticmethod
-    def and_(op1: str, op2: str, group: bool = False) -> str:
-        """Evaluate whether op1 AND op2 are valid."""
-        return OPS._comp_operator(op1, op2, "and", group, False)
+    def and_(*operations: str, **settings) -> str:
+        """Evaluate whether all of the given operations are true."""
+        return OPS._join_multiple(operator="and", group=settings.get("group", False), *operations)
 
     @staticmethod
-    def or_(op1: str, op2: str, group: bool = False) -> str:
-        """Evaluate whether op1 OR op2 is valid."""
-        return OPS._comp_operator(op1, op2, "or", group, False)
+    def or_(*operations: str, **settings) -> str:
+        """Evaluate whether any of the given operations are true."""
+        return OPS._join_multiple(operator="or", group=settings.get("group", False), *operations)
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:
