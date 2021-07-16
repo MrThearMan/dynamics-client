@@ -157,7 +157,7 @@ class DynamicsClient:
         self._pre_expand = ""
 
         self._headers: Dict[str, str] = {}
-        self._pagesize: int = 1000
+        self._pagesize: int = 5000
 
     def __getitem__(self, key):
         return self.headers[key]
@@ -714,7 +714,7 @@ class DynamicsClient:
 
     @pagesize.setter
     def pagesize(self, value: int):
-        """Specify the number of tables to return in a page. By default, this is set to 1000. Maximum is 5000."""
+        """Specify the number of tables to return in a page."""
 
         if value < 1:
             ValueError(f"Value must be bigger than 0. Got {value}.")
