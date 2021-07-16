@@ -6,17 +6,24 @@ Documentation:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions
 """
 
-from typing import List, Literal, Tuple, Dict, Any
+from typing import List, Dict, Literal, Any, TYPE_CHECKING
+from .enums import QuoteState
+
+if TYPE_CHECKING:
+    from .client import DynamicsClient
 
 
-__all__ = [
-    "act",
-]
+__all__ = ["Actions"]
 
 
 class Actions:
-    @staticmethod
+    """Predefined Dynamics API actions."""
+
+    def __init__(self, client: "DynamicsClient"):
+        self.client = client
+
     def send_email_from_template(
+        self,
         template_id: str,
         context_table: str,
         context_row_id: str,
@@ -24,7 +31,8 @@ class Actions:
         to_recipient_ids: List[str],
         cc_recipient_ids: List[str] = None,
         bcc_recipient_ids: List[str] = None,
-    ) -> Tuple[str, Dict[str, Any]]:
+        **kwargs,
+    ):
         """Construct POST data to use in SendEmailFromTemplate action.
 
         https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/sendemailfromtemplate
@@ -58,44 +66,75 @@ class Actions:
         if bcc_recipient_ids:
             parties += add_parties(bcc_recipient_ids, party_type=4)
 
+        self.client.reset_query()
+        self.client.action = "SendEmailFromTemplate"
+
         data = {
             "TemplateId": template_id,
             "Regarding": {"contactid": context_row_id, "@odata.type": f"Microsoft.Dynamics.CRM.{context_table}"},
             "Target": {
-                # "regardingobjectid_contact@odata.bind": f"/contacts({contactid})",
+                "regardingobjectid_contact@odata.bind": f"/contacts({context_row_id})",
                 "email_activity_parties": parties,
                 "@odata.type": "Microsoft.Dynamics.CRM.email",
             },
         }
 
-        return "SendEmailFromTemplate", data
+        return self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
-    @staticmethod
-    def convert_quote_to_order(quote_id: str, select: List[str] = None) -> Tuple[str, Dict[str, Any]]:
-        """Construct POST data to use in 'ConvertQuoteToSalesOrder' action
+    def convert_quote_to_order(self, quote_id: str, select: List[str] = None, **kwargs) -> Dict[str, Any]:
+        """Converts quote to salesorder.
 
         :param quote_id: Quote to convert to an order.
-        :param select: Attributes to retrieve from the new salesorder..
-        :return: Tuple of the action name and POST data to send.
+        :param select: Attributes to retrieve from the new salesorder.
+        :return: New salesorder.
         """
 
-        data = {
-            "QuoteId": quote_id,
-        }
+        self.client.reset_query()
+        self.client.action = "ConvertQuoteToSalesOrder"
+
+        data = {"QuoteId": quote_id, "ColumnSet": {"AllColumns": True}}
+
         if select:
             data["ColumnSet"] = {"AllColumns": False, "Columns": select}
-        else:
-            data["ColumnSet"] = {"AllColumns": True}
 
-        return "ConvertQuoteToSalesOrder", data
+        return self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
-    @staticmethod
-    def win_quote(quote_id: str) -> Tuple[str, Dict[str, Any]]:
-        """Construct POST data to use in 'WinQuote' action
+    def activate_quote(self, quote_id: str, select: List[str] = None, **kwargs) -> Dict[str, Any]:
+        """Change the state of the quote to active so it can be converted to a salesorder.
+
+        :param quote_id: Quote to activate.
+        :param select: Attributes to retrieve from the quote.
+        :return: Activated quote.
+        """
+
+        self.client.reset_query()
+        self.client.table = "quotes"
+        self.client.row_id = quote_id
+        if select:
+            self.client.select = select
+
+        return self.client.PATCH(
+            data={"statecode": QuoteState.Active.value},
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
+
+    def win_quote(self, quote_id: str, **kwargs) -> None:
+        """Win a quote, so it can be converted to a salesorder. Quote must be in the 'Active' state.
 
         :param quote_id: Quote to change to Won state.
-        :return: Tuple of the action name and POST data to send.
         """
+
+        self.client.reset_query()
+        self.client.action = "WinQuote"
 
         data = {
             "QuoteClose": {
@@ -105,15 +144,20 @@ class Actions:
             "Status": -1,
         }
 
-        return "WinQuote", data
+        self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
-    @staticmethod
-    def close_quote(quote_id: str) -> Tuple[str, Dict[str, Any]]:
-        """Construct POST data to use in 'CloseQuote' action
+    def close_quote(self, quote_id: str, **kwargs) -> None:
+        """Close quote as cancelled.
 
-        :param quote_id: Quote to change to Canceled state.
-        :return: Tuple of the action name and POST data to send.
+        :param quote_id: Quote to change to 'Canceled' state.
         """
+
+        self.client.reset_query()
+        self.client.action = "CancelSalesOrder"
 
         data = {
             "QuoteClose": {
@@ -123,41 +167,105 @@ class Actions:
             "Status": -1,
         }
 
-        return "CloseQuote", data
+        self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
-    @staticmethod
-    def revise_quote(quote_id: str, select: List[str] = None) -> Tuple[str, Dict[str, Any]]:
-        """Construct POST data to use in 'ReviseQuote' action
+    def revise_quote(self, quote_id: str, select: List[str] = None, **kwargs) -> Dict[str, Any]:
+        """Change quote back to draft state.
 
-        :param quote_id: Quote to change to Draft state.
+        :param quote_id: Quote to change to 'Draft' state.
         :param select: Attributes to retrieve in the revised quote.
-        :return: Tuple of the action name and POST data to send.
         """
+
+        self.client.reset_query()
+        self.client.action = "ReviseQuote"
 
         data = {"QuoteId": quote_id}
-
         if select:
             data["ColumnSet"] = select
 
-        return "ReviseQuote", data
+        return self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
-    @staticmethod
-    def cancel_order(order_id: str) -> Tuple[str, Dict[str, Any]]:
+    def delete_quote(self, quote_id: str, **kwargs) -> None:
+        """Delete a quote.
+
+        :param quote_id: Quote to delete.
+        """
+
+        self.client.reset_query()
+        self.client.table = "quotes"
+        self.client.row_id = quote_id
+        self.client.DELETE(
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
+
+    def cancel_order(self, order_id: str, reason: int = None, **kwargs) -> None:
         """Construct POST data to use in 'CancelSalesOrder' action
 
         :param order_id: Order to cancel.
-        :return: Tuple of the action name and POST data to send.
+        :param reason: Reason to close salesorder. Default means 'No Money'.
         """
+
+        self.client.reset_query()
+        self.client.action = "CancelSalesOrder"
+
+        if reason is None:
+            reason = 4  # No Money
 
         data = {
             "OrderClose": {
                 "salesorderid@odata.bind": f"/salesorders({order_id})",
                 "@odata.type": "Microsoft.Dynamics.CRM.orderclose",
             },
-            "Status": 4,  # No Money
+            "Status": reason,
         }
 
-        return "CancelSalesOrder", data
+        self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
 
+    def delete_order(self, order_id: str, **kwargs) -> None:
+        """Delete an order.
 
-act = Actions()
+        :param order_id: Order to delete.
+        """
+
+        self.client.reset_query()
+        self.client.table = "salesorders"
+        self.client.row_id = order_id
+        self.client.DELETE(
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
+
+    def calculate_quote_price(self, quote_id: str, **kwargs) -> None:
+        """Calculate the price of a quote.
+
+        :param quote_id: Quote to calculate the price for.
+        """
+
+        self.client.reset_query()
+        self.client.action = "CalculatePrice"
+
+        data = {
+            "Target": {
+                "quoteid": quote_id,
+                "@odata.type": "Microsoft.Dynamics.CRM.quote",
+            },
+        }
+
+        self.client.POST(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )

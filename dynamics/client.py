@@ -29,12 +29,14 @@ import os
 import json
 import logging
 from functools import wraps
-from typing import List, Dict, Optional, Any, Literal, Union, Set
+from typing import List, Dict, Optional, Any, Literal, Union, Set, Type
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from . import status
+from .api_actions import Actions
+from .api_functions import Functions
 from .exceptions import (
     DynamicsException,
     ParseError,
@@ -80,13 +82,13 @@ def error_simplification_available(func):
     @wraps(func)
     def inner(*args, **kwargs):
         simplify_errors: bool = kwargs.pop("simplify_errors", False)
-        raise_separately: List[Exception] = kwargs.pop("raise_separately", [])
+        raise_separately: List[Type[Exception]] = kwargs.pop("raise_separately", [])
 
         try:
             return func(*args, **kwargs)
         except Exception as error:
             logger.error(error)
-            if not simplify_errors or type(error) in raise_separately:
+            if not simplify_errors or any([isinstance(error, exception) for exception in raise_separately]):
                 raise error
             else:
                 raise DynamicsException("There was a problem communicating with the server.")
@@ -132,16 +134,15 @@ class DynamicsClient:
                       Most likely in this format: https://[Organization URI]/.default
         """
 
-        # [sic] Assure that url ends in forward slash
         self._api_url = api_url.rstrip("/") + "/"
+        self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
+        self._session.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
 
-        # [sic] Scope not given here, since we don't have a token yet
-        self._api = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
+        self.actions = Actions(client=self)
+        """Predefined dynamics API actions. Used to make certain changes to data."""
+        self.functions = Functions(client=self)
+        """Predefined dynamics API functions. Used to fetch certain types of data."""
 
-        # Fetch token
-        self._api.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
-
-        # Query options
         self._select: List[str] = []
         self._expand: expand_type = {}
         self._filter: filter_type = []
@@ -285,7 +286,7 @@ class DynamicsClient:
 
         Please also read the decorator's documentation!
 
-        :param not_found_ok: No entities found should not raise NotFound error, but return empty list instead.
+        :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
         :param next_link: Request the next set of records from this link instead.
         """
 
@@ -293,9 +294,9 @@ class DynamicsClient:
         self.set_default_headers("get")
 
         if next_link is not None:
-            response = self._api.get(next_link, headers=self.headers)
+            response = self._session.get(next_link, headers=self.headers)
         else:
-            response = self._api.get(self.current_query, headers=self.headers)
+            response = self._session.get(self.current_query, headers=self.headers)
 
         data = response.json()
 
@@ -345,8 +346,7 @@ class DynamicsClient:
 
     @error_simplification_available
     def POST(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create new row in a table or execute an API action or function.
-        Must have 'table' query option set.
+        """Create new row in a table. Must have 'table' attribute set. Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
 
@@ -356,9 +356,8 @@ class DynamicsClient:
         self.request_counter += 1
         self.set_default_headers("post")
 
-        # [sic] POSTing data in dict form doesn't work for some reason...
         data = json.dumps(data).encode()
-        response = self._api.post(self.current_query, data=data, headers=self.headers)
+        response = self._session.post(self.current_query, data=data, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -372,7 +371,7 @@ class DynamicsClient:
 
     @error_simplification_available
     def PATCH(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Update row in a table. Must have 'table' and 'row_id' query option set.
+        """Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
@@ -384,7 +383,7 @@ class DynamicsClient:
         self.set_default_headers("patch")
 
         data = json.dumps(data).encode()
-        response = self._api.patch(self.current_query, data=data, headers=self.headers)
+        response = self._session.patch(self.current_query, data=data, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -398,7 +397,7 @@ class DynamicsClient:
 
     @error_simplification_available
     def DELETE(self) -> Dict[str, Any]:
-        """Delete row in a table. Must have 'table' and 'row_id' query option set.
+        """Delete row in a table. Must have 'table' and 'row_id' attributes set.
 
         Please also read the decorator's documentation!
         """
@@ -406,7 +405,7 @@ class DynamicsClient:
         self.request_counter += 1
         self.set_default_headers("delete")
 
-        response = self._api.delete(self.current_query, headers=self.headers)
+        response = self._session.delete(self.current_query, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -443,7 +442,8 @@ class DynamicsClient:
         ...and how to Use Web API Actions:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions.
 
-        You can input the action/function as a string, or use the included `act` and `fnc` objects construct it.
+        Most of the time you don't need to set this, since you can use the .actions and .functions attributes
+        to make these queries.
         """
         return self._action
 
