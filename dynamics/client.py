@@ -169,7 +169,7 @@ class DynamicsClient:
     def from_environment(cls):
         """Create a client from environment variables:
 
-        * DYNAMICS_BASE_URL (api_url): url string
+        * DYNAMICS_API_URL: url string
         * DYNAMICS_TOKEN_URL: url string
         * DYNAMICS_CLIENT_ID: client id string
         * DYNAMICS_CLIENT_SECRET: client secret key string
@@ -178,7 +178,7 @@ class DynamicsClient:
         :raises KeyError: An environment variable was not configured properly
         """
 
-        base_url = os.environ["DYNAMICS_BASE_URL"]
+        base_url = os.environ["DYNAMICS_API_URL"]
         token_url = os.environ["DYNAMICS_TOKEN_URL"]
         client_id = os.environ["DYNAMICS_CLIENT_ID"]
         client_secret = os.environ["DYNAMICS_CLIENT_SECRET"]
