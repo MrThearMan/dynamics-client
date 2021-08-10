@@ -272,18 +272,25 @@ Helpful for development and debugging.
 Set `$select` statement. Limits the properties returned from the current table.
 
 ---
-- expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
-- expand_values = Union[List[str], Set[str], int, orderby_type, Dict]
-- expand_type = Dict[str, Dict[expand_keys, expand_values]]
 
 #### *client.expand(...) → expand_type*
 
-- items: expand_type - What linked tables (a.k.a. naviagation properties) to expand and 
-                       what statements to apply inside the expanded tables.
-                       If items-dict value is set to an empty dict, no query options are used.
-                       Otherwise, valid keys for the items-dict are 'select', 'filter', 'top', 'orderby', and 'expand'.
-                       Values under these keys should be constructed in the same manner as they are
-                       when outside the expand statement, e.g. 'select' takes a List[str], 'top' an int, etc.
+- items: Dict[str, ExpandType] - 
+    What linked tables (a.k.a. naviagation properties) to expand and 
+    what statements to apply inside the expanded tables.
+    If items-dict value is set to an empty dict, no query options are used.
+    Otherwise, refer to the `ExpandType` TypedDict.
+
+```python
+from typing import List, Dict, TypedDict, Union, Set, Literal
+
+class ExpandType(TypedDict):
+    select: List[str]
+    filter: Union[Set[str], List[str]]
+    top: int
+    orderby: Dict[str, Literal["asc", "desc"]]
+    expand: Dict[str, "ExpandType"]
+```
 
 Set `$expand` statement, with possible nested statements.
 Controls what data from related entities is returned.
@@ -296,18 +303,28 @@ This means nested expands for collections do not work!
 2. Each request can include a maximum of 10 expand statements.
 This applies to non-nested statements as well! There is no limit on the depth of nested
 expand statements, so long as the total is 10.
-   
+
 ---
 
 #### *client.filter(...) → Union[Set[str], List[str]]*
 
 - items: Union[Set[str], List[str]] - If a list-object, 'and' the items. If a set-object, 'or' the items.
 
-Set `$filter` statement. Sets the criteria for which entities will be returned.
-It is recommended to read the 
+Set `$filter` statement. Sets the criteria for which entities will be returned. It is recommended to read the 
 [API Query Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions)
 and how to [Query data using the Web API](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api).
 You can input the filters as strings, or use the included `ftr` object to construct them.
+
+---
+
+#### *client.apply(...) → str*
+
+- statement: str - aggregate, groupby, or filter apply-string.
+
+Set the `$apply` statement. Aggregates or groups results. It is recommended to read 
+[Aggregate and grouping results](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results)
+and the [FetchXML aggregation documentation](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation)
+You can input the apply-statement as a string, or use the included `apl`-object to construct it.
 
 ---
 
@@ -380,9 +397,21 @@ otherwise a similar class is created and used instead.
 from dynamics import ftr
 ```
 
-Object that holds filter query string construction convenience methods. It is recommended to read the 
+Object that holds `$filter` query string construction convenience methods. It is recommended to read the 
 [API Query Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions)
 and how to [Query data using the Web API](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api).
+
+---
+
+### API Apply Functions:
+
+```python
+from dynamics import apl
+```
+
+Object that holds `$apply` string construction convenience methods. It is recommended to read 
+[Aggregate and grouping results](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results)
+and the [FetchXML aggregation documentation](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation)
 
 ---
 
@@ -416,6 +445,11 @@ They can also be used to specify numeric data as float or int.
 
 - value: Any - Value to normalize.
 - default: int - Default to return if casting value to bool fails. Default is False.
+
+#### *str_as_datetime(...) → datetime*
+
+- value: str - Value to normalize.
+- default: Any - Default to return if casting value to datetime fails. Default is None.
 
 
 ---
