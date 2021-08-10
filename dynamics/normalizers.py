@@ -4,6 +4,11 @@ can be used to pre-process known problematic data points before handing them to 
 Most common case is the separation of non-existing values vs. explicit `null` returned by API.
 """
 
+from datetime import datetime
+from typing import Any, Optional
+
+from dynamics.utils import from_dynamics_date_format
+
 
 __all__ = [
     "as_int",
@@ -13,31 +18,42 @@ __all__ = [
 ]
 
 
-def as_int(value, default: int = 0) -> int:
+def as_int(value: Any, default: int = 0) -> int:
     try:
+        if isinstance(value, str):
+            value = value.replace(",", ".")
         return int(value)
-    except Exception:  # noqa
+    except (ValueError, TypeError):
         return default
 
 
-def as_float(value, default: float = 0.0) -> float:
+def as_float(value: Any, default: float = 0.0) -> float:
     try:
-        return float(str(value).replace(",", "."))
-    except Exception:  # noqa
+        if isinstance(value, str):
+            value = value.replace(",", ".")
+        return float(value)
+    except (ValueError, TypeError):
         return default
 
 
-def as_str(value, default: str = "") -> str:
-    if not value:
-        return default
+def as_str(value: Any, default: str = "") -> str:
     try:
+        if value in (True, False, None):
+            return default
         return str(value)
-    except Exception:  # noqa
+    except (ValueError, TypeError):
         return default
 
 
-def as_bool(value, default: bool = False) -> bool:
+def as_bool(value: Any, default: bool = False) -> bool:
     try:
         return bool(value)
-    except Exception:  # noqa
+    except (ValueError, TypeError):
+        return default
+
+
+def str_as_datetime(value: str, default: Any = None) -> Optional[datetime]:
+    try:
+        return from_dynamics_date_format(value)
+    except Exception:
         return default

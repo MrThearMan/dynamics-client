@@ -1,5 +1,4 @@
 """
-
 Creates a helper object `ftr`, which contains convenience functions of all possible filter operations.
 
 Standard Operators API reference:
@@ -7,10 +6,10 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-
 
 Special Operators API reference:
 https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions?view=dynamics-ce-odata-9
-
 """
 
-from typing import List, Union, Tuple
+from uuid import UUID
+from typing import Union, Optional
 
 
 __all__ = [
@@ -22,20 +21,27 @@ field_type = Union[str, int, float, bool, None]
 comp_type = Union[str, int, float]
 
 
-class OPS:
+def _is_valid_uuid(value: str):
+    try:
+        uuid = UUID(value)
+        return str(uuid) == value
+    except ValueError:
+        return False
+
+
+class FTR:
     """Convenience functions for creating $filter parameters."""
 
     # Base operations
 
     @staticmethod
     def _type(value: field_type, quotes: bool = False) -> str:
-        if isinstance(value, bool):
-            if value:
-                return "'true'" if quotes else "true"
-            else:
-                return "'false'" if quotes else "false"
+        if value is True:
+            return "true"
+        if value is False:
+            return "false"
         elif value is None:
-            return "'null'" if quotes else "null"
+            return "null"
         else:
             return f"'{value}'" if quotes else str(value)
 
@@ -44,45 +50,84 @@ class OPS:
         return f"({result})" if group else result
 
     @staticmethod
-    def _listify(values: List[field_type], quotes: bool = True) -> str:
-        return f"""[{','.join([f"{OPS._type(value, quotes)}" for value in values])}]"""
+    def _listify(values: list[field_type]) -> str:
+        return f"""[{','.join([f"{FTR._type(value, quotes=True)}" for value in values])}]"""
 
     @staticmethod
-    def _comp_operator(param1: str, param2: field_type, operator: str, group: bool, quotes: bool = True) -> str:
-        result = f"{param1} {operator} {OPS._type(param2, quotes)}"
-        return OPS._group(result, group)
+    def _get_indicator(indicator: Optional[str]) -> str:
+        return f"{indicator}/" if indicator is not None else ""
+
+    @staticmethod
+    def _comp_operator(
+        param1: str,
+        param2: field_type,
+        lambda_indicator: Optional[str],
+        operator: str,
+        group: bool,
+    ) -> str:
+        ind = FTR._get_indicator(lambda_indicator)
+        quotes = isinstance(param2, str) and not _is_valid_uuid(param2)
+        result = f"{ind}{param1} {operator} {FTR._type(param2, quotes)}"
+        return FTR._group(result, group)
 
     @staticmethod
     def _join_multiple(*operations: str, **settings) -> str:
         result = f" {settings['operator']} ".join(operations)
-        return OPS._group(result, settings["group"])
+        return FTR._group(result, settings["group"])
 
     @staticmethod
-    def _query_operator(param1: str, param2: field_type, operator: str, group: bool) -> str:
-        result = f"{operator}({OPS._type(param1)},{OPS._type(param2, quotes=True)})"
-        return OPS._group(result, group)
+    def _query_operator(
+        param1: str,
+        param2: field_type,
+        operator: str,
+        lambda_indicator: Optional[str],
+        group: bool,
+    ) -> str:
+        ind = FTR._get_indicator(lambda_indicator)
+        result = f"{operator}({ind}{FTR._type(param1)},{FTR._type(param2, quotes=True)})"
+        return FTR._group(result, group)
 
     @staticmethod
-    def _special_name_only(name: str, operator: str, group: bool, quotes: bool = True) -> str:
-        result = f"Microsoft.Dynamics.CRM.{operator}" f"(PropertyName={OPS._type(name, quotes)})"
-        return OPS._group(result, group)
+    def _lambda_operator(
+        collection: str,
+        operator: str,
+        indicator: str,
+        lambda_indicator: Optional[str],
+        operation: Optional[str],
+        group: bool,
+    ):
+        ind = FTR._get_indicator(lambda_indicator)
+        operation = f"{indicator}:{operation}" if operation is not None else ""
+        result = f"{ind}{collection}/{operator}({operation})"
+        return FTR._group(result, group)
+
+    @staticmethod
+    def _special_name_only(
+        name: str,
+        operator: str,
+        lambda_indicator: Optional[str],
+        group: bool,
+    ) -> str:
+        ind = FTR._get_indicator(lambda_indicator)
+        result = f"{ind}Microsoft.Dynamics.CRM.{operator}" f"(PropertyName={FTR._type(name, quotes=True)})"
+        return FTR._group(result, group)
 
     @staticmethod
     def _special_single_value(
         name: str,
         ref: field_type,
         operator: str,
+        lambda_indicator: Optional[str],
         group: bool,
-        name_quotes: bool = True,
         ref_quotes: bool = True,
     ) -> str:
-
+        ind = FTR._get_indicator(lambda_indicator)
         result = (
-            f"Microsoft.Dynamics.CRM.{operator}"
-            f"(PropertyName={OPS._type(name, name_quotes)},"
-            f"PropertyValue={OPS._type(ref, ref_quotes)})"
+            f"{ind}Microsoft.Dynamics.CRM.{operator}"
+            f"(PropertyName={FTR._type(name, quotes=True)},"
+            f"PropertyValue={FTR._type(ref, ref_quotes)})"
         )
-        return OPS._group(result, group)
+        return FTR._group(result, group)
 
     @staticmethod
     def _special_two_values(
@@ -90,242 +135,370 @@ class OPS:
         ref1: field_type,
         ref2: field_type,
         operator: str,
+        lambda_indicator: Optional[str],
         group: bool,
-        name_quotes: bool = True,
         ref1_quotes: bool = True,
         ref2_quotes: bool = True,
     ) -> str:
-
+        ind = FTR._get_indicator(lambda_indicator)
         result = (
-            f"Microsoft.Dynamics.CRM.{operator}"
-            f"(PropertyName={OPS._type(name, name_quotes)},"
-            f"PropertyValue1={OPS._type(ref1, ref1_quotes)},"
-            f"PropertyValue2={OPS._type(ref2, ref2_quotes)})"
+            f"{ind}Microsoft.Dynamics.CRM.{operator}"
+            f"(PropertyName={FTR._type(name, quotes=True)},"
+            f"PropertyValue1={FTR._type(ref1, ref1_quotes)},"
+            f"PropertyValue2={FTR._type(ref2, ref2_quotes)})"
         )
-        return OPS._group(result, group)
+        return FTR._group(result, group)
 
     @staticmethod
     def _special_many_values(
         name: str,
-        values: List[field_type],
+        values: list[field_type],
         operator: str,
+        lambda_indicator: Optional[str],
         group: bool,
-        column_quotes: bool = True,
-        values_quotes: bool = True,
     ) -> str:
-
+        ind = FTR._get_indicator(lambda_indicator)
         result = (
-            f"Microsoft.Dynamics.CRM.{operator}"
-            f"(PropertyName={OPS._type(name, column_quotes)},"
-            f"PropertyValues={OPS._listify(values, values_quotes)})"
+            f"{ind}Microsoft.Dynamics.CRM.{operator}"
+            f"(PropertyName={FTR._type(name, quotes=True)},"
+            f"PropertyValues={FTR._listify(values)})"
         )
-        return OPS._group(result, group)
+        return FTR._group(result, group)
 
     # Comparison operations
 
     @staticmethod
-    def eq(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is equal to value."""
-        return OPS._comp_operator(column, value, "eq", group, quotes)
+    def eq(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is equal to value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should equal to.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "eq", group)
 
     @staticmethod
-    def ne(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is not equal to value."""
-        return OPS._comp_operator(column, value, "ne", group, quotes)
+    def ne(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is not equal to value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should not equal to.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "ne", group)
 
     @staticmethod
-    def gt(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is greater than value."""
-        return OPS._comp_operator(column, value, "gt", group, quotes)
+    def gt(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is greater than value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should be greater than.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "gt", group)
 
     @staticmethod
-    def ge(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is greater than or equal to value."""
-        return OPS._comp_operator(column, value, "ge", group, quotes)
+    def ge(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is greater than or equal to value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should be greater than or equal to.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "ge", group)
 
     @staticmethod
-    def lt(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is less than value."""
-        return OPS._comp_operator(column, value, "lt", group, quotes)
+    def lt(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is less than value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should less than.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "lt", group)
 
     @staticmethod
-    def le(column: str, value: field_type, group: bool = False, quotes: bool = False) -> str:
-        """Evaluate whether the value in the given column is less than or equel to value."""
-        return OPS._comp_operator(column, value, "le", group, quotes)
+    def le(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column is less than or equel to value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should less than or equal to.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._comp_operator(column, value, lambda_indicator, "le", group)
 
     # Logical operations
 
     @staticmethod
     def and_(*operations: str, **settings) -> str:
-        """Evaluate whether all of the given operations are true."""
-        return OPS._join_multiple(operator="and", group=settings.get("group", False), *operations)
+        """Evaluate whether all of the given operations are true.
+
+        :param settings: group=True -> Group the operation inside parentheses.
+        """
+        return FTR._join_multiple(operator="and", group=settings.get("group", False), *operations)
 
     @staticmethod
     def or_(*operations: str, **settings) -> str:
-        """Evaluate whether any of the given operations are true."""
-        return OPS._join_multiple(operator="or", group=settings.get("group", False), *operations)
+        """Evaluate whether any of the given operations are true.
+
+        :param settings: group=True -> Group the operation inside parentheses.
+        """
+        return FTR._join_multiple(operator="or", group=settings.get("group", False), *operations)
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:
         """Invert the evaluation of an operation. Only works on standard operators!"""
-        return OPS._group(f"not {operation}", group)
+        return FTR._group(f"not {operation}", group)
 
     # Standard query functions
 
     @staticmethod
-    def contains(column: str, value: field_type, group: bool = False) -> str:
-        """Evaluate whether the string value in the given column contains value."""
-        return OPS._query_operator(column, value, "contains", group)
+    def contains(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column contains value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should contain.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._query_operator(column, value, "contains", lambda_indicator, group)
 
     @staticmethod
-    def endswith(column: str, value: field_type, group: bool = False) -> str:
-        """Evaluate whether the string value in the given column ends with value."""
-        return OPS._query_operator(column, value, "endswith", group)
+    def endswith(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column ends with value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should end with.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._query_operator(column, value, "endswith", lambda_indicator, group)
 
     @staticmethod
-    def startswith(column: str, value: field_type, group: bool = False) -> str:
-        """Evaluate whether the string value in the given column starts with value."""
-        return OPS._query_operator(column, value, "startswith", group)
+    def startswith(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the string value in the given column starts with value.
+
+        :param column: Column to apply the operation to.
+        :param value: Value that the column should start with.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._query_operator(column, value, "startswith", lambda_indicator, group)
+
+    # Lambda operations
+
+    @staticmethod
+    def any_(
+        collection: str,
+        indicator: str,
+        operation: str = None,
+        lambda_indicator: str = None,
+        group: bool = False,
+    ) -> str:
+        """True if the operation given is true for any member of the collection, otherwise false.
+        True also if operation is not given, and the collection is not empty.
+
+        :param collection: Name of the collection-valued navigation property for some table,
+                           for the members of which the given operation is evaluated.
+        :param indicator: Item indicator to use inside the statement, typically a single letter.
+                          The same indicator should be given to the operation(s) evaluated inside this operation.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param operation: Operation(s) evaluated inside this operation.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._lambda_operator(collection, "any", indicator, lambda_indicator, operation, group)
+
+    @staticmethod
+    def all_(
+        collection: str,
+        indicator: str,
+        operation: str = None,
+        lambda_indicator: str = None,
+        group: bool = False,
+    ) -> str:
+        """True if the operation given is true for all members of the collection, otherwise false.
+
+        :param collection: Name of the collection-valued navigation property for some table,
+                           for the members of which the given operation is evaluated.
+        :param indicator: Indicator to use inside the statement, typically a single letter.
+                          The same indicator should be given to the operation(s) evaluated inside this operation.
+        :param lambda_indicator: If this operation is evaluated inside a lambda operation,
+                                 provide the lambda operations item indicator here.
+        :param operation: Operation(s) evaluated inside this operation.
+        :param group: Group the operation inside parentheses.
+        """
+        return FTR._lambda_operator(collection, "all", indicator, lambda_indicator, operation, group)
 
     # Special query functions - value checks
 
     @staticmethod
-    def in_(column: str, values: List[field_type], group: bool = False) -> str:
+    def in_(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column exists in a list of values."""
-        return OPS._special_many_values(column, values, "In", group)
+        return FTR._special_many_values(column, values, "In", lambda_indicator, group)
 
     @staticmethod
-    def not_in(column: str, values: List[field_type], group: bool = False) -> str:
+    def not_in(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column doesn't exists in a list of values."""
-        return OPS._special_many_values(column, values, "NotIn", group)
+        return FTR._special_many_values(column, values, "NotIn", lambda_indicator, group)
 
     @staticmethod
-    def between(column: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
+    def between(
+        column: str, values: tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluate whether the value in the given column is between two values."""
-        return OPS._special_many_values(column, list(values), "Between", group)
+        return FTR._special_many_values(column, list(values), "Between", lambda_indicator, group)
 
     @staticmethod
-    def not_between(column: str, values: Tuple[comp_type, comp_type], group: bool = False) -> str:
+    def not_between(
+        column: str, values: tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluate whether the value in the given column is not between two values."""
-        return OPS._special_many_values(column, list(values), "NotBetween", group)
+        return FTR._special_many_values(column, list(values), "NotBetween", lambda_indicator, group)
 
     @staticmethod
-    def contain_values(column: str, values: List[field_type], group: bool = False) -> str:
+    def contain_values(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column contains the listed values."""
-        return OPS._special_many_values(column, values, "ContainValues", group)
+        return FTR._special_many_values(column, values, "ContainValues", lambda_indicator, group)
 
     @staticmethod
-    def not_contain_values(column: str, values: List[field_type], group: bool = False) -> str:
+    def not_contain_values(
+        column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluate whether the value in the given column doesn't contain the listed values."""
-        return OPS._special_many_values(column, values, "DoesNotContainValues", group)
+        return FTR._special_many_values(column, values, "DoesNotContainValues", lambda_indicator, group)
 
     # Special query functions - hierarchy checks
 
     @staticmethod
-    def above(column: str, ref: field_type, group: bool = False) -> str:
+    def above(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is above ref in the hierarchy."""
-        return OPS._special_single_value(column, ref, "Above", group)
+        return FTR._special_single_value(column, ref, "Above", lambda_indicator, group)
 
     @staticmethod
-    def above_or_equal(column: str, ref: field_type, group: bool = False) -> str:
+    def above_or_equal(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is above or equal to ref in the hierarchy."""
-        return OPS._special_single_value(column, ref, "AboveOrEqual", group)
+        return FTR._special_single_value(column, ref, "AboveOrEqual", lambda_indicator, group)
 
     @staticmethod
-    def under(column: str, ref: field_type, group: bool = False) -> str:
+    def under(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is below ref in the hierarchy."""
-        return OPS._special_single_value(column, ref, "Under", group)
+        return FTR._special_single_value(column, ref, "Under", lambda_indicator, group)
 
     @staticmethod
-    def under_or_equal(column: str, ref: field_type, group: bool = False) -> str:
+    def under_or_equal(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in column is under or equal to ref in the hierarchy."""
-        return OPS._special_single_value(column, ref, "UnderOrEqual", group)
+        return FTR._special_single_value(column, ref, "UnderOrEqual", lambda_indicator, group)
 
     @staticmethod
-    def not_under(column: str, ref: field_type, group: bool = False) -> str:
+    def not_under(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in column is not below ref in the hierarchy."""
-        return OPS._special_single_value(column, ref, "NotUnder", group)
+        return FTR._special_single_value(column, ref, "NotUnder", lambda_indicator, group)
 
     # Special query functions - dates
 
     @staticmethod
-    def today(column: str, group: bool = False) -> str:
+    def today(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals today’s date."""
-        return OPS._special_name_only(column, "Today", group)
+        return FTR._special_name_only(column, "Today", lambda_indicator, group)
 
     @staticmethod
-    def tomorrow(column: str, group: bool = False) -> str:
+    def tomorrow(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals tomorrow’s date."""
-        return OPS._special_name_only(column, "Tomorrow", group)
+        return FTR._special_name_only(column, "Tomorrow", lambda_indicator, group)
 
     @staticmethod
-    def yesterday(column: str, group: bool = False) -> str:
+    def yesterday(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals yesterday’s date."""
-        return OPS._special_name_only(column, "Yesterday", group)
+        return FTR._special_name_only(column, "Yesterday", lambda_indicator, group)
 
     # Special query functions - dates - on
 
     @staticmethod
-    def on(column: str, date: comp_type, group: bool = False) -> str:
+    def on(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is on the specified date."""
-        return OPS._special_single_value(column, date, "On", group)
+        return FTR._special_single_value(column, date, "On", lambda_indicator, group)
 
     @staticmethod
-    def on_or_after(column: str, date: comp_type, group: bool = False) -> str:
+    def on_or_after(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is on or after the specified date."""
-        return OPS._special_single_value(column, date, "OnOrAfter", group)
+        return FTR._special_single_value(column, date, "OnOrAfter", lambda_indicator, group)
 
     @staticmethod
-    def on_or_before(column: str, date: comp_type, group: bool = False) -> str:
+    def on_or_before(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is on or before the specified date."""
-        return OPS._special_single_value(column, date, "OnOrBefore", group)
+        return FTR._special_single_value(column, date, "OnOrBefore", lambda_indicator, group)
 
     # Special query functions - dates - in
 
     @staticmethod
-    def in_fiscal_period(column: str, period: int, group: bool = False) -> str:
+    def in_fiscal_period(column: str, period: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the specified fiscal period."""
-        return OPS._special_single_value(column, period, "InFiscalPeriod", group, ref_quotes=False)
+        return FTR._special_single_value(column, period, "InFiscalPeriod", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def in_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+    def in_fiscal_period_and_year(
+        column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluates whether the value in the given column is within the specified fiscal period and year."""
-        return OPS._special_two_values(
+        return FTR._special_two_values(
             column,
             period,
             year,
             "InFiscalPeriodAndYear",
+            lambda_indicator,
             group,
             ref1_quotes=False,
             ref2_quotes=False,
         )
 
     @staticmethod
-    def in_fiscal_year(column: str, year: int, group: bool = False) -> str:
+    def in_fiscal_year(column: str, year: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the specified fiscal year."""
-        return OPS._special_single_value(column, year, "InFiscalYear", group, ref_quotes=False)
+        return FTR._special_single_value(column, year, "InFiscalYear", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def in_or_after_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+    def in_or_after_fiscal_period_and_year(
+        column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluates whether the value in the given column is within or after the specified fiscal period and year."""
-        return OPS._special_two_values(
+        return FTR._special_two_values(
             column,
             period,
             year,
             "InOrAfterFiscalPeriodAndYear",
+            lambda_indicator,
             group,
             ref1_quotes=False,
             ref2_quotes=False,
         )
 
     @staticmethod
-    def in_or_before_fiscal_period_and_year(column: str, period: int, year: int, group: bool = False) -> str:
+    def in_or_before_fiscal_period_and_year(
+        column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
+    ) -> str:
         """Evaluates whether the value in the given column is within, or before the specified fiscal period and year."""
-        return OPS._special_two_values(
+        return FTR._special_two_values(
             column,
             period,
             year,
-            "InOrBeforeFiscalPeriodAndYear ",
+            "InOrBeforeFiscalPeriodAndYear",
+            lambda_indicator,
             group,
             ref1_quotes=False,
             ref2_quotes=False,
@@ -334,247 +507,247 @@ class OPS:
     # Special query functions - dates - this
 
     @staticmethod
-    def this_fiscal_period(column: str, group: bool = False) -> str:
+    def this_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the current fiscal period."""
-        return OPS._special_name_only(column, "ThisFiscalPeriod", group)
+        return FTR._special_name_only(column, "ThisFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
-    def this_fiscal_year(column: str, group: bool = False) -> str:
+    def this_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the current fiscal year."""
-        return OPS._special_name_only(column, "ThisFiscalYear", group)
+        return FTR._special_name_only(column, "ThisFiscalYear", lambda_indicator, group)
 
     @staticmethod
-    def this_month(column: str, group: bool = False) -> str:
+    def this_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the current month."""
-        return OPS._special_name_only(column, "ThisMonth", group)
+        return FTR._special_name_only(column, "ThisMonth", lambda_indicator, group)
 
     @staticmethod
-    def this_week(column: str, group: bool = False) -> str:
+    def this_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the current week."""
-        return OPS._special_name_only(column, "ThisWeek", group)
+        return FTR._special_name_only(column, "ThisWeek", lambda_indicator, group)
 
     @staticmethod
-    def this_year(column: str, group: bool = False) -> str:
+    def this_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the current year."""
-        return OPS._special_name_only(column, "ThisYear", group)
+        return FTR._special_name_only(column, "ThisYear", lambda_indicator, group)
 
     # Special query functions - dates - last
 
     @staticmethod
-    def last_7_days(column: str, group: bool = False) -> str:
+    def last_7_days(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last seven days including today."""
-        return OPS._special_name_only(column, "Last7Days", group)
+        return FTR._special_name_only(column, "Last7Days", lambda_indicator, group)
 
     @staticmethod
-    def last_fiscal_period(column: str, group: bool = False) -> str:
+    def last_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last fiscal period."""
-        return OPS._special_name_only(column, "LastFiscalPeriod", group)
+        return FTR._special_name_only(column, "LastFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
-    def last_fiscal_year(column: str, group: bool = False) -> str:
+    def last_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last fiscal year."""
-        return OPS._special_name_only(column, "LastFiscalYear", group)
+        return FTR._special_name_only(column, "LastFiscalYear", lambda_indicator, group)
 
     @staticmethod
-    def last_month(column: str, group: bool = False) -> str:
+    def last_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last month."""
-        return OPS._special_name_only(column, "LastMonth", group)
+        return FTR._special_name_only(column, "LastMonth", lambda_indicator, group)
 
     @staticmethod
-    def last_week(column: str, group: bool = False) -> str:
+    def last_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last week."""
-        return OPS._special_name_only(column, "LastWeek", group)
+        return FTR._special_name_only(column, "LastWeek", lambda_indicator, group)
 
     @staticmethod
-    def last_year(column: str, group: bool = False) -> str:
+    def last_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last year."""
-        return OPS._special_name_only(column, "LastYear", group)
+        return FTR._special_name_only(column, "LastYear", lambda_indicator, group)
 
     # Special query functions - dates - next
 
     @staticmethod
-    def next_fiscal_period(column: str, group: bool = False) -> str:
+    def next_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is in the next fiscal period."""
-        return OPS._special_name_only(column, "NextFiscalPeriod", group)
+        return FTR._special_name_only(column, "NextFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
-    def next_fiscal_year(column: str, group: bool = False) -> str:
+    def next_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is in the next fiscal year."""
-        return OPS._special_name_only(column, "NextFiscalYear", group)
+        return FTR._special_name_only(column, "NextFiscalYear", lambda_indicator, group)
 
     @staticmethod
-    def next_month(column: str, group: bool = False) -> str:
+    def next_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is in the next month."""
-        return OPS._special_name_only(column, "NextMonth", group)
+        return FTR._special_name_only(column, "NextMonth", lambda_indicator, group)
 
     @staticmethod
-    def next_week(column: str, group: bool = False) -> str:
+    def next_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is in the next week."""
-        return OPS._special_name_only(column, "NextWeek", group)
+        return FTR._special_name_only(column, "NextWeek", lambda_indicator, group)
 
     @staticmethod
-    def next_year(column: str, group: bool = False) -> str:
+    def next_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next year."""
-        return OPS._special_name_only(column, "NextYear", group)
+        return FTR._special_name_only(column, "NextYear", lambda_indicator, group)
 
     # Special query functions - dates - last x
 
     @staticmethod
-    def last_x_days(column: str, x: int, group: bool = False) -> str:
+    def last_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X days."""
-        return OPS._special_single_value(column, x, "LastXDays", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_fiscal_periods(column: str, x: int, group: bool = False) -> str:
+    def last_x_fiscal_periods(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X fiscal periods."""
-        return OPS._special_single_value(column, x, "LastXFiscalPeriods", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXFiscalPeriods", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_fiscal_years(column: str, x: int, group: bool = False) -> str:
+    def last_x_fiscal_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X fiscal years."""
-        return OPS._special_single_value(column, x, "LastXFiscalYears", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXFiscalYears", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_hours(column: str, x: int, group: bool = False) -> str:
+    def last_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X hours."""
-        return OPS._special_single_value(column, x, "LastXHours", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_months(column: str, x: int, group: bool = False) -> str:
+    def last_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X months."""
-        return OPS._special_single_value(column, x, "LastXMonths", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_weeks(column: str, x: int, group: bool = False) -> str:
+    def last_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X weeks."""
-        return OPS._special_single_value(column, x, "LastXWeeks", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def last_x_years(column: str, x: int, group: bool = False) -> str:
+    def last_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the last X years."""
-        return OPS._special_single_value(column, x, "LastXYears", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "LastXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - dates - next x
 
     @staticmethod
-    def next_x_days(column: str, x: int, group: bool = False) -> str:
+    def next_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X days."""
-        return OPS._special_single_value(column, x, "NextXDays", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_fiscal_periods(column: str, x: int, group: bool = False) -> str:
+    def next_x_fiscal_periods(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X fiscal periods."""
-        return OPS._special_single_value(column, x, "NextXFiscalPeriods", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXFiscalPeriods", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_fiscal_years(column: str, x: int, group: bool = False) -> str:
+    def next_x_fiscal_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X fiscal years."""
-        return OPS._special_single_value(column, x, "NextXFiscalYears", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXFiscalYears", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_hours(column: str, x: int, group: bool = False) -> str:
+    def next_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X hours."""
-        return OPS._special_single_value(column, x, "NextXHours", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_months(column: str, x: int, group: bool = False) -> str:
+    def next_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X months."""
-        return OPS._special_single_value(column, x, "NextXMonths", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_weeks(column: str, x: int, group: bool = False) -> str:
+    def next_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X weeks."""
-        return OPS._special_single_value(column, x, "NextXWeeks", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def next_x_years(column: str, x: int, group: bool = False) -> str:
+    def next_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is within the next X years."""
-        return OPS._special_single_value(column, x, "NextXYears", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "NextXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - dates - older than x
 
     @staticmethod
-    def older_than_x_days(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of days."""
-        return OPS._special_single_value(column, x, "OlderThanXDays", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_hours(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of hours."""
-        return OPS._special_single_value(column, x, "OlderThanXHours", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_minutes(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_minutes(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of minutes."""
-        return OPS._special_single_value(column, x, "OlderThanXMinutes", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXMinutes", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_months(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of moths."""
-        return OPS._special_single_value(column, x, "OlderThanXMonths", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_weeks(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of weeks."""
-        return OPS._special_single_value(column, x, "OlderThanXWeeks", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
-    def older_than_x_years(column: str, x: int, group: bool = False) -> str:
+    def older_than_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is older than the specified amount of years."""
-        return OPS._special_single_value(column, x, "OlderThanXYears", group, ref_quotes=False)
+        return FTR._special_single_value(column, x, "OlderThanXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - business id checks
 
     @staticmethod
-    def equal_business_id(column: str, group: bool = False) -> str:
+    def equal_business_id(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is equal to the specified business ID."""
-        return OPS._special_name_only(column, "EqualBusinessId", group)
+        return FTR._special_name_only(column, "EqualBusinessId", lambda_indicator, group)
 
     @staticmethod
-    def not_business_id(column: str, group: bool = False) -> str:
+    def not_business_id(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is not equal to the specified business ID."""
-        return OPS._special_name_only(column, "NotBusinessId", group)
+        return FTR._special_name_only(column, "NotBusinessId", lambda_indicator, group)
 
     # Special query functions - user id checks
 
     @staticmethod
-    def equal_user_id(column: str, group: bool = False) -> str:
+    def equal_user_id(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is equal to the ID of the user."""
-        return OPS._special_name_only(column, "EqualUserId", group)
+        return FTR._special_name_only(column, "EqualUserId", lambda_indicator, group)
 
     @staticmethod
-    def not_user_id(column: str, group: bool = False) -> str:
+    def not_user_id(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is not equal to the ID of the user."""
-        return OPS._special_name_only(column, "NotUserId", group)
+        return FTR._special_name_only(column, "NotUserId", lambda_indicator, group)
 
     # Special query functions - misc
 
     @staticmethod
-    def equal_user_language(column: str, group: bool = False) -> str:
+    def equal_user_language(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is equal to the language for the user."""
-        return OPS._special_name_only(column, "EqualUserLanguage", group)
+        return FTR._special_name_only(column, "EqualUserLanguage", lambda_indicator, group)
 
     @staticmethod
-    def equal_user_or_user_hierarchy(column: str, group: bool = False) -> str:
+    def equal_user_or_user_hierarchy(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals current user or their reporting hierarchy."""
-        return OPS._special_name_only(column, "EqualUserOrUserHierarchy", group)
+        return FTR._special_name_only(column, "EqualUserOrUserHierarchy", lambda_indicator, group)
 
     @staticmethod
-    def equal_user_or_user_hierarchy_and_teams(column: str, group: bool = False) -> str:
+    def equal_user_or_user_hierarchy_and_teams(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals current user,
         or their reporting hierarchy and teams."""
-        return OPS._special_name_only(column, "EqualUserOrUserHierarchyAndTeams", group)
+        return FTR._special_name_only(column, "EqualUserOrUserHierarchyAndTeams", lambda_indicator, group)
 
     @staticmethod
-    def equal_user_or_user_teams(column: str, group: bool = False) -> str:
+    def equal_user_or_user_teams(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals current user or user teams."""
-        return OPS._special_name_only(column, "EqualUserOrUserTeams", group)
+        return FTR._special_name_only(column, "EqualUserOrUserTeams", lambda_indicator, group)
 
     @staticmethod
-    def equal_user_teams(column: str, group: bool = False) -> str:
+    def equal_user_teams(column: str, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column equals current user teams."""
-        return OPS._special_name_only(column, "EqualUserTeams", group)
+        return FTR._special_name_only(column, "EqualUserTeams", lambda_indicator, group)
 
 
-ftr = OPS()
+ftr = FTR()
 """Convenience functions for creating $filter parameters."""

@@ -29,7 +29,7 @@ import os
 import json
 import logging
 from functools import wraps
-from typing import List, Dict, Optional, Any, Literal, Union, Set, Type
+from typing import List, Dict, Optional, Any, Literal, Union, Set, Type, TypedDict
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
@@ -37,6 +37,7 @@ from requests_oauthlib import OAuth2Session
 from . import status
 from .api_actions import Actions
 from .api_functions import Functions
+from .utils import sentinel
 from .exceptions import (
     DynamicsException,
     ParseError,
@@ -51,10 +52,13 @@ from .exceptions import (
     WebAPIUnavailable,
 )
 
+try:
+    from django.core.cache import cache
+except ImportError:
+    from .utils import cache
 
-__all__ = [
-    "DynamicsClient",
-]
+
+__all__ = ["DynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
@@ -63,9 +67,18 @@ method_type = Literal["get", "post", "patch", "delete"]
 orderby_type = Dict[str, Literal["asc", "desc"]]
 filter_type = Union[Set[str], List[str]]
 
+
+class ExpandType(TypedDict):
+    select: List[str]
+    filter: filter_type
+    top: int
+    orderby: orderby_type
+    expand: Dict[str, "ExpandType"]
+
+
 expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
-expand_values = Union[List[str], Set[str], int, orderby_type, Dict]
-expand_type = Dict[str, Dict[expand_keys, expand_values]]
+expand_values = Union[List[str], Set[str], int, orderby_type, Dict[str, ExpandType]]
+expand_type = Dict[str, ExpandType]
 
 
 def error_simplification_available(func):
@@ -94,13 +107,6 @@ def error_simplification_available(func):
                 raise DynamicsException("There was a problem communicating with the server.")
 
     return inner
-
-
-class _sentinel:
-    """Sentinel value."""
-
-    def __bool__(self):
-        return False
 
 
 class DynamicsClient:
@@ -138,6 +144,14 @@ class DynamicsClient:
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
         self._session.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
 
+        self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
+        token = cache.get("dynamics-client-token", None)
+        if token is None:
+            token = self._session.fetch_token(token_url=token_url, client_secret=client_secret, scope=scope)
+            cache.set("dynamics-client-token", token, int(token.get("expires_in", 3599)) - 60)
+        else:
+            self._session.token = token
+
         self.actions = Actions(client=self)
         """Predefined dynamics API actions. Used to make certain changes to data."""
         self.functions = Functions(client=self)
@@ -155,6 +169,7 @@ class DynamicsClient:
         self._row_id = ""
         self._add_ref_to_property = ""
         self._pre_expand = ""
+        self._apply = ""
 
         self._headers: Dict[str, str] = {}
         self._pagesize: int = 5000
@@ -200,7 +215,7 @@ class DynamicsClient:
             if query[-1] != "/":
                 query += "/"
             query += self.action
-        if self.add_ref_to_property and not self.pre_expand and not self.action:
+        if self.add_ref_to_property and not any([self.pre_expand, self.action]):
             query += f"/{self.add_ref_to_property}/$ref"
         if (qo := self._compile_query_options()) and not self.add_ref_to_property:
             query += qo
@@ -213,6 +228,7 @@ class DynamicsClient:
                 statement
                 for statement in [
                     self._compile_expand(),
+                    self._compile_apply(),
                     self._compile_select(),
                     self._compile_filter(),
                     self._compile_top(),
@@ -244,6 +260,7 @@ class DynamicsClient:
         self._row_id = ""
         self._add_ref_to_property = ""
         self._pre_expand = ""
+        self._apply = ""
 
         self._headers: Dict[str, str] = {}
 
@@ -319,8 +336,8 @@ class DynamicsClient:
                 if "@odata.nextLink" in column_key:
 
                     # Sometimes @odata.next links will appear even if all items were fetched.
-                    # We set odata.maxpagesize to 1000 so the first 1000 items should be fetched.
-                    # Therefore, if the @odata.next link appears before that, we can ignore it.
+                    # We know how many items should be fetched from odata.maxpagesize header,
+                    # therefore, if the @odata.next link appears before that, we can ignore it.
                     #
                     key = column_key[:-15]
                     if len(entities[i][key]) < self.pagesize:
@@ -331,7 +348,7 @@ class DynamicsClient:
                     # page of data as well, so we filter those out. Although, This doesn't seem
                     # to be the intended way this should work, based on this:
                     #
-                    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#specify-the-number-of-tables-to-return-in-a-page
+                    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#retrieve-related-tables-by-expanding-navigation-properties
                     #
                     extra = self.GET(not_found_ok=not_found_ok, next_link=row.pop(column_key))
                     id_tags = [value["@odata.etag"] for value in entities[i][key]]
@@ -523,8 +540,8 @@ class DynamicsClient:
         """Set $select statement. Select which columns are returned from the table."""
         self._select = items
 
-    def _compile_select(self, values: List[str] = _sentinel) -> str:
-        if values is _sentinel:
+    def _compile_select(self, values: List[str] = sentinel) -> str:
+        if values is sentinel:
             values = self._select
 
         return "$select=" + ",".join([key for key in values]) if values else ""
@@ -558,8 +575,8 @@ class DynamicsClient:
 
         self._expand = items
 
-    def _compile_expand(self, items: expand_type = _sentinel) -> str:
-        if items is _sentinel:
+    def _compile_expand(self, items: expand_type = sentinel) -> str:
+        if items is sentinel:
             items = self._expand
 
         if not items:
@@ -605,7 +622,7 @@ class DynamicsClient:
         ...and how to Query data using the Web API:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api.
 
-        You can input the filters as strings, or use the included `ftr` object to construct them.
+        You can input the filters as strings, or use the included `ftr`-object to construct them.
 
         Below is a list of the standard operators:
 
@@ -633,17 +650,42 @@ class DynamicsClient:
 
         self._filter = items
 
-    def _compile_filter(self, values: filter_type = _sentinel):
-        if values is _sentinel:
+    def _compile_filter(self, values: filter_type = sentinel):
+        if values is sentinel:
             values = self._filter
 
         if not values:
             return ""
 
         if isinstance(values, set):
-            return "$filter=" + " or ".join([key.strip() for key in values])
+            return "$filter=" + " or ".join([value.strip() for value in values])
         elif isinstance(values, list):
-            return "$filter=" + " and ".join([key.strip() for key in values])
+            return "$filter=" + " and ".join([value.strip() for value in values])
+
+    @property
+    def apply(self):
+        """Current apply statement."""
+        return self._apply
+
+    @apply.setter
+    def apply(self, statement: str):
+        """Set the $apply statement. Aggregates or groups results.
+
+        It is recommended to read how to aggregate and grouping results:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results
+
+        ...and the FetchXML aggregation documentation:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation
+
+        You can input the apply-statement as a string, or use the included `apl`-object to construct it.
+
+        :param statement: aggregate, groupby, or filter apply-string.
+        """
+
+        self._apply = statement
+
+    def _compile_apply(self):
+        return f"$apply={self._apply}"
 
     @property
     def top(self) -> int:
@@ -657,8 +699,8 @@ class DynamicsClient:
         """
         self._top = number
 
-    def _compile_top(self, number: int = _sentinel) -> str:
-        if number is _sentinel:
+    def _compile_top(self, number: int = sentinel) -> str:
+        if number is sentinel:
             number = self._top
 
         return f"$top={number}" if number != 0 else ""
@@ -679,8 +721,8 @@ class DynamicsClient:
 
         self._orderby = items
 
-    def _compile_orderby(self, values: orderby_type = _sentinel) -> str:
-        if values is _sentinel:
+    def _compile_orderby(self, values: orderby_type = sentinel) -> str:
+        if values is sentinel:
             values = self._orderby
 
         if not values:
@@ -701,8 +743,8 @@ class DynamicsClient:
         """
         self._count = value
 
-    def _compile_count(self, value: bool = _sentinel) -> str:
-        if value is _sentinel:
+    def _compile_count(self, value: bool = sentinel) -> str:
+        if value is sentinel:
             value = self._count
 
         return f"$count=true" if value else ""
@@ -722,6 +764,3 @@ class DynamicsClient:
             ValueError(f"Max pagesize is 5000. Got {value}.")
 
         self._pagesize = value
-
-    # TODO: apply-statement
-    # TODO: Any and all statements
