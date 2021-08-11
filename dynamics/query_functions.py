@@ -242,20 +242,22 @@ class FTR:
     # Logical operations
 
     @staticmethod
-    def and_(*operations: str, **settings) -> str:
+    def and_(*args: str, **kwargs) -> str:
         """Evaluate whether all of the given operations are true.
 
-        :param settings: group=True -> Group the operation inside parentheses.
+        :param args: Other filter operation strings to `and` together.
+        :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return FTR._join_multiple(operator="and", group=settings.get("group", False), *operations)
+        return FTR._join_multiple(operator="and", group=kwargs.get("group", False), *args)
 
     @staticmethod
-    def or_(*operations: str, **settings) -> str:
+    def or_(*args: str, **kwargs) -> str:
         """Evaluate whether any of the given operations are true.
 
-        :param settings: group=True -> Group the operation inside parentheses.
+        :param args: Other filter operation strings to `or` together.
+        :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return FTR._join_multiple(operator="or", group=settings.get("group", False), *operations)
+        return FTR._join_multiple(operator="or", group=kwargs.get("group", False), *args)
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:
@@ -317,9 +319,9 @@ class FTR:
                            for the members of which the given operation is evaluated.
         :param indicator: Item indicator to use inside the statement, typically a single letter.
                           The same indicator should be given to the operation(s) evaluated inside this operation.
+        :param operation: Operation(s) evaluated inside this operation.
         :param lambda_indicator: If this operation is evaluated inside a lambda operation,
                                  provide the lambda operations item indicator here.
-        :param operation: Operation(s) evaluated inside this operation.
         :param group: Group the operation inside parentheses.
         """
         return FTR._lambda_operator(collection, "any", indicator, lambda_indicator, operation, group)
@@ -338,9 +340,9 @@ class FTR:
                            for the members of which the given operation is evaluated.
         :param indicator: Indicator to use inside the statement, typically a single letter.
                           The same indicator should be given to the operation(s) evaluated inside this operation.
+        :param operation: Operation(s) evaluated inside this operation.
         :param lambda_indicator: If this operation is evaluated inside a lambda operation,
                                  provide the lambda operations item indicator here.
-        :param operation: Operation(s) evaluated inside this operation.
         :param group: Group the operation inside parentheses.
         """
         return FTR._lambda_operator(collection, "all", indicator, lambda_indicator, operation, group)

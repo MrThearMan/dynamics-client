@@ -78,7 +78,7 @@ class ExpandType(TypedDict):
 
 expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
 expand_values = Union[List[str], Set[str], int, orderby_type, Dict[str, ExpandType]]
-expand_type = Dict[str, ExpandType]
+expand_type = Dict[str, Optional[ExpandType]]
 
 
 def error_simplification_available(func):
@@ -141,9 +141,6 @@ class DynamicsClient:
         """
 
         self._api_url = api_url.rstrip("/") + "/"
-        self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
-        self._session.fetch_token(token_url=token_url, client_id=client_id, client_secret=client_secret, scope=scope)
-
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
         token = cache.get("dynamics-client-token", None)
         if token is None:
@@ -215,9 +212,9 @@ class DynamicsClient:
             if query[-1] != "/":
                 query += "/"
             query += self.action
-        if self.add_ref_to_property and not any([self.pre_expand, self.action]):
+        if self.add_ref_to_property:
             query += f"/{self.add_ref_to_property}/$ref"
-        if (qo := self._compile_query_options()) and not self.add_ref_to_property:
+        if qo := self._compile_query_options():
             query += qo
 
         return query
@@ -492,9 +489,6 @@ class DynamicsClient:
         This should only be used to link existing rows. Adding references
         for new rows can be done on create with this in POST data:
         "<nav_property>@odata.bind": "/<table>(<id>)".
-
-        Note that query options cannot be used and will not be added
-        to the query if this property is set.
         """
         return self._add_ref_to_property
 
@@ -605,7 +599,7 @@ class DynamicsClient:
         elif name == "expand":
             return self._compile_expand(values)
         else:
-            raise KeyError(f"'{name}' is not a valid command!")
+            raise KeyError(f"'{name}' is not a valid query inside expand statement!")
 
     @property
     def filter(self) -> filter_type:
@@ -684,8 +678,11 @@ class DynamicsClient:
 
         self._apply = statement
 
-    def _compile_apply(self):
-        return f"$apply={self._apply}"
+    def _compile_apply(self, statement: str = sentinel):
+        if statement is sentinel:
+            statement = self._apply
+
+        return f"$apply={statement}" if statement else ""
 
     @property
     def top(self) -> int:

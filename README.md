@@ -1,7 +1,9 @@
 # Dynamics Web API Client
+
 ```
 pip install dynamics-client
 ```
+
 Client for making Web API request from a Microsoft Dynamics 365 Database.
 
 You should also read the [Dynamics Web API Reference Docs](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api):
@@ -94,7 +96,7 @@ Create a Dynamics client from environment variables:
 
 ---
 
-#### *DynamicsClient.request_counter: int*
+#### *DynamicsClient.request_counter: int → int*
 
 How many request have been made by the client so far.
 
@@ -243,9 +245,6 @@ This should only be used to link existing rows. Adding references
 for new rows can be done on create with this in POST data:
 `"<nav_property>@odata.bind": "/<table>(<id>)"`.
 
-Note that query options cannot be used and will not be added
-to the query if this property is set.
-
 ---
 
 #### *client.pre_expand: str → str*
@@ -273,13 +272,14 @@ Set `$select` statement. Limits the properties returned from the current table.
 
 ---
 
-#### *client.expand(...) → expand_type*
+#### *client.expand(...) → Dict[str, Optional[ExpandType]]*
 
-- items: Dict[str, ExpandType] - 
+- items: Dict[str, Optional[ExpandType]] - 
     What linked tables (a.k.a. naviagation properties) to expand and 
-    what statements to apply inside the expanded tables.
-    If items-dict value is set to an empty dict, no query options are used.
-    Otherwise, refer to the `ExpandType` TypedDict.
+    what queries to make inside the expanded tables.
+    Refer to the `ExpandType` TypedDict below on what queries are available,
+    and what values they expect. Queries can be an empty dict or None,
+    in which case no query Options are used.
 
 ```python
 from typing import List, Dict, TypedDict, Union, Set, Literal
@@ -360,14 +360,14 @@ Note: You should not use `client.count(...)` and `client.top(...)` in the same q
 
 ---
 
-#### *client.pagesize: int*
+#### *client.pagesize: int → int*
 
 Specify the number of tables to return in a page. 
 By default, this is set to 5000, which is the maximum.
 
 ---
 
-### Exceptions:
+### [Exceptions](dynamics/exceptions.py):
 
 ```python
 from dynamics.exceptions import *
@@ -391,7 +391,7 @@ otherwise a similar class is created and used instead.
 
 ---
 
-### API Query Functions:
+### [API Query Functions](dynamics/query_functions.py):
 
 ```python
 from dynamics import ftr
@@ -401,9 +401,63 @@ Object that holds `$filter` query string construction convenience methods. It is
 [API Query Function Reference](https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions)
 and how to [Query data using the Web API](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api).
 
+### Comparison operations:
+
+#### *ftr.eq(...) → str*
+#### *ftr.ne(...) → str*
+#### *ftr.gt(...) → str*
+#### *ftr.ge(...) → str*
+#### *ftr.lt(...) → str*
+#### *ftr.le(...) → str*
+- column: str - Column to apply the operation to.
+- value: Union[str, int, float, bool, None] - Value to compare against.
+- lambda_indicator: str = None - If this operation is evaluated inside a lambda operation, 
+  provide the lambda operations item indicator here.
+- group: bool = False - Group the operation inside parentheses.
+
+### Logical operations:
+
+#### *ftr.and_(...) → str*
+#### *ftr.or_(...) → str*
+- **args*: str - Other filter operation strings to and/or together.
+- ***kwargs*: If has `group=True` - Group the operation inside parentheses.
+
+#### *ftr.not_(...) → str*
+- operation: str - Invert this operation. Only works on standard operators!
+- group : bool = False - Group the operation inside parentheses.
+
+### Standard query functions:
+
+#### *ftr.contains(...) → str*
+#### *ftr.endswith(...) → str*
+#### *ftr.startswith(...) → str*
+- column: str - Column to apply the operation to.
+- value: Union[str, int, float, bool, None] - Value to compare against.
+- lambda_indicator: str = None - If this operation is evaluated inside a lambda operation, 
+  provide the lambda operations item indicator here.
+- group: bool = False - Group the operation inside parentheses.
+
+### Lambda operations:
+
+#### *ftr.any_(...) → str*
+#### *ftr.all_(...) → str*
+- collection: str - Name of the collection-valued navigation property for some table, 
+  for the members of which the given operation is evaluated.
+- indicator: str - Item indicator to use inside the statement, typically a single letter.
+  The same indicator should be given to the operation(s) evaluated inside this operation.
+- operation: str = None - Operation(s) evaluated inside this operation.
+- lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.
+- group: bool = False - Group the operation inside parentheses.'
+
+### Special query functions:
+
+`ftr`-object contains a number of other special query functions. Have a look at the
+list of functions in the [source code](dynamics/apply_functions.py).
+
 ---
 
-### API Apply Functions:
+### [API Apply Functions](dynamics/apply_functions.py):
 
 ```python
 from dynamics import apl
@@ -413,9 +467,29 @@ Object that holds `$apply` string construction convenience methods. It is recomm
 [Aggregate and grouping results](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results)
 and the [FetchXML aggregation documentation](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation)
 
+#### *apl.groupby(...) → str*
+- columns: List[str] - Columns to group by.
+- aggregate: str = None - Aggregate grouped results by this `apl.aggregate`-function.
+
+Group results by columns, optionally aggregate.
+
+#### *apl.aggregate(...) → str*
+- col_: str - Column to aggregate over.
+- with_: Literal["average", "sum", "min", "max", "count"] - How to aggregate the columns.
+- as_: str - Aggregate result alias.
+
+Aggregate column with some aggregation function, and alias the result under some name.
+
+#### *apl.filter(...) → str*
+- by: filter_type - Filter results by this filter string before applying grouping.
+  Use the `ftr`-object to construct this.
+- group_by_columns: List[str] - Columns to group by.
+
+Group filtered values by columns.
+
 ---
 
-### Normalizers:
+### [Normalizers](dynamics/normalizers.py):
 
 ```python
 from dynamics.normalizers import *
@@ -454,7 +528,7 @@ They can also be used to specify numeric data as float or int.
 
 ---
 
-### Utils:
+### [Utils](dynamics/utils.py):
 
 ```python
 from dynamics.utils import *
@@ -480,5 +554,12 @@ Convert a datetime-object to Dynamics compatible ISO formatted date string.
                      to what the time is at 'to_timezone'. Default is "UCT".
   
 Convert a ISO datestring from Dynamics database to a datetime-object.
+
+---
+
+#### *cache*
+
+Instance of a SQLite based cache that the client uses to store the auth token so that it can be
+reused between client instances. Django's cache is prefered to this, if it is installed.
 
 ---

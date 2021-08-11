@@ -19,10 +19,10 @@ class APL:
 
     @staticmethod
     def groupby(columns: List[str], aggregate: str = None) -> str:
-        """Group results by columns, optionally aggregate
+        """Group results by columns, optionally aggregate.
 
         :param columns: Columns to group by.
-        :param aggregate: Aggregate grouped results by this function. User `apl.aggregate(...)` to construct this.
+        :param aggregate: Aggregate grouped results by this function. Use `apl.aggregate(...)` to construct this.
         """
         aggregate = f",{aggregate}" if aggregate is not None else ""
         return f"groupby(({','.join(columns)}){aggregate})"
@@ -41,8 +41,7 @@ class APL:
     def filter(by: filter_type, group_by_columns: List[str]):
         """Group filtered values by columns.
 
-        :param by: Filter results by this filter string before applying grouping.
-                   Use `ftr` to construct this, but only standard operators.
+        :param by: Filter results by this filter string before applying grouping. Use `ftr` to construct this.
         :param group_by_columns: Columns to group by.
         """
         return f"filter({APL._compile_filter(by).removeprefix('$filter=')})/" + APL.groupby(group_by_columns)
