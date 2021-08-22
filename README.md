@@ -9,64 +9,141 @@ Client for making Web API request from a Microsoft Dynamics 365 Database.
 You should also read the [Dynamics Web API Reference Docs](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api):
 
 ## Basic usage:
-1. Init the client:     
-```python
-from dynamics import DynamicsClient
 
+```python
+from dynamics import DynamicsClient, ftr
+
+# Init the client:
 client = DynamicsClient(...)
-client = DynamicsClient.from_environment()
-```  
-2. Set the table:
-```python
-client.table = "..."
-```
-3. Set row (Required for PATCH and DELETE, otherwese optional):
-```python
-client.row_id = "..."
-```
-4. Set query options (optional):
-```python
-client.select = [...]
-client.expand = {...}
-client.filter = [...]
-...
-```
-5. Set headers (optional):
-```
-client[...] = ...
-```
 
----
+### Example GET request:
 
-Make a GET request:
-```python
+client.table = "accounts"
+
+# Get only these columns for the account.
+client.select = ["accountid", "name"]
+
+# Filter to only the accounts that have been created on or after the
+# given ISO date string, AND that have 200 or more employees.
+client.filter = [
+    ftr.on_or_after("createdon", "2020-01-01T00:00:00Z"),
+    ftr.ge("numberofemployees", 200),
+]
+
+# Expand to the contacts (collection-values navigation property)
+# on the account that have 'gmail.com' in their email address 1 OR 2.
+# Get only the 'firstname', 'lastname' and 'mobilephone' columns for these contacts.
+# Also expand the primary contact (single-valued navigation property).
+# Get only the 'emailaddress1' column for the primary contact.
+client.expand = {
+    "contact_customer_accounts": {
+        "select": ["firstname", "lastname", "mobilephone"],
+        "filter": {
+            ftr.contains("emailaddress1", "gmail.com"),
+            ftr.contains("emailaddress2", "gmail.com"),
+        }
+    },
+    "primarycontactid": {
+        "select": ["emailaddress1"],
+    },
+}
+
 result = client.GET()
-```
-Make a POST request:
-```python
-result = client.POST(data={...})
-```
-Make a PATCH request:
-```python
-result = client.PATCH(data={...})
-```
-Make a DELETE request:
-```python
-result = client.DELETE()
-```
 
-Remember to reset between queries:
-```python
+# [
+#     {
+#         "accountid": ...,
+#         "name": ...,
+#         "contact_customer_accounts": [
+#             {
+#                 "contactid": ...,  # id field is always given
+#                 "firstname": ...,
+#                 "lastname": ...,
+#                 "mobilephone": ...
+#             },
+#             ...
+#         ],
+#         "primarycontactid": {
+#             "contactid": ...,
+#             "emailaddress1": ...
+#         }
+#     },
+#     ...
+# ]
+
+### Example POST request
+
+# IMPORTANT!!!
 client.reset_query()
+
+client.table = "contacts"
+
+# Get only these columns from the created contact
+client.select = ["firstname", "lastname", "emailaddress1"]
+
+# The data to create the contact with. '@odata.bind' is used to link
+# the contact to the given navigation property.
+accountid = ...
+data = {
+    "firstname": ...,
+    "lastname": ...,
+    "emailaddress1": ...,
+    "parentcustomerid_account@odata.bind": f"/accounts({accountid})"
+}
+
+result = client.POST(data=data)
+
+# {
+#     "contactid": ...,
+#     "firstname": ...,
+#     "lastname": ...,
+#     "emailaddress1": ...
+# }
+
+
+### Example PATCH request
+
+client.reset_query()
+
+client.table = "contacts"
+client.row_id = result["contactid"]
+
+data = {
+    "firstname": ...,
+    "lastname": ...,
+}
+
+result = client.PATCH(data=data)
+
+# Return all rows on the updated contact, 
+# since no select statement was given
+# 
+# {
+#     ...
+#     "contactid": ...,
+#     "firstname": ...,
+#     "lastname": ...,
+#     ...
+# }
+
+
+### Example DELETE request
+
+client.reset_query()
+
+client.table = "contacts"
+client.row_id = result["contactid"]
+
+client.DELETE()
 ```
 
-Query straight after client init to get a list of tables in the database.
+> Tip: Query straight after client initialization for a list of tables in the database.
 
 ---
 
 ##  Documentation:
 
-### Client class methods an properties:
+### Client class methods and properties:
 
 ```python
 from dynamics import DynamicsClient
@@ -80,7 +157,9 @@ from dynamics import DynamicsClient
 - client_secret: str - Client secret (e.g. OAuth password).
 - scope: List[str] - List of urls in form: 'https://[Organization URI]/scope'. Defines the database records that the API connection has access to.
 
-Create a Dynamics client from the given arguments.
+Establish a Microsoft Dynamics 365 Dataverse API client connection
+using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
+created in Dynamics, and granting it an appropriate security role.
 
 ---
 
@@ -148,7 +227,7 @@ Update row in a table. Must have 'table' and 'row_id' query option set.
 
 ---
 
-#### *client.DELETE() → Dict[str, Any]*
+#### *client.DELETE() → None*
 
 Delete row in a table. Must have 'table' and 'row_id' query option set.
 
@@ -160,7 +239,7 @@ Delete row in a table. Must have 'table' and 'row_id' query option set.
 
 - to_file: bool = False - Save to a file instead of returning as string.
 
-XML representation of the relational ascpects of the data.
+Fetch XML schema of the available table, actions, and relational aspects of the data.
 
 ---
 
@@ -453,7 +532,7 @@ and how to [Query data using the Web API](https://docs.microsoft.com/en-us/power
 ### Special query functions:
 
 `ftr`-object contains a number of other special query functions. Have a look at the
-list of functions in the [source code](dynamics/apply_functions.py).
+list of functions in the [source code](dynamics/query_functions.py).
 
 ---
 
@@ -503,27 +582,27 @@ They can also be used to specify numeric data as float or int.
 #### *as_int(...) → int*
 
 - value: Any - Value to normalize.
-- default: int - Default to return if casting value to int fails. Default is 0.
+- default: int = 0 - Default to return if casting value to int fails.
 
 #### *as_float(...) → float*
 
 - value: Any - Value to normalize.
-- default: int - Default to return if casting value to float fails. Default is 0.0.
+- default: int = 0.0 - Default to return if casting value to float fails.
 
 #### *as_str(...) → str*
 
 - value: Any - Value to normalize.
-- default: int - Default to return if casting value to string fails. Default is an empty string.
+- default: int = "" - Default to return if casting value to string fails.
 
 #### *as_bool(...) → bool*
 
 - value: Any - Value to normalize.
-- default: int - Default to return if casting value to bool fails. Default is False.
+- default: int = False - Default to return if casting value to bool fails.
 
 #### *str_as_datetime(...) → datetime*
 
 - value: str - Value to normalize.
-- default: Any - Default to return if casting value to datetime fails. Default is None.
+- default: Any = None - Default to return if casting value to datetime fails.
 
 
 ---
@@ -540,7 +619,7 @@ This library includes a number of helpful utilities.
 #### *to_dynamics_date_format(...) → str*
 
 - date: datetime - Datetime object to convert.
-- from_timezone: str - Name of the timezone, from 'pytz.all_timezones', the date is in. Optional.
+- from_timezone: str = None - Name of the timezone, from 'pytz.all_timezones', the date is in.
 
 Convert a datetime-object to Dynamics compatible ISO formatted date string.
 
@@ -549,9 +628,9 @@ Convert a datetime-object to Dynamics compatible ISO formatted date string.
 #### *from_dynamics_date_format(...) → datetime*
 
 - date: str - ISO datestring from Dynamics database, in form: YYYY-mm-ddTHH:MM:SSZ.
-- to_timezone: str - Name of the timezone, from 'pytz.all_timezones', to convert the date to. 
-                     This won't add 'tzinfo', instead the actual time part will be changed from UCT
-                     to what the time is at 'to_timezone'. Default is "UCT".
+- to_timezone: str = "UCT" - Name of the timezone, from 'pytz.all_timezones', to convert the date to. 
+                             This won't add 'tzinfo', instead the actual time part will be changed from UCT
+                             to what the time is at 'to_timezone'.
   
 Convert a ISO datestring from Dynamics database to a datetime-object.
 
