@@ -410,7 +410,7 @@ class DynamicsClient:
         return data
 
     @error_simplification_available
-    def DELETE(self) -> Dict[str, Any]:
+    def DELETE(self) -> None:
         """Delete row in a table. Must have 'table' and 'row_id' attributes set.
 
         Please also read the decorator's documentation!
@@ -422,14 +422,12 @@ class DynamicsClient:
         response = self._session.delete(self.current_query, headers=self.headers)
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            return {}
+            return
 
         data = response.json()
 
         if errors := data.get("error"):
             self._error_handling(status_code=response.status_code, error_message=errors["message"], method="delete")
-
-        return data
 
     @property
     def table(self) -> str:
