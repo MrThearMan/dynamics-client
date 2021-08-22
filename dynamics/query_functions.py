@@ -9,7 +9,7 @@ https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfu
 """
 
 from uuid import UUID
-from typing import Union, Optional
+from typing import Union, Optional, List, Tuple
 
 
 __all__ = [
@@ -50,7 +50,7 @@ class FTR:
         return f"({result})" if group else result
 
     @staticmethod
-    def _listify(values: list[field_type]) -> str:
+    def _listify(values: List[field_type]) -> str:
         return f"""[{','.join([f"{FTR._type(value, quotes=True)}" for value in values])}]"""
 
     @staticmethod
@@ -152,7 +152,7 @@ class FTR:
     @staticmethod
     def _special_many_values(
         name: str,
-        values: list[field_type],
+        values: List[field_type],
         operator: str,
         lambda_indicator: Optional[str],
         group: bool,
@@ -350,37 +350,37 @@ class FTR:
     # Special query functions - value checks
 
     @staticmethod
-    def in_(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+    def in_(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column exists in a list of values."""
         return FTR._special_many_values(column, values, "In", lambda_indicator, group)
 
     @staticmethod
-    def not_in(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluate whether the value in the given column doesn't exists in a list of values."""
+    def not_in(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluate whether the value in the given column doesn't exist in a list of values."""
         return FTR._special_many_values(column, values, "NotIn", lambda_indicator, group)
 
     @staticmethod
     def between(
-        column: str, values: tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: Tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column is between two values."""
         return FTR._special_many_values(column, list(values), "Between", lambda_indicator, group)
 
     @staticmethod
     def not_between(
-        column: str, values: tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: Tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column is not between two values."""
         return FTR._special_many_values(column, list(values), "NotBetween", lambda_indicator, group)
 
     @staticmethod
-    def contain_values(column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+    def contain_values(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column contains the listed values."""
         return FTR._special_many_values(column, values, "ContainValues", lambda_indicator, group)
 
     @staticmethod
     def not_contain_values(
-        column: str, values: list[field_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column doesn't contain the listed values."""
         return FTR._special_many_values(column, values, "DoesNotContainValues", lambda_indicator, group)
@@ -432,32 +432,32 @@ class FTR:
     # Special query functions - dates - on
 
     @staticmethod
-    def on(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is on the specified date."""
+    def on(column: str, date: str, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluates whether the date in the given column is on the specified date."""
         return FTR._special_single_value(column, date, "On", lambda_indicator, group)
 
     @staticmethod
-    def on_or_after(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is on or after the specified date."""
+    def on_or_after(column: str, date: str, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluates whether the date in the given column is on or after the specified date."""
         return FTR._special_single_value(column, date, "OnOrAfter", lambda_indicator, group)
 
     @staticmethod
-    def on_or_before(column: str, date: comp_type, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is on or before the specified date."""
+    def on_or_before(column: str, date: str, lambda_indicator: str = None, group: bool = False) -> str:
+        """Evaluates whether the date in the given column is on or before the specified date."""
         return FTR._special_single_value(column, date, "OnOrBefore", lambda_indicator, group)
 
     # Special query functions - dates - in
 
     @staticmethod
     def in_fiscal_period(column: str, period: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the specified fiscal period."""
+        """Evaluates whether the date in the given column is within the specified fiscal period."""
         return FTR._special_single_value(column, period, "InFiscalPeriod", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def in_fiscal_period_and_year(
         column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
     ) -> str:
-        """Evaluates whether the value in the given column is within the specified fiscal period and year."""
+        """Evaluates whether the date in the given column is within the specified fiscal period and year."""
         return FTR._special_two_values(
             column,
             period,
@@ -471,14 +471,14 @@ class FTR:
 
     @staticmethod
     def in_fiscal_year(column: str, year: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the specified fiscal year."""
+        """Evaluates whether the date in the given column is within the specified fiscal year."""
         return FTR._special_single_value(column, year, "InFiscalYear", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def in_or_after_fiscal_period_and_year(
         column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
     ) -> str:
-        """Evaluates whether the value in the given column is within or after the specified fiscal period and year."""
+        """Evaluates whether the date in the given column is within or after the specified fiscal period and year."""
         return FTR._special_two_values(
             column,
             period,
@@ -494,7 +494,7 @@ class FTR:
     def in_or_before_fiscal_period_and_year(
         column: str, period: int, year: int, lambda_indicator: str = None, group: bool = False
     ) -> str:
-        """Evaluates whether the value in the given column is within, or before the specified fiscal period and year."""
+        """Evaluates whether the date in the given column is within, or before the specified fiscal period and year."""
         return FTR._special_two_values(
             column,
             period,
@@ -510,192 +510,192 @@ class FTR:
 
     @staticmethod
     def this_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the current fiscal period."""
+        """Evaluates whether the date in the given column is within the current fiscal period."""
         return FTR._special_name_only(column, "ThisFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
     def this_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the current fiscal year."""
+        """Evaluates whether the date in the given column is within the current fiscal year."""
         return FTR._special_name_only(column, "ThisFiscalYear", lambda_indicator, group)
 
     @staticmethod
     def this_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the current month."""
+        """Evaluates whether the date in the given column is within the current month."""
         return FTR._special_name_only(column, "ThisMonth", lambda_indicator, group)
 
     @staticmethod
     def this_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the current week."""
+        """Evaluates whether the date in the given column is within the current week."""
         return FTR._special_name_only(column, "ThisWeek", lambda_indicator, group)
 
     @staticmethod
     def this_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the current year."""
+        """Evaluates whether the date in the given column is within the current year."""
         return FTR._special_name_only(column, "ThisYear", lambda_indicator, group)
 
     # Special query functions - dates - last
 
     @staticmethod
     def last_7_days(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last seven days including today."""
+        """Evaluates whether the date in the given column is within the last seven days including today."""
         return FTR._special_name_only(column, "Last7Days", lambda_indicator, group)
 
     @staticmethod
     def last_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last fiscal period."""
+        """Evaluates whether the date in the given column is within the last fiscal period."""
         return FTR._special_name_only(column, "LastFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
     def last_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last fiscal year."""
+        """Evaluates whether the date in the given column is within the last fiscal year."""
         return FTR._special_name_only(column, "LastFiscalYear", lambda_indicator, group)
 
     @staticmethod
     def last_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last month."""
+        """Evaluates whether the date in the given column is within the last month."""
         return FTR._special_name_only(column, "LastMonth", lambda_indicator, group)
 
     @staticmethod
     def last_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last week."""
+        """Evaluates whether the date in the given column is within the last week."""
         return FTR._special_name_only(column, "LastWeek", lambda_indicator, group)
 
     @staticmethod
     def last_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last year."""
+        """Evaluates whether the date in the given column is within the last year."""
         return FTR._special_name_only(column, "LastYear", lambda_indicator, group)
 
     # Special query functions - dates - next
 
     @staticmethod
     def next_fiscal_period(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is in the next fiscal period."""
+        """Evaluates whether the date in the given column is in the next fiscal period."""
         return FTR._special_name_only(column, "NextFiscalPeriod", lambda_indicator, group)
 
     @staticmethod
     def next_fiscal_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is in the next fiscal year."""
+        """Evaluates whether the date in the given column is in the next fiscal year."""
         return FTR._special_name_only(column, "NextFiscalYear", lambda_indicator, group)
 
     @staticmethod
     def next_month(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is in the next month."""
+        """Evaluates whether the date in the given column is in the next month."""
         return FTR._special_name_only(column, "NextMonth", lambda_indicator, group)
 
     @staticmethod
     def next_week(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is in the next week."""
+        """Evaluates whether the date in the given column is in the next week."""
         return FTR._special_name_only(column, "NextWeek", lambda_indicator, group)
 
     @staticmethod
     def next_year(column: str, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next year."""
+        """Evaluates whether the date in the given column is within the next year."""
         return FTR._special_name_only(column, "NextYear", lambda_indicator, group)
 
     # Special query functions - dates - last x
 
     @staticmethod
     def last_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X days."""
+        """Evaluates whether the date in the given column is within the last X days."""
         return FTR._special_single_value(column, x, "LastXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_fiscal_periods(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X fiscal periods."""
+        """Evaluates whether the date in the given column is within the last X fiscal periods."""
         return FTR._special_single_value(column, x, "LastXFiscalPeriods", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_fiscal_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X fiscal years."""
+        """Evaluates whether the date in the given column is within the last X fiscal years."""
         return FTR._special_single_value(column, x, "LastXFiscalYears", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X hours."""
+        """Evaluates whether the date in the given column is within the last X hours."""
         return FTR._special_single_value(column, x, "LastXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X months."""
+        """Evaluates whether the date in the given column is within the last X months."""
         return FTR._special_single_value(column, x, "LastXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X weeks."""
+        """Evaluates whether the date in the given column is within the last X weeks."""
         return FTR._special_single_value(column, x, "LastXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def last_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the last X years."""
+        """Evaluates whether the date in the given column is within the last X years."""
         return FTR._special_single_value(column, x, "LastXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - dates - next x
 
     @staticmethod
     def next_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X days."""
+        """Evaluates whether the date in the given column is within the next X days."""
         return FTR._special_single_value(column, x, "NextXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_fiscal_periods(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X fiscal periods."""
+        """Evaluates whether the date in the given column is within the next X fiscal periods."""
         return FTR._special_single_value(column, x, "NextXFiscalPeriods", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_fiscal_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X fiscal years."""
+        """Evaluates whether the date in the given column is within the next X fiscal years."""
         return FTR._special_single_value(column, x, "NextXFiscalYears", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X hours."""
+        """Evaluates whether the date in the given column is within the next X hours."""
         return FTR._special_single_value(column, x, "NextXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X months."""
+        """Evaluates whether the date in the given column is within the next X months."""
         return FTR._special_single_value(column, x, "NextXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X weeks."""
+        """Evaluates whether the date in the given column is within the next X weeks."""
         return FTR._special_single_value(column, x, "NextXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def next_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is within the next X years."""
+        """Evaluates whether the date in the given column is within the next X years."""
         return FTR._special_single_value(column, x, "NextXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - dates - older than x
 
     @staticmethod
     def older_than_x_days(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of days."""
+        """Evaluates whether the date in the given column is older than the specified amount of days."""
         return FTR._special_single_value(column, x, "OlderThanXDays", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def older_than_x_hours(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of hours."""
+        """Evaluates whether the date in the given column is older than the specified amount of hours."""
         return FTR._special_single_value(column, x, "OlderThanXHours", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def older_than_x_minutes(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of minutes."""
+        """Evaluates whether the date in the given column is older than the specified amount of minutes."""
         return FTR._special_single_value(column, x, "OlderThanXMinutes", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def older_than_x_months(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of moths."""
+        """Evaluates whether the date in the given column is older than the specified amount of moths."""
         return FTR._special_single_value(column, x, "OlderThanXMonths", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def older_than_x_weeks(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of weeks."""
+        """Evaluates whether the date in the given column is older than the specified amount of weeks."""
         return FTR._special_single_value(column, x, "OlderThanXWeeks", lambda_indicator, group, ref_quotes=False)
 
     @staticmethod
     def older_than_x_years(column: str, x: int, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluates whether the value in the given column is older than the specified amount of years."""
+        """Evaluates whether the date in the given column is older than the specified amount of years."""
         return FTR._special_single_value(column, x, "OlderThanXYears", lambda_indicator, group, ref_quotes=False)
 
     # Special query functions - business id checks
