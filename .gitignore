@@ -128,10 +128,3 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Sphinx
-/_build/
-/_static/
-/_templates/
-/conf.py
-/index.rst
-/Makefile

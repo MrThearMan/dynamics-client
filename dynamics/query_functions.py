@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """
 Creates a helper object `ftr`, which contains convenience functions of all possible filter operations.
 
@@ -9,16 +10,11 @@ https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfu
 """
 
 from uuid import UUID
-from typing import Union, Optional, List, Tuple
+
+from .typing import CompType, FieldType, List, Optional, Tuple
 
 
-__all__ = [
-    "ftr",
-]
-
-
-field_type = Union[str, int, float, bool, None]
-comp_type = Union[str, int, float]
+__all__ = ["ftr"]
 
 
 def _is_valid_uuid(value: str):
@@ -29,28 +25,28 @@ def _is_valid_uuid(value: str):
         return False
 
 
-class FTR:
+class FTR:  # pylint: disable=R0904
     """Convenience functions for creating $filter parameters."""
 
     # Base operations
 
     @staticmethod
-    def _type(value: field_type, quotes: bool = False) -> str:
+    def _type(value: FieldType, quotes: bool = False) -> str:
         if value is True:
             return "true"
         if value is False:
             return "false"
-        elif value is None:
+        if value is None:
             return "null"
-        else:
-            return f"'{value}'" if quotes else str(value)
+
+        return f"'{value}'" if quotes else str(value)
 
     @staticmethod
     def _group(result: str, group: bool) -> str:
         return f"({result})" if group else result
 
     @staticmethod
-    def _listify(values: List[field_type]) -> str:
+    def _listify(values: List[FieldType]) -> str:
         return f"""[{','.join([f"{FTR._type(value, quotes=True)}" for value in values])}]"""
 
     @staticmethod
@@ -60,7 +56,7 @@ class FTR:
     @staticmethod
     def _comp_operator(
         param1: str,
-        param2: field_type,
+        param2: FieldType,
         lambda_indicator: Optional[str],
         operator: str,
         group: bool,
@@ -78,7 +74,7 @@ class FTR:
     @staticmethod
     def _query_operator(
         param1: str,
-        param2: field_type,
+        param2: FieldType,
         operator: str,
         lambda_indicator: Optional[str],
         group: bool,
@@ -115,7 +111,7 @@ class FTR:
     @staticmethod
     def _special_single_value(
         name: str,
-        ref: field_type,
+        ref: FieldType,
         operator: str,
         lambda_indicator: Optional[str],
         group: bool,
@@ -132,8 +128,8 @@ class FTR:
     @staticmethod
     def _special_two_values(
         name: str,
-        ref1: field_type,
-        ref2: field_type,
+        ref1: FieldType,
+        ref2: FieldType,
         operator: str,
         lambda_indicator: Optional[str],
         group: bool,
@@ -152,7 +148,7 @@ class FTR:
     @staticmethod
     def _special_many_values(
         name: str,
-        values: List[field_type],
+        values: List[FieldType],
         operator: str,
         lambda_indicator: Optional[str],
         group: bool,
@@ -168,7 +164,7 @@ class FTR:
     # Comparison operations
 
     @staticmethod
-    def eq(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def eq(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is equal to value.
 
         :param column: Column to apply the operation to.
@@ -180,7 +176,7 @@ class FTR:
         return FTR._comp_operator(column, value, lambda_indicator, "eq", group)
 
     @staticmethod
-    def ne(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def ne(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is not equal to value.
 
         :param column: Column to apply the operation to.
@@ -192,7 +188,7 @@ class FTR:
         return FTR._comp_operator(column, value, lambda_indicator, "ne", group)
 
     @staticmethod
-    def gt(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def gt(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is greater than value.
 
         :param column: Column to apply the operation to.
@@ -204,7 +200,7 @@ class FTR:
         return FTR._comp_operator(column, value, lambda_indicator, "gt", group)
 
     @staticmethod
-    def ge(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def ge(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is greater than or equal to value.
 
         :param column: Column to apply the operation to.
@@ -216,7 +212,7 @@ class FTR:
         return FTR._comp_operator(column, value, lambda_indicator, "ge", group)
 
     @staticmethod
-    def lt(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def lt(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is less than value.
 
         :param column: Column to apply the operation to.
@@ -228,7 +224,7 @@ class FTR:
         return FTR._comp_operator(column, value, lambda_indicator, "lt", group)
 
     @staticmethod
-    def le(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def le(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column is less than or equel to value.
 
         :param column: Column to apply the operation to.
@@ -267,7 +263,7 @@ class FTR:
     # Standard query functions
 
     @staticmethod
-    def contains(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def contains(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the string value in the given column contains value.
 
         :param column: Column to apply the operation to.
@@ -279,7 +275,7 @@ class FTR:
         return FTR._query_operator(column, value, "contains", lambda_indicator, group)
 
     @staticmethod
-    def endswith(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def endswith(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the string value in the given column ends with value.
 
         :param column: Column to apply the operation to.
@@ -291,7 +287,7 @@ class FTR:
         return FTR._query_operator(column, value, "endswith", lambda_indicator, group)
 
     @staticmethod
-    def startswith(column: str, value: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def startswith(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the string value in the given column starts with value.
 
         :param column: Column to apply the operation to.
@@ -350,37 +346,37 @@ class FTR:
     # Special query functions - value checks
 
     @staticmethod
-    def in_(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+    def in_(column: str, values: List[FieldType], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column exists in a list of values."""
         return FTR._special_many_values(column, values, "In", lambda_indicator, group)
 
     @staticmethod
-    def not_in(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+    def not_in(column: str, values: List[FieldType], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column doesn't exist in a list of values."""
         return FTR._special_many_values(column, values, "NotIn", lambda_indicator, group)
 
     @staticmethod
     def between(
-        column: str, values: Tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: Tuple[CompType, CompType], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column is between two values."""
         return FTR._special_many_values(column, list(values), "Between", lambda_indicator, group)
 
     @staticmethod
     def not_between(
-        column: str, values: Tuple[comp_type, comp_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: Tuple[CompType, CompType], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column is not between two values."""
         return FTR._special_many_values(column, list(values), "NotBetween", lambda_indicator, group)
 
     @staticmethod
-    def contain_values(column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False) -> str:
+    def contain_values(column: str, values: List[FieldType], lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluate whether the value in the given column contains the listed values."""
         return FTR._special_many_values(column, values, "ContainValues", lambda_indicator, group)
 
     @staticmethod
     def not_contain_values(
-        column: str, values: List[field_type], lambda_indicator: str = None, group: bool = False
+        column: str, values: List[FieldType], lambda_indicator: str = None, group: bool = False
     ) -> str:
         """Evaluate whether the value in the given column doesn't contain the listed values."""
         return FTR._special_many_values(column, values, "DoesNotContainValues", lambda_indicator, group)
@@ -388,27 +384,27 @@ class FTR:
     # Special query functions - hierarchy checks
 
     @staticmethod
-    def above(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def above(column: str, ref: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is above ref in the hierarchy."""
         return FTR._special_single_value(column, ref, "Above", lambda_indicator, group)
 
     @staticmethod
-    def above_or_equal(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def above_or_equal(column: str, ref: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is above or equal to ref in the hierarchy."""
         return FTR._special_single_value(column, ref, "AboveOrEqual", lambda_indicator, group)
 
     @staticmethod
-    def under(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def under(column: str, ref: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in the given column is below ref in the hierarchy."""
         return FTR._special_single_value(column, ref, "Under", lambda_indicator, group)
 
     @staticmethod
-    def under_or_equal(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def under_or_equal(column: str, ref: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in column is under or equal to ref in the hierarchy."""
         return FTR._special_single_value(column, ref, "UnderOrEqual", lambda_indicator, group)
 
     @staticmethod
-    def not_under(column: str, ref: field_type, lambda_indicator: str = None, group: bool = False) -> str:
+    def not_under(column: str, ref: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
         """Evaluates whether the value in column is not below ref in the hierarchy."""
         return FTR._special_single_value(column, ref, "NotUnder", lambda_indicator, group)
 

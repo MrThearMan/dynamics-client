@@ -1,0 +1,9 @@
+site_name: Dynamics Web API Client
+nav:
+  - Home: index.md
+  - Documentation: docs.md
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - python

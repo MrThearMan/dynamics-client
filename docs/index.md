@@ -18,12 +18,7 @@ pip install dynamics-client
 
 ---
 
-
-Client for making Web API request from a Microsoft Dynamics 365 Database.
-
-You should also read the [Dynamics Web API Reference Docs](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api):
-
-## Basic usage:
+## Basic usage
 
 ```python
 from dynamics import DynamicsClient, ftr

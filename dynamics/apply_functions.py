@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """
 Aggregate and grouping results:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results
@@ -6,12 +7,10 @@ FetchXML aggregation documentation:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation
 """
 
-from typing import List, Literal, Set, Union
+from .typing import FilterType, List, Literal
 
 
 __all__ = ["apl"]
-
-filter_type = Union[Set[str], List[str]]
 
 
 class APL:
@@ -38,7 +37,7 @@ class APL:
         return f"aggregate({col_} with {with_} as {as_})"
 
     @staticmethod
-    def filter(by: filter_type, group_by_columns: List[str]):
+    def filter(by: FilterType, group_by_columns: List[str]) -> str:
         """Group filtered values by columns.
 
         :param by: Filter results by this filter string before applying grouping. Use `ftr` to construct this.
@@ -47,10 +46,10 @@ class APL:
         return f"filter({APL._compile_filter(by).removeprefix('$filter=')})/" + APL.groupby(group_by_columns)
 
     @staticmethod
-    def _compile_filter(values: filter_type):
+    def _compile_filter(values: FilterType) -> str:  # pylint: disable=R1710
         if isinstance(values, set):
             return "$filter=" + " or ".join([value.strip() for value in values])
-        elif isinstance(values, list):
+        if isinstance(values, list):
             return "$filter=" + " and ".join([value.strip() for value in values])
 
 

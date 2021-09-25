@@ -6,11 +6,12 @@ Documentation:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions
 """
 
-from typing import List, Dict, Literal, Any, TYPE_CHECKING
 from .enums import QuoteState
+from .typing import TYPE_CHECKING, Any, Dict, List, Literal
+
 
 if TYPE_CHECKING:
-    from .client import DynamicsClient
+    from .client import DynamicsClient  # pylint: disable=R0401
 
 
 __all__ = ["Actions"]
@@ -22,7 +23,7 @@ class Actions:
     def __init__(self, client: "DynamicsClient"):
         self.client = client
 
-    def send_email_from_template(
+    def send_email_from_template(  # pylint: disable=R0913
         self,
         template_id: str,
         context_table: str,
@@ -79,7 +80,7 @@ class Actions:
             },
         }
 
-        return self.client.POST(
+        return self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -97,11 +98,10 @@ class Actions:
         self.client.action = "ConvertQuoteToSalesOrder"
 
         data = {"QuoteId": quote_id, "ColumnSet": {"AllColumns": True}}
-
         if select:
             data["ColumnSet"] = {"AllColumns": False, "Columns": select}
 
-        return self.client.POST(
+        return self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -121,7 +121,7 @@ class Actions:
         if select:
             self.client.select = select
 
-        return self.client.PATCH(
+        return self.client.patch(
             data={"statecode": QuoteState.Active.value},
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -144,7 +144,7 @@ class Actions:
             "Status": -1,
         }
 
-        self.client.POST(
+        self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -167,7 +167,7 @@ class Actions:
             "Status": -1,
         }
 
-        self.client.POST(
+        self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -187,7 +187,7 @@ class Actions:
         if select:
             data["ColumnSet"] = select
 
-        return self.client.POST(
+        return self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -202,7 +202,7 @@ class Actions:
         self.client.reset_query()
         self.client.table = "quotes"
         self.client.row_id = quote_id
-        self.client.DELETE(
+        self.client.delete(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -228,7 +228,7 @@ class Actions:
             "Status": reason,
         }
 
-        self.client.POST(
+        self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
@@ -243,7 +243,7 @@ class Actions:
         self.client.reset_query()
         self.client.table = "salesorders"
         self.client.row_id = order_id
-        self.client.DELETE(
+        self.client.delete(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -264,7 +264,7 @@ class Actions:
             },
         }
 
-        self.client.POST(
+        self.client.post(
             data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),

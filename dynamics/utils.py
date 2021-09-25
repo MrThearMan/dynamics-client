@@ -1,11 +1,13 @@
-import pytz
 import logging
-import sqlite3
 import pickle
-from pathlib import Path
-from functools import wraps
+import sqlite3
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Any
+from functools import wraps
+from pathlib import Path
+
+import pytz
+
+from .typing import Any, Optional
 
 
 __all__ = [
@@ -19,7 +21,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class sentinel:
+class sentinel:  # pylint: disable=C0103
     """Sentinel value."""
 
     def __bool__(self):
@@ -35,8 +37,8 @@ def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
     """
 
     if from_timezone is not None and date.tzinfo is None:
-        tz = pytz.timezone(from_timezone)
-        date: datetime = tz.localize(date)
+        timezone_ = pytz.timezone(from_timezone)
+        date: datetime = timezone_.localize(date)
 
     if date.tzinfo is not None:
         date -= date.utcoffset()
@@ -52,8 +54,8 @@ def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
                         This won't add 'tzinfo', instead the actual time part will be changed from UCT
                         to what the time is at 'to_timezone'.
     """
-    tz = pytz.timezone(to_timezone)
-    local_time: datetime = tz.localize(datetime.fromisoformat(date.replace("Z", "")))
+    timezone_ = pytz.timezone(to_timezone)
+    local_time: datetime = timezone_.localize(datetime.fromisoformat(date.replace("Z", "")))
     local_time += local_time.utcoffset()
     local_time = local_time.replace(tzinfo=None)
     return local_time
@@ -71,17 +73,17 @@ def sqlite_method(method):
     def inner(*args, **kwargs):
         self = args[0]
         self.con = sqlite3.connect(self.connection_string)
-        self._apply_pragma()
+        self._apply_pragma()  # pylint: disable=W0212
 
         try:
             value = method(*args, **kwargs)
             self.con.commit()
-        except Exception as e:
-            self.con.execute(self._set_pragma.format("optimize"))
+        except Exception as error:
+            self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
             self.con.close()
-            raise e
+            raise error
 
-        self.con.execute(self._set_pragma.format("optimize"))
+        self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
         self.con.close()
         return value
 
@@ -93,38 +95,26 @@ class SQLiteCache:
 
     DEFAULT_TIMEOUT = 300
     DEFAULT_PRAGMA = {
-        "mmap_size": 2 ** 26,           # https://www.sqlite.org/pragma.html#pragma_mmap_size
-        "cache_size": 8192,             # https://www.sqlite.org/pragma.html#pragma_cache_size
-        "wal_autocheckpoint": 1000,     # https://www.sqlite.org/pragma.html#pragma_wal_autocheckpoint
-        "auto_vacuum": "none",          # https://www.sqlite.org/pragma.html#pragma_auto_vacuum
-        "synchronous": "off",           # https://www.sqlite.org/pragma.html#pragma_synchronous
-        "journal_mode": "wal",          # https://www.sqlite.org/pragma.html#pragma_journal_mode
-        "temp_store": "memory",         # https://www.sqlite.org/pragma.html#pragma_temp_store
+        "mmap_size": 2 ** 26,  # https://www.sqlite.org/pragma.html#pragma_mmap_size
+        "cache_size": 8192,  # https://www.sqlite.org/pragma.html#pragma_cache_size
+        "wal_autocheckpoint": 1000,  # https://www.sqlite.org/pragma.html#pragma_wal_autocheckpoint
+        "auto_vacuum": "none",  # https://www.sqlite.org/pragma.html#pragma_auto_vacuum
+        "synchronous": "off",  # https://www.sqlite.org/pragma.html#pragma_synchronous
+        "journal_mode": "wal",  # https://www.sqlite.org/pragma.html#pragma_journal_mode
+        "temp_store": "memory",  # https://www.sqlite.org/pragma.html#pragma_temp_store
     }
 
-    _create_sql = (
-        "CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value BLOB, exp REAL)"
-    )
-    _create_index_sql = (
-        "CREATE UNIQUE INDEX IF NOT EXISTS cache_key ON cache(key)"
-    )
-    _set_pragma = (
-        "PRAGMA {}"
-    )
-    _set_pragma_equal = (
-        "PRAGMA {}={}"
-    )
+    _create_sql = "CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, value BLOB, exp REAL)"
+    _create_index_sql = "CREATE UNIQUE INDEX IF NOT EXISTS cache_key ON cache(key)"
+    _set_pragma = "PRAGMA {}"
+    _set_pragma_equal = "PRAGMA {}={}"
 
-    _get_sql = (
-        "SELECT value, exp FROM cache WHERE key = :key"
-    )
+    _get_sql = "SELECT value, exp FROM cache WHERE key = :key"
     _set_sql = (
         "INSERT INTO cache (key, value, exp) VALUES (:key, :value, :exp) "
         "ON CONFLICT(key) DO UPDATE SET value = :value, exp = :exp"
     )
-    _delete_sql = (
-        "DELETE FROM cache WHERE key = :key"
-    )
+    _delete_sql = "DELETE FROM cache WHERE key = :key"
 
     def __init__(self, *, filename: str = "dynamics.cache", path: str = None):
         """Create a cache using sqlite3.

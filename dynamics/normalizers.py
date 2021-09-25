@@ -5,9 +5,9 @@ Most common case is the separation of non-existing values vs. explicit `null` re
 """
 
 from datetime import datetime
-from typing import Any, Optional
 
-from dynamics.utils import from_dynamics_date_format
+from .typing import Any, Optional
+from .utils import from_dynamics_date_format
 
 
 __all__ = [
@@ -55,5 +55,5 @@ def as_bool(value: Any, default: bool = False) -> bool:
 def str_as_datetime(value: str, default: Any = None) -> Optional[datetime]:
     try:
         return from_dynamics_date_format(value)
-    except Exception:
+    except Exception:  # pylint: disable=W0703
         return default

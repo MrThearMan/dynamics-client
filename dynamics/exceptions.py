@@ -2,21 +2,27 @@ import logging
 
 from . import status
 
+
 try:
     from rest_framework.exceptions import APIException
 
 except ImportError:
+
     class APIException(Exception):
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         default_detail = "A server error occurred."
         default_code = "error"
 
-        def __init__(self, detail: str = None):
+        def __init__(self, detail: str = None, code=None):
             if detail is None:
                 detail = self.default_detail
 
-            self.detail = f"[{self.status_code}] {detail}"
+            if code is None:
+                code = self.default_code
+
+            self.detail = f"[{self.status_code}] {detail} <{code}>"
             logger.error(self.detail)
+            super().__init__()
 
         def __str__(self):
             return str(self.detail)
@@ -45,8 +51,8 @@ class DynamicsException(APIException):
     default_detail = "Dynamics Web API call failed."
     default_code = "dynamics_link_failed"
 
-    def __init__(self, detail=None, code=None, *arg, **kwargs):
-        super(DynamicsException, self).__init__(detail, code)
+    def __init__(self, detail=None, code=None, **kwargs):  # pylint: disable=W0613
+        super().__init__(detail, code)
 
 
 class ParseError(DynamicsException):

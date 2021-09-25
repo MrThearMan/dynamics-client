@@ -1,35 +1,16 @@
+# pylint: disable=R0913
 """
 Dynamics Api Client. API Reference Docs:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
-
-How to use:
-1. Init the client:                         client = DynamicsClient(...)
-                                            client = DynamicsClient.from_environment()
-2. Set the table:                           client.table = "..."
-
-Required for PATCH and DELETE, otherwese optional:
-3. Set row:                                 client.row_id = "..."
-
-Optional steps:
-4. Set query options:                       client.select = [...], client.expand = {...}, etc.
-5. Set headers:                             client.headers = {...} or client[...] = ...
-
-Make a GET request:                         result = client.GET()
-Make a POST request:                        result = client.POST(data={...})
-Make a PATCH request:                       result = client.PATCH(data={...})
-Make a DELETE request:                      result = client.DELETE()
-
-Remember to reset between queries:          client.reset_query()
 
 Author: Matti Lamppu.
 Date: April 5th, 2021.
 """
 
-import os
 import json
 import logging
+import os
 from functools import wraps
-from typing import List, Dict, Optional, Any, Literal, Union, Set, Type, TypedDict
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
@@ -37,20 +18,34 @@ from requests_oauthlib import OAuth2Session
 from . import status
 from .api_actions import Actions
 from .api_functions import Functions
-from .utils import sentinel
 from .exceptions import (
-    DynamicsException,
-    ParseError,
-    AuthenticationFailed,
-    PermissionDenied,
-    NotFound,
-    MethodNotAllowed,
-    DuplicateRecordError,
-    PayloadTooLarge,
     APILimitsExceeded,
+    AuthenticationFailed,
+    DuplicateRecordError,
+    DynamicsException,
+    MethodNotAllowed,
+    NotFound,
     OperationNotImplemented,
+    ParseError,
+    PayloadTooLarge,
+    PermissionDenied,
     WebAPIUnavailable,
 )
+from .typing import (
+    Any,
+    Dict,
+    ExpandDict,
+    ExpandKeys,
+    ExpandValues,
+    FilterType,
+    List,
+    MethodType,
+    Optional,
+    OrderbyType,
+    Type,
+)
+from .utils import sentinel
+
 
 try:
     from django.core.cache import cache
@@ -62,23 +57,6 @@ __all__ = ["DynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
-
-method_type = Literal["get", "post", "patch", "delete"]
-orderby_type = Dict[str, Literal["asc", "desc"]]
-filter_type = Union[Set[str], List[str]]
-
-
-class ExpandType(TypedDict):
-    select: List[str]
-    filter: filter_type
-    top: int
-    orderby: orderby_type
-    expand: Dict[str, "ExpandType"]
-
-
-expand_keys = Literal["select", "filter", "top", "orderby", "expand"]
-expand_values = Union[List[str], Set[str], int, orderby_type, Dict[str, ExpandType]]
-expand_type = Dict[str, Optional[ExpandType]]
 
 
 def error_simplification_available(func):
@@ -99,17 +77,16 @@ def error_simplification_available(func):
 
         try:
             return func(*args, **kwargs)
-        except Exception as error:
-            logger.error(error)
-            if not simplify_errors or any([isinstance(error, exception) for exception in raise_separately]):
+        except Exception as error:  # pylint: disable=W0703
+            logger.warning(error)
+            if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
                 raise error
-            else:
-                raise DynamicsException("There was a problem communicating with the server.")
+            raise DynamicsException("There was a problem communicating with the server.") from error
 
     return inner
 
 
-class DynamicsClient:
+class DynamicsClient:  # pylint: disable=R0904,R0902
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
@@ -155,9 +132,9 @@ class DynamicsClient:
         """Predefined dynamics API functions. Used to fetch certain types of data."""
 
         self._select: List[str] = []
-        self._expand: expand_type = {}
-        self._filter: filter_type = []
-        self._orderby: orderby_type = {}
+        self._expand: ExpandDict = {}
+        self._filter: FilterType = []
+        self._orderby: OrderbyType = {}
         self._top: int = 0
         self._count: bool = False
 
@@ -214,8 +191,8 @@ class DynamicsClient:
             query += self.action
         if self.add_ref_to_property:
             query += f"/{self.add_ref_to_property}/$ref"
-        if qo := self._compile_query_options():
-            query += qo
+        if query_optinos := self._compile_query_options():
+            query += query_optinos
 
         return query
 
@@ -246,9 +223,9 @@ class DynamicsClient:
     def reset_query(self):
         """Resets all client options and headers."""
         self._select: List[str] = []
-        self._expand: expand_type = {}
-        self._filter: filter_type = []
-        self._orderby: orderby_type = {}
+        self._expand: ExpandDict = {}
+        self._filter: FilterType = []
+        self._orderby: OrderbyType = {}
         self._top: int = 0
         self._count: bool = False
 
@@ -261,7 +238,7 @@ class DynamicsClient:
 
         self._headers: Dict[str, str] = {}
 
-    def set_default_headers(self, method: method_type):
+    def set_default_headers(self, method: MethodType):
         """Sets per method default headers. Does not override user added headers."""
 
         self.headers.setdefault("OData-MaxVersion", "4.0")
@@ -281,7 +258,7 @@ class DynamicsClient:
 
         self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
 
-    def _error_handling(self, status_code: int, error_message: str, method: method_type):
+    def _error_handling(self, status_code: int, error_message: str, method: MethodType):
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
 
@@ -290,12 +267,17 @@ class DynamicsClient:
         :param method: HTTP method in question.
         """
 
-        logger.error(f"Dynamics client query {self.current_query} failed with status {status_code}: {error_message}")
+        logger.warning(
+            "Dynamics client query %s failed with status %d: %s",
+            self.current_query,
+            status_code,
+            error_message,
+        )
         error = self.error_dict.get(status_code, DynamicsException)
         raise error(method=method, detail=error_message)
 
     @error_simplification_available
-    def GET(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
 
         Please also read the decorator's documentation!
@@ -347,7 +329,7 @@ class DynamicsClient:
                     #
                     # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#retrieve-related-tables-by-expanding-navigation-properties
                     #
-                    extra = self.GET(not_found_ok=not_found_ok, next_link=row.pop(column_key))
+                    extra = self.get(not_found_ok=not_found_ok, next_link=row.pop(column_key))
                     id_tags = [value["@odata.etag"] for value in entities[i][key]]
                     extra = [value for value in extra if value["@odata.etag"] not in id_tags]
 
@@ -359,7 +341,7 @@ class DynamicsClient:
         return entities
 
     @error_simplification_available
-    def POST(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def post(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new row in a table. Must have 'table' attribute set. Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
@@ -384,7 +366,7 @@ class DynamicsClient:
         return data
 
     @error_simplification_available
-    def PATCH(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def patch(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
 
@@ -410,7 +392,7 @@ class DynamicsClient:
         return data
 
     @error_simplification_available
-    def DELETE(self) -> None:
+    def delete(self) -> None:
         """Delete row in a table. Must have 'table' and 'row_id' attributes set.
 
         Please also read the decorator's documentation!
@@ -435,7 +417,7 @@ class DynamicsClient:
         return self._table
 
     @table.setter
-    def table(self, value: str):
+    def table(self, value: str) -> None:
         self._table = value
 
     @property
@@ -460,7 +442,7 @@ class DynamicsClient:
         return self._action
 
     @action.setter
-    def action(self, value: str):
+    def action(self, value: str) -> None:
         self._action = value
 
     @property
@@ -474,7 +456,7 @@ class DynamicsClient:
         return self._row_id
 
     @row_id.setter
-    def row_id(self, value: str):
+    def row_id(self, value: str) -> None:
         self._row_id = value
 
     @property
@@ -491,7 +473,7 @@ class DynamicsClient:
         return self._add_ref_to_property
 
     @add_ref_to_property.setter
-    def add_ref_to_property(self, value: str):
+    def add_ref_to_property(self, value: str) -> None:
         self._add_ref_to_property = value
 
     @property
@@ -504,7 +486,7 @@ class DynamicsClient:
         return self._pre_expand
 
     @pre_expand.setter
-    def pre_expand(self, value: str):
+    def pre_expand(self, value: str) -> None:
         self._pre_expand = value
 
     @property
@@ -516,7 +498,7 @@ class DynamicsClient:
         return self.headers.get("Prefer") == 'odata.include-annotations="*"'
 
     @show_annotations.setter
-    def show_annotations(self, value: bool):
+    def show_annotations(self, value: bool) -> None:
         if value:
             self.headers["Prefer"] = 'odata.include-annotations="*"'
         elif self.headers.get("Prefer") == 'odata.include-annotations="*"':
@@ -528,7 +510,7 @@ class DynamicsClient:
         return self._select
 
     @select.setter
-    def select(self, items: List[str]):
+    def select(self, items: List[str]) -> None:
         """Set $select statement. Select which columns are returned from the table."""
         self._select = items
 
@@ -539,12 +521,12 @@ class DynamicsClient:
         return "$select=" + ",".join([key for key in values]) if values else ""
 
     @property
-    def expand(self) -> expand_type:
+    def expand(self) -> ExpandDict:
         """Get current $expand statement."""
         return self._expand
 
     @expand.setter
-    def expand(self, items: expand_type):
+    def expand(self, items: ExpandDict) -> None:
         """Set $expand statement, with possible nested statements.
         Controls what data from related entities is returned.
 
@@ -567,7 +549,7 @@ class DynamicsClient:
 
         self._expand = items
 
-    def _compile_expand(self, items: expand_type = sentinel) -> str:
+    def _compile_expand(self, items: ExpandDict = sentinel) -> str:
         if items is sentinel:
             items = self._expand
 
@@ -576,36 +558,36 @@ class DynamicsClient:
 
         return "$expand=" + ",".join(
             [
-                f"{key}(" + ";".join([self._expand_commands(name, values) for name, values in value.items()]) + f")"
+                f"{key}(" + ";".join([self._expand_commands(name, values) for name, values in value.items()]) + ")"
                 if value
                 else f"{key}"
                 for key, value in items.items()
             ]
         )
 
-    def _expand_commands(self, name: expand_keys, values: expand_values) -> str:
+    def _expand_commands(self, name: ExpandKeys, values: ExpandValues) -> str:
         """Compile commands inside an expand statement."""
 
         if name == "select":
             return self._compile_select(values)
-        elif name == "filter":
+        if name == "filter":
             return self._compile_filter(values)
-        elif name == "orderby":
+        if name == "orderby":
             return self._compile_orderby(values)
-        elif name == "top":
+        if name == "top":
             return self._compile_top(values)
-        elif name == "expand":
+        if name == "expand":
             return self._compile_expand(values)
-        else:
-            raise KeyError(f"'{name}' is not a valid query inside expand statement!")
+
+        raise KeyError(f"'{name}' is not a valid query inside expand statement!")
 
     @property
-    def filter(self) -> filter_type:
+    def filter(self) -> FilterType:
         """Get current $filter statement"""
         return self._filter
 
     @filter.setter
-    def filter(self, items: filter_type):
+    def filter(self, items: FilterType) -> None:
         """Set $filter statement. Sets the criteria for which entities will be returned.
 
         It is recommended to read the API Query Function Reference:
@@ -637,12 +619,12 @@ class DynamicsClient:
 
         if not isinstance(items, (set, list)):
             raise TypeError("Filter items must be either a set or a list.")
-        elif not items:
+        if not items:
             raise ValueError("Filter list cannot be empty.")
 
         self._filter = items
 
-    def _compile_filter(self, values: filter_type = sentinel):
+    def _compile_filter(self, values: FilterType = sentinel) -> str:  # pylint: disable=R1710
         if values is sentinel:
             values = self._filter
 
@@ -651,7 +633,7 @@ class DynamicsClient:
 
         if isinstance(values, set):
             return "$filter=" + " or ".join([value.strip() for value in values])
-        elif isinstance(values, list):
+        if isinstance(values, list):
             return "$filter=" + " and ".join([value.strip() for value in values])
 
     @property
@@ -660,7 +642,7 @@ class DynamicsClient:
         return self._apply
 
     @apply.setter
-    def apply(self, statement: str):
+    def apply(self, statement: str) -> None:
         """Set the $apply statement. Aggregates or groups results.
 
         It is recommended to read how to aggregate and grouping results:
@@ -688,7 +670,7 @@ class DynamicsClient:
         return self._top
 
     @top.setter
-    def top(self, number: int):
+    def top(self, number: int) -> None:
         """Set $top statement. Limits the number of results returned.
         Note: You should not use 'top' and 'count' in the same query.
         """
@@ -701,29 +683,29 @@ class DynamicsClient:
         return f"$top={number}" if number != 0 else ""
 
     @property
-    def orderby(self) -> orderby_type:
+    def orderby(self) -> OrderbyType:
         """Get current $orderby statement"""
         return self._orderby
 
     @orderby.setter
-    def orderby(self, items: orderby_type):
+    def orderby(self, items: OrderbyType) -> None:
         """Set $orderby statement. Specifies the order in which items are returned."""
 
         if isinstance(items, dict):
             raise TypeError("Orderby items must be a dict.")
-        elif not items:
+        if not items:
             raise ValueError("Orderby dict must not be empty.")
 
         self._orderby = items
 
-    def _compile_orderby(self, values: orderby_type = sentinel) -> str:
+    def _compile_orderby(self, values: OrderbyType = sentinel) -> str:
         if values is sentinel:
             values = self._orderby
 
         if not values:
             return ""
 
-        return f"$orderby=" + ",".join([f"{key} {order}" for key, order in values.items()])
+        return "$orderby=" + ",".join([f"{key} {order}" for key, order in values.items()])
 
     @property
     def count(self) -> bool:
@@ -731,7 +713,7 @@ class DynamicsClient:
         return self._count
 
     @count.setter
-    def count(self, value: bool):
+    def count(self, value: bool) -> None:
         """Set $count statement. Include the count of entities that match the filter criteria in the results.
         Count will be the first item in the list of results.
         Note: You should not use 'count' and 'top' in the same query.
@@ -742,7 +724,7 @@ class DynamicsClient:
         if value is sentinel:
             value = self._count
 
-        return f"$count=true" if value else ""
+        return "$count=true" if value else ""
 
     @property
     def pagesize(self) -> int:
@@ -750,7 +732,7 @@ class DynamicsClient:
         return self._pagesize
 
     @pagesize.setter
-    def pagesize(self, value: int):
+    def pagesize(self, value: int) -> None:
         """Specify the number of tables to return in a page."""
 
         if value < 1:

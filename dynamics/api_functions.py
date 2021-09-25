@@ -3,8 +3,9 @@ Functions available in the web API. Reference:
 https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions
 """
 
-from typing import List, Dict, Any, TYPE_CHECKING
-from .enums import TargetFieldType, EntityFilter
+from .enums import EntityFilter, TargetFieldType
+from .typing import TYPE_CHECKING, Any, Dict, List
+
 
 if TYPE_CHECKING:
     from .client import DynamicsClient
@@ -19,20 +20,20 @@ class Functions:
     def __init__(self, client: "DynamicsClient"):
         self.client = client
 
-    def expand_calendar(self, start: str, end: str, **kwargs) -> List[Dict[str, Any]]:
+    def expand_calendar(self, start: str, end: str, **kwargs) -> list[dict[str, Any]]:
         """Converts the calendar rules to an array of available time blocks for the specified period."""
 
         self.client.reset_query()
         self.client.action = f"ExpandCalendar(Start='{start}',End='{end}')"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
     def format_address(
         self, line_1: str, city: str, state: str, postal_code: str, country: str, **kwargs
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Builds the full address according to country/regional format specific requirements."""
 
         self.client.reset_query()
@@ -41,45 +42,43 @@ class Functions:
             f"StateOrProvince='{state}',PostalCode='{postal_code}',Country='{country}')"
         )
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_default_price_level(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_default_price_level(self, **kwargs) -> list[dict[str, Any]]:
         """Retrieves the default price level (price list) for the current user
         based on the user’s territory relationship with the price level.
         """
 
         self.client.reset_query()
-        self.client.action = f"GetDefaultPriceLevel()"
+        self.client.action = "GetDefaultPriceLevel()"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_valid_many_to_many(self, **kwargs) -> List[Dict[str, Any]]:
+    def get_valid_many_to_many(self, **kwargs) -> list[dict[str, Any]]:
         """Retrieves a list of all the entities that can participate in a Many-to-Many entity relationship."""
 
-
         self.client.reset_query()
-        self.client.action = f"GetValidManyToMany()"
+        self.client.action = "GetValidManyToMany()"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_valid_referenced_entities(self, name: str, **kwargs) -> List[Dict[str, Any]]:
+    def get_valid_referenced_entities(self, name: str, **kwargs) -> list[dict[str, Any]]:
         """Retrieves a list of entity logical names that are valid as
         the primary entity (one) from the specified entity in a one-to-many relationship."""
-
 
         self.client.reset_query()
         self.client.action = f"GetValidReferencedEntities(ReferencingEntityName='{name}')"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -92,7 +91,7 @@ class Functions:
         self.client.reset_query()
         self.client.action = f"GetValidReferencingEntities(ReferencingEntityName='{name}')"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -105,11 +104,11 @@ class Functions:
         self.client.reset_query()
         self.client.action = (
             f"InitializeFrom(EntityMoniker=@tid,TargetEntityName='{entity_name}',"
-            + f"TargetFieldType={field_type.value})"
+            + f"TargetFieldType={TargetFieldType[field_type].value})"
             + f"?@tid={{'@odata.id':'{table}({row_id})'}}"
         )
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -129,7 +128,7 @@ class Functions:
             f"RetrieveAsIfPublished={'true' if as_if_published else 'false'})"
         )
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -154,7 +153,7 @@ class Functions:
             f"RetrieveAsIfPublished={'true' if as_if_published else 'false'})"
         )
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -168,7 +167,7 @@ class Functions:
             + f"?@tid={{'@odata.id':'{table}({row_id})'}}"
         )
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
@@ -180,7 +179,7 @@ class Functions:
         self.client.reset_query()
         self.client.action = "WhoAmI()"
 
-        return self.client.GET(
+        return self.client.get(
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
