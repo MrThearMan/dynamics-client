@@ -122,7 +122,7 @@ class Actions:
             self.client.select = select
 
         return self.client.patch(
-            data={"statecode": QuoteState.Active.value},
+            data={"statecode": QuoteState.ACTIVE.value},
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )

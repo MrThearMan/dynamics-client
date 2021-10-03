@@ -1,4 +1,9 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, TypedDict, Union
+try:
+    from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, TypedDict, Union
+except ImportError:
+    from typing import Any, Dict, List, Optional, Set, Union
+
+    from typing_extensions import TYPE_CHECKING, Literal, Tuple, Type, TypedDict
 
 
 __all__ = [
