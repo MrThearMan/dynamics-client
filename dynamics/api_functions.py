@@ -8,7 +8,7 @@ from .typing import TYPE_CHECKING, Any, Dict, List
 
 
 if TYPE_CHECKING:
-    from .client import DynamicsClient
+    from .client import DynamicsClient  # pylint: disable=R0401
 
 
 __all__ = ["Functions"]
@@ -20,7 +20,7 @@ class Functions:
     def __init__(self, client: "DynamicsClient"):
         self.client = client
 
-    def expand_calendar(self, start: str, end: str, **kwargs) -> list[dict[str, Any]]:
+    def expand_calendar(self, start: str, end: str, **kwargs) -> List[Dict[str, Any]]:
         """Converts the calendar rules to an array of available time blocks for the specified period."""
 
         self.client.reset_query()
@@ -33,7 +33,7 @@ class Functions:
 
     def format_address(
         self, line_1: str, city: str, state: str, postal_code: str, country: str, **kwargs
-    ) -> list[dict[str, Any]]:
+    ) -> List[Dict[str, Any]]:
         """Builds the full address according to country/regional format specific requirements."""
 
         self.client.reset_query()
@@ -47,7 +47,7 @@ class Functions:
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_default_price_level(self, **kwargs) -> list[dict[str, Any]]:
+    def get_default_price_level(self, **kwargs) -> List[Dict[str, Any]]:
         """Retrieves the default price level (price list) for the current user
         based on the user’s territory relationship with the price level.
         """
@@ -60,7 +60,7 @@ class Functions:
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_valid_many_to_many(self, **kwargs) -> list[dict[str, Any]]:
+    def get_valid_many_to_many(self, **kwargs) -> List[Dict[str, Any]]:
         """Retrieves a list of all the entities that can participate in a Many-to-Many entity relationship."""
 
         self.client.reset_query()
@@ -71,7 +71,7 @@ class Functions:
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def get_valid_referenced_entities(self, name: str, **kwargs) -> list[dict[str, Any]]:
+    def get_valid_referenced_entities(self, name: str, **kwargs) -> List[Dict[str, Any]]:
         """Retrieves a list of entity logical names that are valid as
         the primary entity (one) from the specified entity in a one-to-many relationship."""
 

@@ -183,15 +183,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         if self.row_id:
             query += f"({self.row_id})"
+
         if self.pre_expand:
             query += f"/{self.pre_expand}"
+
         if self.action:
             if query[-1] != "/":
                 query += "/"
             query += self.action
+
         if self.add_ref_to_property:
             query += f"/{self.add_ref_to_property}/$ref"
-        if query_optinos := self._compile_query_options():
+
+        query_optinos = self._compile_query_options()
+        if query_optinos:
             query += query_optinos
 
         return query
@@ -360,7 +365,8 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         data = response.json()
 
-        if errors := data.get("error"):
+        errors = data.get("error")
+        if errors:
             self._error_handling(status_code=response.status_code, error_message=errors["message"], method="post")
 
         return data
@@ -386,7 +392,8 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         data = response.json()
 
-        if errors := data.get("error"):
+        errors = data.get("error")
+        if errors:
             self._error_handling(status_code=response.status_code, error_message=errors["message"], method="patch")
 
         return data
@@ -408,7 +415,8 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         data = response.json()
 
-        if errors := data.get("error"):
+        errors = data.get("error")
+        if errors:
             self._error_handling(status_code=response.status_code, error_message=errors["message"], method="delete")
 
     @property
