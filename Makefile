@@ -54,10 +54,10 @@ isort:
 	@poetry run isort .
 
 pylint:
-	@poetry run pylint pipeline_views/
+	@poetry run pylint dynamics/
 
 flake8:
-	@poetry run flake8 --max-line-length=120 --extend-ignore=E203,E501 pipeline_views/
+	@poetry run flake8 --max-line-length=120 --extend-ignore=E203,E501 dynamics/
 
 mypy:
-	@poetry run mypy pipeline_views/
+	@poetry run mypy dynamics/
