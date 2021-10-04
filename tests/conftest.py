@@ -4,82 +4,96 @@ from unittest import mock
 import pytest
 
 from dynamics.client import DynamicsClient
-from dynamics.typing import Literal, Union
+from dynamics.typing import MethodType, Type, Union
 
 
 __all__ = [
-    "DynamicsResponse",
+    "ClientResponse",
     "dynamics_client_response",
 ]
+
+ResponseType = Union[list, dict, None, Type[Exception]]
+RequestType = Union[list, dict, None]
 
 
 @pytest.fixture
 def dynamics_client(request, _dynamics_client_constructor) -> DynamicsClient:
+    _dynamics_client_constructor.reset_query()
+    _dynamics_client_constructor.request_counter = 0
+
     if not hasattr(request, "param"):
         yield _dynamics_client_constructor
         return
 
     with dynamics_client_response(
         _dynamics_client_constructor,
-        method=request.param[0],
-        response=request.param[1],
-        status_code=request.param[2],
+        request=request.param[0],
+        method=request.param[1],
+        response=request.param[2],
+        status_code=request.param[3],
     ) as client:
         yield client
 
 
-class DynamicsResponse:
+class ClientResponse(DynamicsClient):
     """Used in pytest.mark.parametrize to pass used client method,
-    response data, and status code to the mocker fixture in a more explicit way.
+    request data, and status code to the mocker fixture in a more explicit way.
     """
 
-    def __init__(
+    # dynamics_client_response saves to these
+    expected_response: ResponseType = None
+    this_request: RequestType = None
+
+    def __init__(  # noqa
         self,
         *,
-        method: Literal["get", "post", "patch", "delete"],
-        response: Union[list, dict, None],
+        request: RequestType,
+        method: MethodType,
+        response: ResponseType,
         status_code: int,
     ):
-        self.content = [method, response, status_code]
+        self.__content = [request, method, response, status_code]
 
     def __iter__(self):
         return self
 
-    def __getitem__(self, item):
-        return self.content[item]
+    def __getitem__(self, item: int):
+        return self.__content[item]
 
     def __next__(self):
-        return next(self.content)
+        return next(self.__content)
 
 
 @contextmanager
 def dynamics_client_response(
     client: DynamicsClient,
     *,
-    method: Literal["get", "post", "patch", "delete"],
-    response: Union[list, dict, None],
+    request: RequestType,
+    method: MethodType,
+    response: ResponseType,
     status_code: int,
 ) -> DynamicsClient:
-    """Mock dynamics client response for certain method."""
+    client.expected_response = response
+    client.this_request = request
     with mock.patch(
         f"requests_oauthlib.oauth2_session.OAuth2Session.{method}",
-        new_callable=_request_call(response, status_code),
+        new_callable=_request_mock_call(request, status_code),
     ):
         yield client
 
 
-class _RequestMock:
-    def __init__(self, params, status_code):
-        self.params = params
+class _ResponseMock:
+    def __init__(self, request: RequestType, status_code: int):
+        self.response = request
         self.status_code = status_code
 
-    def json(self):
-        return self.params
+    def json(self) -> RequestType:
+        return self.response
 
 
-def _request_call(response, status_code):
+def _request_mock_call(request: RequestType, status_code: int):
     def request_mock(self, url, **kwargs):
-        return _RequestMock(response, status_code)
+        return _ResponseMock(request=request, status_code=status_code)
 
     return lambda: request_mock
 
