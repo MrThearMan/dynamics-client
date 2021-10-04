@@ -347,7 +347,8 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
     @error_simplification_available
     def post(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create new row in a table. Must have 'table' attribute set. Use expand and select to reduce returned data.
+        """Create new row in a table. Must have 'table' attribute set.
+        Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
 
@@ -367,7 +368,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="post")
+            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="post")
 
         return data
 
@@ -394,7 +395,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="patch")
+            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="patch")
 
         return data
 
@@ -417,7 +418,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors["message"], method="delete")
+            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="delete")
 
     @property
     def table(self) -> str:
@@ -699,7 +700,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
     def orderby(self, items: OrderbyType) -> None:
         """Set $orderby statement. Specifies the order in which items are returned."""
 
-        if isinstance(items, dict):
+        if not isinstance(items, dict):
             raise TypeError("Orderby items must be a dict.")
         if not items:
             raise ValueError("Orderby dict must not be empty.")
@@ -744,8 +745,8 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         """Specify the number of tables to return in a page."""
 
         if value < 1:
-            ValueError(f"Value must be bigger than 0. Got {value}.")
-        elif value > 5000:
-            ValueError(f"Max pagesize is 5000. Got {value}.")
+            raise ValueError(f"Value must be bigger than 0. Got {value}.")
+        if value > 5000:
+            raise ValueError(f"Max pagesize is 5000. Got {value}.")
 
         self._pagesize = value
