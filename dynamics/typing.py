@@ -1,7 +1,7 @@
 try:
-    from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, TypedDict, Union
+    from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Type, TypedDict, Union
 except ImportError:
-    from typing import Any, Dict, List, Optional, Set, Union
+    from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
     from typing_extensions import TYPE_CHECKING, Literal, Tuple, Type, TypedDict
 
@@ -14,6 +14,7 @@ __all__ = [
     "Literal",
     "Union",
     "Set",
+    "Sequence",
     "Type",
     "Tuple",
     "TypedDict",

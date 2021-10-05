@@ -4,16 +4,26 @@ from unittest import mock
 import pytest
 
 from dynamics.client import DynamicsClient
-from dynamics.typing import MethodType, Type, Union
+from dynamics.typing import MethodType, Sequence, Type, Union
 
 
 __all__ = [
     "ClientResponse",
     "dynamics_client_response",
+    "ResponseMock",
 ]
 
 ResponseType = Union[list, dict, None, Type[Exception]]
 RequestType = Union[list, dict, None]
+
+
+class ResponseMock:
+    def __init__(self, *, data: RequestType, status_code: int):
+        self.data = data
+        self.status_code = status_code
+
+    def json(self) -> RequestType:
+        return self.data
 
 
 @pytest.fixture
@@ -27,10 +37,9 @@ def dynamics_client(request, _dynamics_client_constructor) -> DynamicsClient:
 
     with dynamics_client_response(
         _dynamics_client_constructor,
-        request=request.param[0],
+        session_response=request.param[0],
         method=request.param[1],
-        response=request.param[2],
-        status_code=request.param[3],
+        client_response=request.param[2],
     ) as client:
         yield client
 
@@ -41,18 +50,17 @@ class ClientResponse(DynamicsClient):
     """
 
     # dynamics_client_response saves to these
-    expected_response: ResponseType = None
-    this_request: RequestType = None
+    _input_: RequestType = None
+    _output_: ResponseType = None
 
     def __init__(  # noqa
         self,
         *,
-        request: RequestType,
+        session_response: Union[ResponseMock, Sequence[ResponseMock]],
         method: MethodType,
-        response: ResponseType,
-        status_code: int,
+        client_response: ResponseType,
     ):
-        self.__content = [request, method, response, status_code]
+        self.__content = [session_response, method, client_response]
 
     def __iter__(self):
         return self
@@ -68,34 +76,28 @@ class ClientResponse(DynamicsClient):
 def dynamics_client_response(
     client: DynamicsClient,
     *,
-    request: RequestType,
+    session_response: Union[ResponseMock, Sequence[ResponseMock]],
     method: MethodType,
-    response: ResponseType,
-    status_code: int,
+    client_response: ResponseType,
 ) -> DynamicsClient:
-    client.expected_response = response
-    client.this_request = request
+    """Mock dynamics client OAuthSession response for testing HTTP client methods.
+
+    :param client: Client to mock session response for.
+    :param session_response: Mocked response, or a series of responses
+                             recieved from the OAuthSession when it's called.
+    :param method: HTTP client method to mock.
+    :param client_response: Expected response from the HTTP client method.
+    """
+
+    # Save input and output for usage in testing assertions
+    client._input_ = session_response[0].data if isinstance(session_response, Sequence) else session_response.data
+    client._output_ = client_response
+
     with mock.patch(
         f"requests_oauthlib.oauth2_session.OAuth2Session.{method}",
-        new_callable=_request_mock_call(request, status_code),
+        mock.MagicMock(side_effect=session_response if isinstance(session_response, Sequence) else [session_response]),
     ):
         yield client
-
-
-class _ResponseMock:
-    def __init__(self, request: RequestType, status_code: int):
-        self.response = request
-        self.status_code = status_code
-
-    def json(self) -> RequestType:
-        return self.response
-
-
-def _request_mock_call(request: RequestType, status_code: int):
-    def request_mock(self, url, **kwargs):
-        return _ResponseMock(request=request, status_code=status_code)
-
-    return lambda: request_mock
 
 
 @pytest.fixture(scope="session")

@@ -19,399 +19,469 @@ from dynamics.exceptions import (
 from dynamics.typing import MethodType
 from dynamics.utils import cache
 
-from .conftest import ClientResponse, dynamics_client_response
+from .conftest import ClientResponse, ResponseMock, dynamics_client_response
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
             method="get",
-            response=[{"foo": "bar", "one": 2}],
-            status_code=200,
+            client_response=[{"foo": "bar", "one": 2}],
         ),
         ClientResponse(
-            request={"value": []},
+            session_response=ResponseMock(data={"value": []}, status_code=204),
             method="get",
-            response=[],
-            status_code=204,
+            client_response=[],
         ),
         ClientResponse(
-            request={"value": [{"foo": "bar"}, {"one": 2}]},
+            session_response=ResponseMock(data={"value": [{"foo": "bar"}, {"one": 2}]}, status_code=204),
             method="get",
-            response=[{"foo": "bar"}, {"one": 2}],
-            status_code=204,
+            client_response=[{"foo": "bar"}, {"one": 2}],
         ),
     ],
     indirect=True,
 )
 def test_client_get_request(dynamics_client):
-    assert dynamics_client.get(not_found_ok=True) == dynamics_client.expected_response
+    assert dynamics_client.get(not_found_ok=True) == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"value": []},
+            session_response=ResponseMock(data={"value": []}, status_code=404),
             method="get",
-            response=NotFound,
-            status_code=404,
+            client_response=NotFound,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a ParseError"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a ParseError"}},
+                status_code=400,
+            ),
             method="get",
-            response=ParseError,
-            status_code=400,
+            client_response=ParseError,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a AuthenticationFailed"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a AuthenticationFailed"}},
+                status_code=401,
+            ),
             method="get",
-            response=AuthenticationFailed,
-            status_code=401,
+            client_response=AuthenticationFailed,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a PermissionDenied"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a PermissionDenied"}},
+                status_code=403,
+            ),
             method="get",
-            response=PermissionDenied,
-            status_code=403,
+            client_response=PermissionDenied,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a NotFound"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a NotFound"}},
+                status_code=404,
+            ),
             method="get",
-            response=NotFound,
-            status_code=404,
+            client_response=NotFound,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a MethodNotAllowed"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a MethodNotAllowed"}},
+                status_code=405,
+            ),
             method="get",
-            response=MethodNotAllowed,
-            status_code=405,
+            client_response=MethodNotAllowed,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a DuplicateRecordError"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a DuplicateRecordError"}},
+                status_code=412,
+            ),
             method="get",
-            response=DuplicateRecordError,
-            status_code=412,
+            client_response=DuplicateRecordError,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a PayloadTooLarge"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a PayloadTooLarge"}},
+                status_code=413,
+            ),
             method="get",
-            response=PayloadTooLarge,
-            status_code=413,
+            client_response=PayloadTooLarge,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a APILimitsExceeded"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a APILimitsExceeded"}},
+                status_code=429,
+            ),
             method="get",
-            response=APILimitsExceeded,
-            status_code=429,
+            client_response=APILimitsExceeded,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a OperationNotImplemented"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a OperationNotImplemented"}},
+                status_code=501,
+            ),
             method="get",
-            response=OperationNotImplemented,
-            status_code=501,
+            client_response=OperationNotImplemented,
         ),
         ClientResponse(
-            request={"value": [], "error": {"message": "This is a WebAPIUnavailable"}},
+            session_response=ResponseMock(
+                data={"value": [], "error": {"message": "This is a WebAPIUnavailable"}},
+                status_code=503,
+            ),
             method="get",
-            response=WebAPIUnavailable,
-            status_code=503,
+            client_response=WebAPIUnavailable,
         ),
     ],
     indirect=True,
 )
 def test_client_get_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client.expected_response) as exc_info:
+    with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.get()
     nf_message = "No records matching the given criteria."
-    assert dynamics_client.this_request.get("error", {}).get("message", nf_message) == exc_info.value.args[0]
+    assert dynamics_client._input_.get("error", {}).get("message", nf_message) == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
             method="post",
-            response={"foo": "bar", "one": 2},
-            status_code=200,
+            client_response={"foo": "bar", "one": 2},
         ),
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
             method="post",
-            response={},
-            status_code=204,
+            client_response={},
         ),
     ],
     indirect=True,
 )
 def test_client_post_request(dynamics_client):
-    assert dynamics_client.post(data=dynamics_client.this_request) == dynamics_client.expected_response
+    assert dynamics_client.post(data=dynamics_client._input_) == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"error": {"message": "This is a ParseError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a ParseError"}},
+                status_code=400,
+            ),
             method="post",
-            response=ParseError,
-            status_code=400,
+            client_response=ParseError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a AuthenticationFailed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a AuthenticationFailed"}},
+                status_code=401,
+            ),
             method="post",
-            response=AuthenticationFailed,
-            status_code=401,
+            client_response=AuthenticationFailed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PermissionDenied"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PermissionDenied"}},
+                status_code=403,
+            ),
             method="post",
-            response=PermissionDenied,
-            status_code=403,
+            client_response=PermissionDenied,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a NotFound"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a NotFound"}},
+                status_code=404,
+            ),
             method="post",
-            response=NotFound,
-            status_code=404,
+            client_response=NotFound,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a MethodNotAllowed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a MethodNotAllowed"}},
+                status_code=405,
+            ),
             method="post",
-            response=MethodNotAllowed,
-            status_code=405,
+            client_response=MethodNotAllowed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a DuplicateRecordError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a DuplicateRecordError"}},
+                status_code=412,
+            ),
             method="post",
-            response=DuplicateRecordError,
-            status_code=412,
+            client_response=DuplicateRecordError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PayloadTooLarge"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PayloadTooLarge"}},
+                status_code=413,
+            ),
             method="post",
-            response=PayloadTooLarge,
-            status_code=413,
+            client_response=PayloadTooLarge,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a APILimitsExceeded"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a APILimitsExceeded"}},
+                status_code=429,
+            ),
             method="post",
-            response=APILimitsExceeded,
-            status_code=429,
+            client_response=APILimitsExceeded,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a OperationNotImplemented"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a OperationNotImplemented"}},
+                status_code=501,
+            ),
             method="post",
-            response=OperationNotImplemented,
-            status_code=501,
+            client_response=OperationNotImplemented,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a WebAPIUnavailable"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a WebAPIUnavailable"}},
+                status_code=503,
+            ),
             method="post",
-            response=WebAPIUnavailable,
-            status_code=503,
+            client_response=WebAPIUnavailable,
         ),
     ],
     indirect=True,
 )
 def test_client_post_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client.expected_response) as exc_info:
+    with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.post({})
 
-    assert dynamics_client.this_request.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
             method="patch",
-            response={"foo": "bar", "one": 2},
-            status_code=200,
+            client_response={"foo": "bar", "one": 2},
         ),
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
             method="patch",
-            response={},
-            status_code=204,
+            client_response={},
         ),
     ],
     indirect=True,
 )
 def test_client_patch_request(dynamics_client):
-    assert dynamics_client.patch(data=dynamics_client.this_request) == dynamics_client.expected_response
+    assert dynamics_client.patch(data=dynamics_client._input_) == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"error": {"message": "This is a ParseError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a ParseError"}},
+                status_code=400,
+            ),
             method="patch",
-            response=ParseError,
-            status_code=400,
+            client_response=ParseError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a AuthenticationFailed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a AuthenticationFailed"}},
+                status_code=401,
+            ),
             method="patch",
-            response=AuthenticationFailed,
-            status_code=401,
+            client_response=AuthenticationFailed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PermissionDenied"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PermissionDenied"}},
+                status_code=403,
+            ),
             method="patch",
-            response=PermissionDenied,
-            status_code=403,
+            client_response=PermissionDenied,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a NotFound"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a NotFound"}},
+                status_code=404,
+            ),
             method="patch",
-            response=NotFound,
-            status_code=404,
+            client_response=NotFound,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a MethodNotAllowed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a MethodNotAllowed"}},
+                status_code=405,
+            ),
             method="patch",
-            response=MethodNotAllowed,
-            status_code=405,
+            client_response=MethodNotAllowed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a DuplicateRecordError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a DuplicateRecordError"}},
+                status_code=412,
+            ),
             method="patch",
-            response=DuplicateRecordError,
-            status_code=412,
+            client_response=DuplicateRecordError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PayloadTooLarge"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PayloadTooLarge"}},
+                status_code=413,
+            ),
             method="patch",
-            response=PayloadTooLarge,
-            status_code=413,
+            client_response=PayloadTooLarge,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a APILimitsExceeded"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a APILimitsExceeded"}},
+                status_code=429,
+            ),
             method="patch",
-            response=APILimitsExceeded,
-            status_code=429,
+            client_response=APILimitsExceeded,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a OperationNotImplemented"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a OperationNotImplemented"}},
+                status_code=501,
+            ),
             method="patch",
-            response=OperationNotImplemented,
-            status_code=501,
+            client_response=OperationNotImplemented,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a WebAPIUnavailable"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a WebAPIUnavailable"}},
+                status_code=503,
+            ),
             method="patch",
-            response=WebAPIUnavailable,
-            status_code=503,
+            client_response=WebAPIUnavailable,
         ),
     ],
     indirect=True,
 )
 def test_client_patch_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client.expected_response) as exc_info:
+    with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.patch({})
 
-    assert dynamics_client.this_request.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
             method="delete",
-            response=None,
-            status_code=200,
+            client_response=None,
         ),
         ClientResponse(
-            request={"foo": "bar", "one": 2},
+            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
             method="delete",
-            response=None,
-            status_code=204,
+            client_response=None,
         ),
     ],
     indirect=True,
 )
 def test_client_delete_request(dynamics_client):
-    assert dynamics_client.delete() == dynamics_client.expected_response
+    assert dynamics_client.delete() == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
         ClientResponse(
-            request={"error": {"message": "This is a ParseError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a ParseError"}},
+                status_code=400,
+            ),
             method="delete",
-            response=ParseError,
-            status_code=400,
+            client_response=ParseError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a AuthenticationFailed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a AuthenticationFailed"}},
+                status_code=401,
+            ),
             method="delete",
-            response=AuthenticationFailed,
-            status_code=401,
+            client_response=AuthenticationFailed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PermissionDenied"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PermissionDenied"}},
+                status_code=403,
+            ),
             method="delete",
-            response=PermissionDenied,
-            status_code=403,
+            client_response=PermissionDenied,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a NotFound"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a NotFound"}},
+                status_code=404,
+            ),
             method="delete",
-            response=NotFound,
-            status_code=404,
+            client_response=NotFound,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a MethodNotAllowed"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a MethodNotAllowed"}},
+                status_code=405,
+            ),
             method="delete",
-            response=MethodNotAllowed,
-            status_code=405,
+            client_response=MethodNotAllowed,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a DuplicateRecordError"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a DuplicateRecordError"}},
+                status_code=412,
+            ),
             method="delete",
-            response=DuplicateRecordError,
-            status_code=412,
+            client_response=DuplicateRecordError,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a PayloadTooLarge"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a PayloadTooLarge"}},
+                status_code=413,
+            ),
             method="delete",
-            response=PayloadTooLarge,
-            status_code=413,
+            client_response=PayloadTooLarge,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a APILimitsExceeded"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a APILimitsExceeded"}},
+                status_code=429,
+            ),
             method="delete",
-            response=APILimitsExceeded,
-            status_code=429,
+            client_response=APILimitsExceeded,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a OperationNotImplemented"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a OperationNotImplemented"}},
+                status_code=501,
+            ),
             method="delete",
-            response=OperationNotImplemented,
-            status_code=501,
+            client_response=OperationNotImplemented,
         ),
         ClientResponse(
-            request={"error": {"message": "This is a WebAPIUnavailable"}},
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a WebAPIUnavailable"}},
+                status_code=503,
+            ),
             method="delete",
-            response=WebAPIUnavailable,
-            status_code=503,
+            client_response=WebAPIUnavailable,
         ),
     ],
     indirect=True,
 )
 def test_client_delete_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client.expected_response) as exc_info:
+    with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.delete()
 
-    assert dynamics_client.this_request.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -723,12 +793,11 @@ def test_client_query__count(dynamics_client):
 
     with dynamics_client_response(
         dynamics_client,
-        request={"@odata.count": 1, "value": [{"foo": "bar"}]},
+        session_response=ResponseMock(data={"@odata.count": 1, "value": [{"foo": "bar"}]}, status_code=200),
         method="get",
-        response=[1, {"foo": "bar"}],
-        status_code=200,
+        client_response=[1, {"foo": "bar"}],
     ):
-        assert dynamics_client.get() == dynamics_client.expected_response  # noqa
+        assert dynamics_client.get() == dynamics_client._output_  # noqa
 
 
 def test_client_pagesize(dynamics_client):
@@ -756,5 +825,42 @@ def test_client_show_annotations(dynamics_client):
     assert dynamics_client.headers == {}
 
 
-def test_client_get_next_page(dynamics_client):
-    pass  # TODO: get next page
+def test_client_get_next_page__before_pagesize_reached(dynamics_client):
+    with dynamics_client_response(
+        dynamics_client,
+        session_response=ResponseMock(
+            data={"foo": ["bar"], "foo@odata.nextLink": "link-to-next-page"},
+            status_code=200,
+        ),
+        method="get",
+        client_response=[{"foo": ["bar"]}],
+    ):
+        assert dynamics_client.get() == dynamics_client._output_  # noqa
+
+
+def test_client_get_next_page__over_pagesize(dynamics_client):
+    dynamics_client.pagesize = 1
+
+    with dynamics_client_response(
+        dynamics_client,
+        session_response=[
+            ResponseMock(
+                data={"foo": [{"@odata.etag": "12345", "bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"},
+                status_code=200,
+            ),
+            ResponseMock(
+                data={"@odata.etag": "23456", "fizz": "buzz"},
+                status_code=200,
+            ),
+        ],
+        method="get",
+        client_response=[
+            {
+                "foo": [
+                    {"@odata.etag": "12345", "bar": "baz"},
+                    {"@odata.etag": "23456", "fizz": "buzz"},
+                ],
+            },
+        ],
+    ):
+        assert dynamics_client.get() == dynamics_client._output_  # noqa
