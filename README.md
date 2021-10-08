@@ -2,10 +2,11 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main)](https://coveralls.io/github/MrThearMan/dynamics-client?branch=main)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Tests)](https://github.com/MrThearMan/dynamics-client/actions/workflows/main.yml)
-[![PyPI](https://img.shields.io/pypi/v/dynamics-client)](https://pypi.org/project/dynamics-client)
-[![GitHub](https://img.shields.io/github/license/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE)
+[![PyPI - Version](https://img.shields.io/pypi/v/dynamics-client)](https://pypi.org/project/dynamics-client)
+[![License](https://img.shields.io/github/license/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE)
 [![GitHub last commit](https://img.shields.io/github/last-commit/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/issues)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dynamics-client)](https://pypi.org/project/dynamics-client)
 
 ```shell
 pip install dynamics-client
