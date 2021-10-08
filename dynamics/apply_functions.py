@@ -13,7 +13,7 @@ from .typing import FilterType, List, Literal
 __all__ = ["apl"]
 
 
-class APL:
+class apl:
     """Convenience functions for creating $apply parameters."""
 
     @staticmethod
@@ -43,14 +43,11 @@ class APL:
         :param by: Filter results by this filter string before applying grouping. Use `ftr` to construct this.
         :param group_by_columns: Columns to group by.
         """
-        return f"filter({APL._compile_filter(by).removeprefix('$filter=')})/" + APL.groupby(group_by_columns)
+        if isinstance(by, set):
+            filters = " or ".join([value.strip() for value in by])
+        elif isinstance(by, list):
+            filters = " and ".join([value.strip() for value in by])
+        else:
+            raise TypeError("Filter by must be either a set or a list.")
 
-    @staticmethod
-    def _compile_filter(values: FilterType) -> str:  # pylint: disable=R1710
-        if isinstance(values, set):
-            return "$filter=" + " or ".join([value.strip() for value in values])
-        if isinstance(values, list):
-            return "$filter=" + " and ".join([value.strip() for value in values])
-
-
-apl = APL()
+        return f"filter({filters})/" + apl.groupby(group_by_columns)

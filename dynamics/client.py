@@ -273,13 +273,14 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         """
 
         logger.warning(
-            "Dynamics client query %s failed with status %d: %s",
+            "Dynamics client <[%s] %s> failed with status %d: %s",
+            method.upper(),
             self.current_query,
             status_code,
             error_message,
         )
         error = self.error_dict.get(status_code, DynamicsException)
-        raise error(method=method, detail=error_message)
+        raise error(detail=error_message)
 
     @error_simplification_available
     def get(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:

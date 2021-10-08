@@ -104,8 +104,8 @@ class Functions:
         self.client.reset_query()
         self.client.action = (
             f"InitializeFrom(EntityMoniker=@tid,TargetEntityName='{entity_name}',"
-            + f"TargetFieldType={TargetFieldType[field_type].value})"
-            + f"?@tid={{'@odata.id':'{table}({row_id})'}}"
+            f"TargetFieldType={field_type.value})"
+            f"?@tid={{'@odata.id':'{table}({row_id})'}}"
         )
 
         return self.client.get(
@@ -124,7 +124,7 @@ class Functions:
 
         self.client.reset_query()
         self.client.action = (
-            f"RetrieveAllEntities(EntityFilters={entity_filter.values}"
+            f"RetrieveAllEntities(EntityFilters={entity_filter.value},"
             f"RetrieveAsIfPublished={'true' if as_if_published else 'false'})"
         )
 
@@ -147,7 +147,7 @@ class Functions:
         self.client.reset_query()
         self.client.action = (
             f"RetrieveEntity("
-            f"EntityFilters={entity_filter.values},"
+            f"EntityFilters={entity_filter.value},"
             f"LogicalName='{name}',"
             f"MetadataId={row_id},"
             f"RetrieveAsIfPublished={'true' if as_if_published else 'false'})"
@@ -164,7 +164,7 @@ class Functions:
         self.client.reset_query()
         self.client.action = (
             f"RetrieveDuplicates(BusinessEntity=@tid,MatchingEntityName='{entity_name}',"
-            + f"?@tid={{'@odata.id':'{table}({row_id})'}}"
+            f"?@tid={{'@odata.id':'{table}({row_id})'}}"
         )
 
         return self.client.get(

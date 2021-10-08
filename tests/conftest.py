@@ -1,10 +1,12 @@
+import json
 from contextlib import contextmanager
 from unittest import mock
 
 import pytest
 
 from dynamics.client import DynamicsClient
-from dynamics.typing import MethodType, Sequence, Type, Union
+from dynamics.typing import Any, Dict, Literal, MethodType, Sequence, Type, Union
+from dynamics.utils import cache
 
 
 __all__ = [
@@ -17,13 +19,25 @@ ResponseType = Union[list, dict, None, Type[Exception]]
 RequestType = Union[list, dict, None]
 
 
-class ResponseMock:
-    def __init__(self, *, data: RequestType, status_code: int):
-        self.data = data
-        self.status_code = status_code
+@pytest.fixture(scope="session")
+def _dynamics_client_constructor():
+    patch: Any
 
-    def json(self) -> RequestType:
-        return self.data
+    def no_token_caching(key: str, value: Any, timeout: int = cache.DEFAULT_TIMEOUT):
+        if key != "dynamics-client-token":
+            patch.stop()
+            cache.set(key, value, timeout)
+            patch.start()
+
+    with mock.patch("requests_oauthlib.oauth2_session.OAuth2Session.fetch_token", new_callable=mock.PropertyMock):
+        patch = mock.patch("dynamics.utils.SQLiteCache.set", mock.MagicMock(side_effect=no_token_caching))
+        patch.start()
+        dynamics_client = DynamicsClient("", "", "", "", [])
+        yield dynamics_client
+        try:
+            patch.stop()
+        except RuntimeError:
+            pass
 
 
 @pytest.fixture
@@ -42,6 +56,15 @@ def dynamics_client(request, _dynamics_client_constructor) -> DynamicsClient:
         client_response=request.param[2],
     ) as client:
         yield client
+
+
+class ResponseMock:
+    def __init__(self, *, data: RequestType, status_code: int):
+        self.data = data
+        self.status_code = status_code
+
+    def json(self) -> RequestType:
+        return self.data
 
 
 class ClientResponse(DynamicsClient):
@@ -100,9 +123,15 @@ def dynamics_client_response(
         yield client
 
 
-@pytest.fixture(scope="session")
-def _dynamics_client_constructor():
-    with mock.patch("requests_oauthlib.oauth2_session.OAuth2Session.fetch_token", new_callable=mock.PropertyMock):
-        with mock.patch("dynamics.utils.SQLiteCache.set", new_callable=mock.PropertyMock):
-            dynamics_client = DynamicsClient("", "", "", "", [])
-            yield dynamics_client
+@contextmanager
+def dynamics_client_response_mirror(client: DynamicsClient, *, method: Literal["post", "patch"]) -> DynamicsClient:
+    """Make OAuthSessionClient mirror any post or patch data given to it."""
+
+    def mirror(url: str, data: bytes, headers: Dict[str, Any]) -> ResponseMock:
+        return ResponseMock(data=json.loads(data.decode()), status_code=200)
+
+    with mock.patch(
+        f"requests_oauthlib.oauth2_session.OAuth2Session.{method}",
+        mock.MagicMock(side_effect=mirror),
+    ):
+        yield client

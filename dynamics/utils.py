@@ -4,6 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from uuid import UUID
 
 import pytz
 
@@ -15,6 +16,7 @@ __all__ = [
     "from_dynamics_date_format",
     "sentinel",
     "cache",
+    "is_valid_uuid",
 ]
 
 
@@ -24,7 +26,12 @@ logger = logging.getLogger(__name__)
 class sentinel:  # pylint: disable=C0103
     """Sentinel value."""
 
-    def __bool__(self):
+
+def is_valid_uuid(value: str):
+    try:
+        uuid = UUID(value)
+        return str(uuid) == value
+    except Exception:  # pylint: disable=W0703
         return False
 
 
@@ -78,10 +85,10 @@ def sqlite_method(method):
         try:
             value = method(*args, **kwargs)
             self.con.commit()
-        except Exception as error:
+        except Exception as sqlerror:
             self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
             self.con.close()
-            raise error
+            raise sqlerror
 
         self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
         self.con.close()

@@ -51,9 +51,6 @@ class DynamicsException(APIException):
     default_detail = "Dynamics Web API call failed."
     default_code = "dynamics_link_failed"
 
-    def __init__(self, detail=None, code=None, **kwargs):  # pylint: disable=W0613
-        super().__init__(detail, code)
-
 
 class ParseError(DynamicsException):
     status_code = status.HTTP_400_BAD_REQUEST
@@ -81,13 +78,8 @@ class NotFound(DynamicsException):
 
 class MethodNotAllowed(DynamicsException):
     status_code = status.HTTP_405_METHOD_NOT_ALLOWED
-    default_detail = 'Method "{method}" not allowed.'
+    default_detail = "Method not allowed."
     default_code = "dynamics_method_not_allowed"
-
-    def __init__(self, method: str, detail=None, code=None):
-        if detail is None:
-            self.default_detail = self.default_detail.format(method=method)
-        super().__init__(detail=detail, code=code)
 
 
 class DuplicateRecordError(DynamicsException):
@@ -104,19 +96,20 @@ class PayloadTooLarge(DynamicsException):
 
 
 class APILimitsExceeded(DynamicsException):
-    """Error when API protection limits are exceeded."""
+    """Error when API protection limits are exceeded.
 
-    # Dynamics Web API service protection limits were exceeded.
-    # This can be due to any of the following reasons:
-    #
-    # 1. Over 6000 requests within a 5 minute sliding window.
-    # 2. Combined request execution time exceeded 20 minutes within a 5 minute sliding window.
-    # 3. Over 52 concurrent request.
-    # 4. Maximum number of API requests per 24 hours exceeded (depends on Dynamics licence).
-    #
-    # You can read more here:
-    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/api-limits
-    # https://docs.microsoft.com/en-us/power-platform/admin/api-request-limits-allocations
+    Dynamics Web API service protection limits were exceeded.
+    This can be due to any of the following reasons:
+
+    1. Over 6000 requests within a 5 minute sliding window.
+    2. Combined request execution time exceeded 20 minutes within a 5 minute sliding window.
+    3. Over 52 concurrent request.
+    4. Maximum number of API requests per 24 hours exceeded (depends on Dynamics licence).
+
+    You can read more here:
+    https://docs.microsoft.com/en-us/powerapps/developer/data-platform/api-limits
+    https://docs.microsoft.com/en-us/power-platform/admin/api-request-limits-allocations
+    """
 
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
     default_detail = "Dynamics Web API limits were exceeded."

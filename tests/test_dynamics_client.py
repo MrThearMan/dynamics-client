@@ -566,8 +566,6 @@ def test_client_init_from_cache():
 
     assert client._session.token == "token"
 
-    cache.set("dynamics-client-token", None)
-
 
 def test_client_query__table(dynamics_client):
     dynamics_client.table = "table"
@@ -864,3 +862,11 @@ def test_client_get_next_page__over_pagesize(dynamics_client):
         ],
     ):
         assert dynamics_client.get() == dynamics_client._output_  # noqa
+
+
+# TODO: Test "raise separately"
+# TODO: Test "simplify errors"
+# TODO: Test a very complex query (multi layer expand, etc.)
+# TODO: Test "request_counter"
+# TODO: Test "reset_query"
+# TODO: Test headers are set on http call

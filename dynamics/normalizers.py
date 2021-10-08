@@ -22,7 +22,7 @@ def as_int(value: Any, default: int = 0) -> int:
     try:
         if isinstance(value, str):
             value = value.replace(",", ".")
-        return int(value)
+        return int(float(value))
     except (ValueError, TypeError):
         return default
 
@@ -38,7 +38,7 @@ def as_float(value: Any, default: float = 0.0) -> float:
 
 def as_str(value: Any, default: str = "") -> str:
     try:
-        if value in (True, False, None):
+        if value is True or value is False or value is None:
             return default
         return str(value)
     except (ValueError, TypeError):
@@ -48,7 +48,7 @@ def as_str(value: Any, default: str = "") -> str:
 def as_bool(value: Any, default: bool = False) -> bool:
     try:
         return bool(value)
-    except (ValueError, TypeError):
+    except Exception:  # pylint: disable=W0703
         return default
 
 

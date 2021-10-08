@@ -157,7 +157,7 @@ class Actions:
         """
 
         self.client.reset_query()
-        self.client.action = "CancelSalesOrder"
+        self.client.action = "CloseQuote"
 
         data = {
             "QuoteClose": {
@@ -207,6 +207,28 @@ class Actions:
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
+    def calculate_quote_price(self, quote_id: str, **kwargs) -> None:
+        """Calculate the price of a quote.
+
+        :param quote_id: Quote to calculate the price for.
+        """
+
+        self.client.reset_query()
+        self.client.action = "CalculatePrice"
+
+        data = {
+            "Target": {
+                "quoteid": quote_id,
+                "@odata.type": "Microsoft.Dynamics.CRM.quote",
+            },
+        }
+
+        self.client.post(
+            data=data,
+            simplify_errors=kwargs.pop("simplify_errors", False),
+            raise_separately=kwargs.pop("raise_separately", []),
+        )
+
     def cancel_order(self, order_id: str, reason: int = None, **kwargs) -> None:
         """Construct POST data to use in 'CancelSalesOrder' action
 
@@ -244,28 +266,6 @@ class Actions:
         self.client.table = "salesorders"
         self.client.row_id = order_id
         self.client.delete(
-            simplify_errors=kwargs.pop("simplify_errors", False),
-            raise_separately=kwargs.pop("raise_separately", []),
-        )
-
-    def calculate_quote_price(self, quote_id: str, **kwargs) -> None:
-        """Calculate the price of a quote.
-
-        :param quote_id: Quote to calculate the price for.
-        """
-
-        self.client.reset_query()
-        self.client.action = "CalculatePrice"
-
-        data = {
-            "Target": {
-                "quoteid": quote_id,
-                "@odata.type": "Microsoft.Dynamics.CRM.quote",
-            },
-        }
-
-        self.client.post(
-            data=data,
             simplify_errors=kwargs.pop("simplify_errors", False),
             raise_separately=kwargs.pop("raise_separately", []),
         )
