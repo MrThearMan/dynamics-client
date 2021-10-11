@@ -6,7 +6,11 @@ from functools import wraps
 from pathlib import Path
 from uuid import UUID
 
-import pytz
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from .typing import Any, Optional
 
@@ -39,13 +43,12 @@ def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
     """Convert a datetime-object to a Dynamics compatible ISO formatted date string.
 
     :param date: Datetime object.
-    :param from_timezone: Name of the timezone, from 'pytz.all_timezones', the date is in.
+    :param from_timezone: Time zone name from the IANA Time Zone Database the date is in.
                           Dynamics dates are in UCT, so timezoned values need to be converted to it.
     """
 
     if from_timezone is not None and date.tzinfo is None:
-        timezone_ = pytz.timezone(from_timezone)
-        date: datetime = timezone_.localize(date)
+        date: datetime = date.replace(tzinfo=ZoneInfo(from_timezone))
 
     if date.tzinfo is not None:
         date -= date.utcoffset()
@@ -57,12 +60,11 @@ def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
     """Convert a Dynamics compatible ISO formatted date string to a datetime-object.
 
     :param date: Date string in form: YYYY-mm-ddTHH:MM:SSZ
-    :param to_timezone: Name of the timezone, from 'pytz.all_timezones', to convert the date to.
+    :param to_timezone: Time zone name from the IANA Time Zone Database to convert the date to.
                         This won't add 'tzinfo', instead the actual time part will be changed from UCT
                         to what the time is at 'to_timezone'.
     """
-    timezone_ = pytz.timezone(to_timezone)
-    local_time: datetime = timezone_.localize(datetime.fromisoformat(date.replace("Z", "")))
+    local_time = datetime.fromisoformat(date.replace("Z", "")).replace(tzinfo=ZoneInfo(to_timezone))
     local_time += local_time.utcoffset()
     local_time = local_time.replace(tzinfo=None)
     return local_time
