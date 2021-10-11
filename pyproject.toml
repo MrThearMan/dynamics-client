@@ -123,17 +123,13 @@ python =
     3.9: py39
 
 [testenv]
+whitelist_externals =
+    poetry
 setenv =
     PYTHONPATH = {toxinidir}
-deps =
-    typing-extensions
-    pytest-cov
-    toml
-    oauthlib
-    requests-oauthlib
-    pytz
 commands =
-    coverage run -m pytest -vv -s
+    poetry install
+    poetry run coverage run -m pytest -vv -s
 """
 
 [build-system]
