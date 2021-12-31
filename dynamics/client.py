@@ -288,21 +288,23 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
 
-    def _error_handling(self, status_code: int, error_message: str, method: MethodType):
+    def error_handling(self, status_code: int, error_message: str, error_code: str, method: MethodType):
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
 
         :param status_code: Error status from dynamics
         :param error_message: Error message from dynamics.
+        :param error_code: Error code from dynamics.
         :param method: HTTP method in question.
         """
 
         logger.warning(
-            "Dynamics client <[%s] %s> failed with status %d: %s",
+            "Dynamics client <[%s] %s> failed with status %d: %s (%s)",
             method.upper(),
             self.current_query,
             status_code,
             error_message,
+            error_code,
         )
         error = self.error_dict.get(status_code, DynamicsException)
         raise error(detail=error_message)
@@ -333,12 +335,22 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         count = data.get("@odata.count", "")
 
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="get")
+            self.error_handling(
+                status_code=response.status_code,
+                error_message=errors.get("message"),
+                error_code=errors.get("code"),
+                method="get",
+            )
         elif not entities:
             if not_found_ok:
                 return []
             message = "No records matching the given criteria."
-            self._error_handling(status_code=status.HTTP_404_NOT_FOUND, error_message=message, method="get")
+            self.error_handling(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_message=message,
+                error_code="not_found",
+                method="get",
+            )
 
         # Fetch more data if needed
         for i, row in enumerate(entities):
@@ -394,7 +406,12 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="post")
+            self.error_handling(
+                status_code=response.status_code,
+                error_message=errors.get("message"),
+                error_code=errors.get("code"),
+                method="post",
+            )
 
         return data
 
@@ -421,7 +438,12 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="patch")
+            self.error_handling(
+                status_code=response.status_code,
+                error_message=errors.get("message"),
+                error_code=errors.get("code"),
+                method="patch",
+            )
 
         return data
 
@@ -444,7 +466,12 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         errors = data.get("error")
         if errors:
-            self._error_handling(status_code=response.status_code, error_message=errors.get("message"), method="delete")
+            self.error_handling(
+                status_code=response.status_code,
+                error_message=errors.get("message"),
+                error_code=errors.get("code"),
+                method="delete",
+            )
 
     @property
     def table(self) -> str:
