@@ -39,7 +39,7 @@ submit-docs:
 	@poetry run mkdocs gh-deploy
 
 tests:
-	@poetry run coverage run pytest -vv -s
+	@poetry run coverage run pytest -vv -s  --log-cli-level=INFO
 
 tox:
 	@poetry run tox

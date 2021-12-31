@@ -10,9 +10,10 @@ Date: April 5th, 2021.
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 
-from oauthlib.oauth2 import BackendApplicationClient
+from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
 from requests_oauthlib import OAuth2Session
 
 from . import status
@@ -57,6 +58,30 @@ __all__ = ["DynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_token() -> OAuth2Token:
+    """Get dynamics client token in a thread, so it can be done in an async context."""
+
+    def task() -> OAuth2Token:
+        return cache.get("dynamics-client-token", None)
+
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(task)
+        return future.result()
+
+
+def set_token(token: OAuth2Token):
+    """Set dynamics client token in a thread, so it can be done in an async context."""
+
+    def task():
+        name = "dynamics-client-token"
+        expires = int(token["expires_in"]) - 60
+        cache.set(name, token, expires)
+
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(task)
+        return future.result()
 
 
 def error_simplification_available(func):
@@ -119,10 +144,10 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._api_url = api_url.rstrip("/") + "/"
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
-        token = cache.get("dynamics-client-token", None)
+        token = get_token()
         if token is None:
             token = self._session.fetch_token(token_url=token_url, client_secret=client_secret, scope=scope)
-            cache.set("dynamics-client-token", token, int(token.get("expires_in", 3599)) - 60)
+            set_token(token)
         else:
             self._session.token = token
 
@@ -751,3 +776,9 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             raise ValueError(f"Max pagesize is 5000. Got {value}.")
 
         self._pagesize = value
+
+    # TODO: fetchXml:
+    #  https://docs.microsoft.com/en-us/powerapps/developer/data-platform/
+    #   use-fetchxml-construct-query
+    #  https://docs.microsoft.com/en-us/powerapps/developer/data-platform/
+    #   webapi/retrieve-and-execute-predefined-queries#use-custom-fetchxml

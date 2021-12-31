@@ -17,7 +17,6 @@ from dynamics.exceptions import (
     WebAPIUnavailable,
 )
 from dynamics.typing import MethodType
-from dynamics.utils import cache
 
 from .conftest import ClientResponse, ResponseMock, dynamics_client_response
 
