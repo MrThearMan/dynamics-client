@@ -51,7 +51,9 @@ from .utils import sentinel
 try:
     from django.core.cache import cache
 except ImportError:
-    from .utils import cache
+    from .utils import SQLiteCache
+
+    cache = SQLiteCache()
 
 
 __all__ = ["DynamicsClient"]
@@ -106,7 +108,8 @@ def error_simplification_available(func):
             logger.warning(error)
             if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
                 raise error
-            raise DynamicsException("There was a problem communicating with the server.") from error
+            self: "DynamicsClient" = args[0]
+            raise DynamicsException(self.simplified_error_message) from error
 
     return inner
 
@@ -115,6 +118,10 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
+    actions_class: Type[Actions] = Actions
+    functions_class: Type[Functions] = Functions
+    simplified_error_message: str = "There was a problem communicating with the server."
+
     error_dict = {
         status.HTTP_400_BAD_REQUEST: ParseError,
         status.HTTP_401_UNAUTHORIZED: AuthenticationFailed,
@@ -124,6 +131,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         status.HTTP_412_PRECONDITION_FAILED: DuplicateRecordError,
         status.HTTP_413_REQUEST_ENTITY_TOO_LARGE: PayloadTooLarge,
         status.HTTP_429_TOO_MANY_REQUESTS: APILimitsExceeded,
+        status.HTTP_500_INTERNAL_SERVER_ERROR: DynamicsException,
         status.HTTP_501_NOT_IMPLEMENTED: OperationNotImplemented,
         status.HTTP_503_SERVICE_UNAVAILABLE: WebAPIUnavailable,
     }
@@ -151,9 +159,9 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         else:
             self._session.token = token
 
-        self.actions = Actions(client=self)
+        self.actions = self.actions_class(client=self)
         """Predefined dynamics API actions. Used to make certain changes to data."""
-        self.functions = Functions(client=self)
+        self.functions = self.functions_class(client=self)
         """Predefined dynamics API functions. Used to fetch certain types of data."""
 
         self._select: List[str] = []
@@ -192,13 +200,13 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         :raises KeyError: An environment variable was not configured properly
         """
 
-        base_url = os.environ["DYNAMICS_API_URL"]
+        api_url = os.environ["DYNAMICS_API_URL"]
         token_url = os.environ["DYNAMICS_TOKEN_URL"]
         client_id = os.environ["DYNAMICS_CLIENT_ID"]
         client_secret = os.environ["DYNAMICS_CLIENT_SECRET"]
         scope = os.environ["DYNAMICS_SCOPE"].split(",")
 
-        return cls(base_url, token_url, client_id, client_secret, scope)
+        return cls(api_url, token_url, client_id, client_secret, scope)
 
     @property
     def current_query(self) -> str:

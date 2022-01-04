@@ -8,6 +8,7 @@ from dynamics.exceptions import (
     APILimitsExceeded,
     AuthenticationFailed,
     DuplicateRecordError,
+    DynamicsException,
     MethodNotAllowed,
     NotFound,
     OperationNotImplemented,
@@ -120,6 +121,14 @@ def test_client_get_request(dynamics_client):
         ),
         ClientResponse(
             session_response=ResponseMock(
+                data={"error": {"message": "This is a DynamicsException"}},
+                status_code=500,
+            ),
+            method="get",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
                 data={"value": [], "error": {"message": "This is a OperationNotImplemented"}},
                 status_code=501,
             ),
@@ -141,7 +150,7 @@ def test_client_get_request__errors(dynamics_client):
     with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.get()
     nf_message = "No records matching the given criteria."
-    assert dynamics_client._input_.get("error", {}).get("message", nf_message) == exc_info.value.args[0]
+    assert dynamics_client._input_.data.get("error", {}).get("message", nf_message) == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -161,7 +170,7 @@ def test_client_get_request__errors(dynamics_client):
     indirect=True,
 )
 def test_client_post_request(dynamics_client):
-    assert dynamics_client.post(data=dynamics_client._input_) == dynamics_client._output_
+    assert dynamics_client.post(data=dynamics_client._input_.data) == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
@@ -230,6 +239,14 @@ def test_client_post_request(dynamics_client):
             ),
             method="post",
             client_response=APILimitsExceeded,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
+                data={"error": {"message": "This is a DynamicsException"}},
+                status_code=500,
+            ),
+            method="post",
+            client_response=DynamicsException,
         ),
         ClientResponse(
             session_response=ResponseMock(
@@ -254,7 +271,7 @@ def test_client_post_request__errors(dynamics_client):
     with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.post({})
 
-    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -274,7 +291,7 @@ def test_client_post_request__errors(dynamics_client):
     indirect=True,
 )
 def test_client_patch_request(dynamics_client):
-    assert dynamics_client.patch(data=dynamics_client._input_) == dynamics_client._output_
+    assert dynamics_client.patch(data=dynamics_client._input_.data) == dynamics_client._output_
 
 
 @pytest.mark.parametrize(
@@ -346,6 +363,14 @@ def test_client_patch_request(dynamics_client):
         ),
         ClientResponse(
             session_response=ResponseMock(
+                data={"error": {"message": "This is a DynamicsException"}},
+                status_code=500,
+            ),
+            method="patch",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
                 data={"error": {"message": "This is a OperationNotImplemented"}},
                 status_code=501,
             ),
@@ -367,7 +392,7 @@ def test_client_patch_request__errors(dynamics_client):
     with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.patch({})
 
-    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -459,6 +484,14 @@ def test_client_delete_request(dynamics_client):
         ),
         ClientResponse(
             session_response=ResponseMock(
+                data={"error": {"message": "This is a DynamicsException"}},
+                status_code=500,
+            ),
+            method="delete",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
                 data={"error": {"message": "This is a OperationNotImplemented"}},
                 status_code=501,
             ),
@@ -480,7 +513,7 @@ def test_client_delete_request__errors(dynamics_client):
     with pytest.raises(dynamics_client._output_) as exc_info:
         dynamics_client.delete()
 
-    assert dynamics_client._input_.get("error", {}).get("message") == exc_info.value.args[0]
+    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
 
 
 @pytest.mark.parametrize(
@@ -863,9 +896,218 @@ def test_client_get_next_page__over_pagesize(dynamics_client):
         assert dynamics_client.get() == dynamics_client._output_  # noqa
 
 
-# TODO: Test "raise separately"
-# TODO: Test "simplify errors"
-# TODO: Test a very complex query (multi layer expand, etc.)
-# TODO: Test "request_counter"
-# TODO: Test "reset_query"
-# TODO: Test headers are set on http call
+@pytest.mark.parametrize(
+    "dynamics_client",
+    [
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="get",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="post",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="patch",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="delete",
+            client_response=DynamicsException,
+        ),
+    ],
+    indirect=True,
+)
+def test_client_simplify_errors(dynamics_client):
+    with pytest.raises(dynamics_client._output_) as exc_info:
+        if dynamics_client._method_ == "get":
+            dynamics_client.get(simplify_errors=True)
+        elif dynamics_client._method_ == "post":
+            dynamics_client.post({}, simplify_errors=True)
+        elif dynamics_client._method_ == "patch":
+            dynamics_client.patch({}, simplify_errors=True)
+        elif dynamics_client._method_ == "delete":
+            dynamics_client.delete(simplify_errors=True)
+
+    assert exc_info.value.args[0] == dynamics_client.simplified_error_message
+
+
+@pytest.mark.parametrize(
+    "dynamics_client",
+    [
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="get",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=TypeError("Unexpected Error!"),
+            method="get",
+            client_response=TypeError,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="post",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=TypeError("Unexpected Error!"),
+            method="post",
+            client_response=TypeError,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="patch",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=TypeError("Unexpected Error!"),
+            method="patch",
+            client_response=TypeError,
+        ),
+        ClientResponse(
+            session_response=ValueError("Unexpected Error!"),
+            method="delete",
+            client_response=DynamicsException,
+        ),
+        ClientResponse(
+            session_response=TypeError("Unexpected Error!"),
+            method="delete",
+            client_response=TypeError,
+        ),
+    ],
+    indirect=True,
+)
+def test_client_simplify_errors__raise_separately(dynamics_client):
+    with pytest.raises(dynamics_client._output_) as exc_info:
+        if dynamics_client._method_ == "get":
+            dynamics_client.get(simplify_errors=True, raise_separately=[TypeError])
+        elif dynamics_client._method_ == "post":
+            dynamics_client.post({}, simplify_errors=True, raise_separately=[TypeError])
+        elif dynamics_client._method_ == "patch":
+            dynamics_client.patch({}, simplify_errors=True, raise_separately=[TypeError])
+        elif dynamics_client._method_ == "delete":
+            dynamics_client.delete(simplify_errors=True, raise_separately=[TypeError])
+
+    msg = dynamics_client._input_.args[0]
+    if issubclass(dynamics_client._output_, DynamicsException):
+        msg = dynamics_client.simplified_error_message
+
+    assert exc_info.value.args[0] == msg
+
+
+@pytest.mark.parametrize(
+    "dynamics_client",
+    [
+        ClientResponse(
+            session_response=[
+                ResponseMock(
+                    data={"foo": "bar"},
+                    status_code=200,
+                ),
+                ResponseMock(
+                    data={"foo": "baz"},
+                    status_code=200,
+                ),
+            ],
+            method="get",
+            client_response=DynamicsException,
+        ),
+    ],
+    indirect=True,
+)
+def test_client_request_counter(dynamics_client):
+    assert dynamics_client.request_counter == 0
+    dynamics_client.get()
+    assert dynamics_client.request_counter == 1
+    dynamics_client.get()
+    assert dynamics_client.request_counter == 2
+
+
+def test_client_reset_query(dynamics_client):
+    dynamics_client.table = "table"
+    dynamics_client.row_id = "row"
+    dynamics_client.action = "action"
+    dynamics_client.select = ["foo", "bar"]
+    dynamics_client.add_ref_to_property = "foo"
+    dynamics_client.pre_expand = "fizzbuzz"
+    dynamics_client.show_annotations = True
+    dynamics_client.filter = {"foo", "bar"}
+    dynamics_client.expand = {"foo": {"select": ["bar", "baz"], "filter": ["fizz", "buzz"]}}
+    dynamics_client.apply = "statement"
+    dynamics_client.top = 2
+    dynamics_client.orderby = {"foo": "asc"}
+    dynamics_client.count = True
+    dynamics_client["foo"] = "bar"
+
+    # Not overridden
+    dynamics_client.pagesize = 2000
+
+    assert dynamics_client.current_query != "/"
+    assert "foo" in dynamics_client.headers
+    assert dynamics_client.pagesize == 2000
+
+    dynamics_client.reset_query()
+
+    assert dynamics_client.current_query == "/"
+    assert "foo" not in dynamics_client.headers
+    assert dynamics_client.pagesize == 2000
+
+
+@pytest.mark.parametrize(
+    "dynamics_client",
+    [
+        ClientResponse(
+            session_response=ResponseMock(
+                data={"foo": "bar"},
+                status_code=200,
+            ),
+            method="get",
+            client_response=None,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
+                data={"foo": "bar"},
+                status_code=200,
+            ),
+            method="post",
+            client_response=None,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
+                data={"foo": "bar"},
+                status_code=200,
+            ),
+            method="patch",
+            client_response=None,
+        ),
+        ClientResponse(
+            session_response=ResponseMock(
+                data={"foo": "bar"},
+                status_code=200,
+            ),
+            method="delete",
+            client_response=None,
+        ),
+    ],
+    indirect=True,
+)
+def test_client_headers_are_set_on_call(dynamics_client):
+    with mock.patch(
+        "dynamics.client.DynamicsClient.set_default_headers",
+        side_effect=dynamics_client.set_default_headers,
+    ) as patch:
+        if dynamics_client._method_ == "get":
+            dynamics_client.get()
+        elif dynamics_client._method_ == "post":
+            dynamics_client.post({})
+        elif dynamics_client._method_ == "patch":
+            dynamics_client.patch({})
+        elif dynamics_client._method_ == "delete":
+            dynamics_client.delete()
+
+    patch.assert_called_once()

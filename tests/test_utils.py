@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from dynamics.utils import cache, from_dynamics_date_format, is_valid_uuid, to_dynamics_date_format
+from dynamics.utils import from_dynamics_date_format, is_valid_uuid, to_dynamics_date_format
 
 
 @pytest.mark.parametrize(
@@ -44,7 +44,7 @@ def test_utils__from_dynamics_date_format(value: str, from_timezone: str, result
     assert from_dynamics_date_format(value, from_timezone) == result
 
 
-def test_utils__cache():
+def test_utils__cache(cache):
     cache.set("foo", "bar", 0.5)
     assert cache.get("foo") == "bar"
     sleep(0.5)

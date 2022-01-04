@@ -1,7 +1,21 @@
 try:
-    from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Type, TypedDict, Union
+    from typing import (
+        TYPE_CHECKING,
+        Any,
+        Callable,
+        Dict,
+        List,
+        Literal,
+        Optional,
+        Sequence,
+        Set,
+        Tuple,
+        Type,
+        TypedDict,
+        Union,
+    )
 except ImportError:
-    from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union
+    from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Type, Union
 
     from typing_extensions import Literal, TypedDict
 
@@ -27,6 +41,7 @@ __all__ = [
     "ExpandValues",
     "ExpandValues",
     "ExpandDict",
+    "Callable",
 ]
 
 

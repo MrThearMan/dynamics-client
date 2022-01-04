@@ -19,8 +19,8 @@ __all__ = [
     "to_dynamics_date_format",
     "from_dynamics_date_format",
     "sentinel",
-    "cache",
     "is_valid_uuid",
+    "SQLiteCache",
 ]
 
 
@@ -174,6 +174,3 @@ class SQLiteCache:
     def set(self, key: str, value: Any, timeout: int = DEFAULT_TIMEOUT) -> None:
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         self.con.execute(self._set_sql, data)
-
-
-cache = SQLiteCache()
