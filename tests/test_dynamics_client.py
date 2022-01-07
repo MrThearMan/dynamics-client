@@ -17,9 +17,8 @@ from dynamics.exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
+from dynamics.test import ClientResponse, ResponseMock, dynamics_client_response
 from dynamics.typing import MethodType
-
-from .conftest import ClientResponse, ResponseMock, dynamics_client_response
 
 
 @pytest.mark.parametrize(

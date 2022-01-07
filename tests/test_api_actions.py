@@ -5,9 +5,8 @@ import pytest
 
 from dynamics.api_actions import Actions
 from dynamics.enums import QuoteState
+from dynamics.test import ResponseMock, dynamics_client_response, dynamics_client_response_mirror
 from dynamics.typing import Any, Dict, List, Optional
-
-from .conftest import ResponseMock, dynamics_client_response, dynamics_client_response_mirror
 
 
 @pytest.mark.parametrize("cc,bcc", [[["cc1"], ["bcc1"]], [None, None]])

@@ -4,8 +4,7 @@ import pytest
 
 from dynamics.api_functions import Functions
 from dynamics.enums import EntityFilter, TargetFieldType
-
-from .conftest import ResponseMock, dynamics_client_response
+from dynamics.test import ResponseMock, dynamics_client_response
 
 
 PLAIN = ResponseMock(data={"value": [{"foo": "bar"}]}, status_code=200)

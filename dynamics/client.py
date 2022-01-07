@@ -315,7 +315,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             error_code,
         )
         error = self.error_dict.get(status_code, DynamicsException)
-        raise error(detail=error_message)
+        raise error(error_message)
 
     @error_simplification_available
     def get(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:

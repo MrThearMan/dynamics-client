@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamics-client"
-version = "0.2.4"
+version = "0.2.5"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
@@ -92,10 +92,6 @@ notes = "FIXME,XXX,BUG"
 python_version = "3.9"
 warn_return_any = "True"
 warn_unused_configs = "True"
-plugins = [
-    "mypy_django_plugin.main",
-    "mypy_drf_plugin.main",
-]
 
 [tool.coverage.run]
 relative_files = true
