@@ -1,10 +1,16 @@
 import logging
 import pickle
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from typing import List, Type
 from uuid import UUID
+
+from oauthlib.oauth2 import OAuth2Token
+
+from .exceptions import DynamicsException
 
 
 try:
@@ -12,7 +18,11 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import Any, Optional
+from .typing import TYPE_CHECKING, Any, Optional
+
+
+if TYPE_CHECKING:
+    from . import DynamicsClient
 
 
 __all__ = [
@@ -21,6 +31,10 @@ __all__ = [
     "sentinel",
     "is_valid_uuid",
     "SQLiteCache",
+    "cache",
+    "get_token",
+    "set_token",
+    "error_simplification_available",
 ]
 
 
@@ -124,6 +138,7 @@ class SQLiteCache:
         "ON CONFLICT(key) DO UPDATE SET value = :value, exp = :exp"
     )
     _delete_sql = "DELETE FROM cache WHERE key = :key"
+    _clear_sql = "DELETE FROM cache"
 
     def __init__(self, *, filename: str = "dynamics.cache", path: str = None):
         """Create a cache using sqlite3.
@@ -174,3 +189,65 @@ class SQLiteCache:
     def set(self, key: str, value: Any, timeout: int = DEFAULT_TIMEOUT) -> None:
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         self.con.execute(self._set_sql, data)
+
+    @sqlite_method
+    def clear(self) -> None:
+        self.con.execute(self._clear_sql)
+
+
+try:
+    from django.core.cache import cache
+except ImportError:
+    cache = SQLiteCache()
+
+
+def get_token() -> OAuth2Token:
+    """Get dynamics client token in a thread, so it can be done in an async context."""
+
+    def task() -> OAuth2Token:
+        return cache.get("dynamics-client-token", None)
+
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(task)
+        return future.result()
+
+
+def set_token(token: OAuth2Token):
+    """Set dynamics client token in a thread, so it can be done in an async context."""
+
+    def task():
+        name = "dynamics-client-token"
+        expires = int(token["expires_in"]) - 60
+        cache.set(name, token, expires)
+
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(task)
+        return future.result()
+
+
+def error_simplification_available(func):
+    """Errors in the function decorated with this decorator can be simplified to just a
+    DynamicsException with default error message using the keyword: 'simplify_errors'.
+    This is useful if you want to hide error details from frontend users.
+
+    You can use the 'raise_separately' keyword to list exception types to exclude from this
+    simplification, if separate handling is needed.
+
+    :param func: Decorated function.
+    """
+
+    @wraps(func)
+    def inner(*args, **kwargs):
+        simplify_errors: bool = kwargs.pop("simplify_errors", False)
+        raise_separately: List[Type[Exception]] = kwargs.pop("raise_separately", [])
+
+        try:
+            return func(*args, **kwargs)
+        except Exception as error:  # pylint: disable=W0703
+            logger.warning(error)
+            if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
+                raise error
+            self: "DynamicsClient" = args[0]
+            raise DynamicsException(self.simplified_error_message) from error
+
+    return inner

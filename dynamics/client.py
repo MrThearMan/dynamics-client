@@ -10,10 +10,8 @@ Date: April 5th, 2021.
 import json
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
-from functools import wraps
 
-from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
+from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 from . import status
@@ -45,73 +43,13 @@ from .typing import (
     OrderbyType,
     Type,
 )
-from .utils import sentinel
-
-
-try:
-    from django.core.cache import cache
-except ImportError:
-    from .utils import SQLiteCache
-
-    cache = SQLiteCache()
+from .utils import error_simplification_available, get_token, sentinel, set_token
 
 
 __all__ = ["DynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
-
-
-def get_token() -> OAuth2Token:
-    """Get dynamics client token in a thread, so it can be done in an async context."""
-
-    def task() -> OAuth2Token:
-        return cache.get("dynamics-client-token", None)
-
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(task)
-        return future.result()
-
-
-def set_token(token: OAuth2Token):
-    """Set dynamics client token in a thread, so it can be done in an async context."""
-
-    def task():
-        name = "dynamics-client-token"
-        expires = int(token["expires_in"]) - 60
-        cache.set(name, token, expires)
-
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(task)
-        return future.result()
-
-
-def error_simplification_available(func):
-    """Errors in the function decorated with this decorator can be simplified to just a
-    DynamicsException with default error message using the keyword: 'simplify_errors'.
-    This is useful if you want to hide error details from frontend users.
-
-    You can use the 'raise_separately' keyword to list exception types to exclude from this
-    simplification, if separate handling is needed.
-
-    :param func: Decorated function.
-    """
-
-    @wraps(func)
-    def inner(*args, **kwargs):
-        simplify_errors: bool = kwargs.pop("simplify_errors", False)
-        raise_separately: List[Type[Exception]] = kwargs.pop("raise_separately", [])
-
-        try:
-            return func(*args, **kwargs)
-        except Exception as error:  # pylint: disable=W0703
-            logger.warning(error)
-            if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
-                raise error
-            self: "DynamicsClient" = args[0]
-            raise DynamicsException(self.simplified_error_message) from error
-
-    return inner
 
 
 class DynamicsClient:  # pylint: disable=R0904,R0902

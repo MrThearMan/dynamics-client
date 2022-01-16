@@ -2,8 +2,9 @@ from datetime import datetime
 from time import sleep
 
 import pytest
+from oauthlib.oauth2.rfc6749.tokens import OAuth2Token
 
-from dynamics.utils import from_dynamics_date_format, is_valid_uuid, to_dynamics_date_format
+from dynamics.utils import from_dynamics_date_format, get_token, is_valid_uuid, set_token, to_dynamics_date_format
 
 
 @pytest.mark.parametrize(
@@ -52,3 +53,23 @@ def test_utils__cache(dynamics_cache):
 
     with pytest.raises(AttributeError):
         dynamics_cache.set("foo", lambda x: 100, 0.5)
+
+
+def test_utils__get_token(dynamics_cache):
+    value = get_token()
+    assert value is None
+    token = OAuth2Token(params={"foo": "bar"})
+    dynamics_cache.set("dynamics-client-token", token)
+
+    value = get_token()
+    assert value == token
+
+
+def test_utils__set_token(dynamics_cache):
+    value = dynamics_cache.get("dynamics-client-token", None)
+    assert value is None
+    token = OAuth2Token(params={"foo": "bar", "expires_in": 3600})
+    set_token(token)
+
+    value = dynamics_cache.get("dynamics-client-token", None)
+    assert value == token

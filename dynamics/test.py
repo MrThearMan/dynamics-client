@@ -11,6 +11,7 @@ from .typing import List, MethodType, Sequence, Type, Union
 
 
 __all__ = [
+    "dynamics_cache_constructor",
     "dynamics_cache",
     "dynamics_client_constructor",
     "dynamics_client",
@@ -27,7 +28,7 @@ ResponseType = Union[JsonType, Type[Exception]]
 
 
 @pytest.fixture(scope="session")
-def dynamics_cache():
+def dynamics_cache_constructor():
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
         from django.core.cache import cache  # pylint: disable=C0415,W0621
@@ -39,8 +40,15 @@ def dynamics_cache():
     return cache
 
 
+@pytest.fixture()
+def dynamics_cache(dynamics_cache_constructor):  # pylint: disable=W0621
+    """Imports the django cache instance or creates a SQLiteCache instance."""
+    dynamics_cache_constructor.clear()
+    yield dynamics_cache_constructor
+
+
 @pytest.fixture(scope="session")
-def dynamics_client_constructor(dynamics_cache):  # pylint: disable=W0621,W0613
+def dynamics_client_constructor(dynamics_cache_constructor):  # pylint: disable=W0621,W0613
     """Creates a mocked dynamics client for the session."""
 
     with patch("requests_oauthlib.oauth2_session.OAuth2Session.fetch_token"), patch("dynamics.client.set_token"):

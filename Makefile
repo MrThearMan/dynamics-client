@@ -1,35 +1,32 @@
 
-.PHONY: help dev-setup dev-docs build-docs submit-docs lock tests tox pre-commit black isort pylint flake8 mypy Makefile
+.PHONY: help serve-docs build-docs submit-docs tests tox hook pre-commit black isort pylint flake8 mypy Makefile
 
+# Trick to allow passing commands to make
+# Use quotes (" ") if command contains flags (-h / --help)
+args = `arg="$(filter-out $@,$(MAKECMDGOALS))" && echo $${arg:-${1}}`
+
+# If command doesn't match, do not throw error
+%:
+	@:
 
 help:
 	@echo ""
 	@echo "Commands:"
-	@echo "  dev-setup     Install poetry, the virtual environment, and pre-commit hook."
-	@echo "  dev-docs      Serve mkdocs on 127.0.0.1:8000 for development."
-	@echo "  build-docs    Build documentation site."
-	@echo "  submit-docs   Sumbit docs to github pages."
-	@echo "  lock          Resolve dependencies into the poetry lock-file."
-	@echo "  tests         Run tests with pytest-cov."
-	@echo "  tox           Run tests with tox."
-	@echo "  pre-commit    Run pre-commit hooks on all files."
-	@echo "  black         Run black on all files."
-	@echo "  isort         Run isort on all files."
-	@echo "  pylink        Run pylint on all files under pipeline_views/"
-	@echo "  flake8        Run flake8 on all files under pipeline_views/"
-	@echo "  mypy          Run mypy on all files under pipeline_views/"
+	@echo "  serve-docs       Serve mkdocs on 127.0.0.1:8000 for development."
+	@echo "  build-docs       Build documentation site."
+	@echo "  submit-docs      Sumbit docs to github pages."
+	@echo "  tests            Run all tests."
+	@echo "  test <name>      Run tests maching the given <name>"
+	@echo "  tox              Run tests tests with tox."
+	@echo "  hook             Install pre-commit hook."
+	@echo "  pre-commit       Run pre-commit hooks on all files."
+	@echo "  black            Run black on all files."
+	@echo "  isort            Run isort on all files."
+	@echo "  pylink           Run pylint on all files."
+	@echo "  flake8           Run flake8 on all files."
+	@echo "  mypy             Run mypy on all files."
 
-dev-setup:
-	@echo "If this fails, you may need to add Poetry's install directory to PATH and re-run this script."
-	@timeout 3
-	@curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
-	@poetry install
-	@poetry run pre-commit install
-
-lock:
-	@poetry lock
-
-dev-docs:
+serve-docs:
 	@poetry run mkdocs serve
 
 build-docs:
@@ -41,8 +38,14 @@ submit-docs:
 tests:
 	@poetry run coverage run pytest -vv -s  --log-cli-level=INFO
 
+test:
+	@poetry run pytest -s -vv -k $(call args, "")
+
 tox:
 	@poetry run tox
+
+hook:
+	@poetry run pre-commit install
 
 pre-commit:
 	@poetry run pre-commit run --all-files
