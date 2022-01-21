@@ -47,15 +47,16 @@ djangorestframework = {version = ">=3.12", optional = true}
 pytest-cov = "^3.0.0"
 tomli = "1.2.3"
 pre-commit = "^2.16.0"
-tox-gh-actions = "^2.8.1"
 tox = "^3.24.5"
+tox-gh-actions = "^2.8.1"
 coveralls = "^3.3.1"
-mkdocs = "^1.2.3"
 black = "^21.12b0"
 isort = "^5.10.1"
 flake8 = "^4.0.1"
 mypy = "^0.930"
 pylint = "^2.12.2"
+mkdocs = "^1.2.3"
+pymdown-extensions = "^9.1"
 
 [tool.poetry.extras]
 django = ["Django", "djangorestframework"]

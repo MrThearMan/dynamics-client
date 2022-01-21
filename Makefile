@@ -36,7 +36,7 @@ submit-docs:
 	@poetry run mkdocs gh-deploy
 
 tests:
-	@poetry run coverage run pytest -vv -s  --log-cli-level=INFO
+	@poetry run coverage run -m pytest -vv -s --log-cli-level=INFO
 
 test:
 	@poetry run pytest -s -vv -k $(call args, "")
