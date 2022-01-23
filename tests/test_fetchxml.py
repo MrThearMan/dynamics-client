@@ -64,10 +64,10 @@ def test_fech_xml__all_top_level_options():
 
     expected = (
         '<fetch mapping="logical" version="1.0" page="1" count="2" top="1" '
-        'aggregate="true" distinct="true" paging_cookie="foo" utc_offset="123123" '
-        'output_format="xml-auto" min_active_row_version="true" '
-        'return_total_record_count="true" no_lock="true"><entity '
-        'name="account"/><order attribute="name"/></fetch>'
+        'aggregate="true" distinct="true" paging-cookie="foo" utc-offset="123123" '
+        'output-format="xml-auto" min-active-row-version="true" '
+        'returntotalrecordcount="true" no-lock="true"><entity name="account"/><order '
+        'attribute="name"/></fetch>'
     )
 
     assert fetch_xml == expected
@@ -110,15 +110,15 @@ def test_fech_xml__all_entity_options():
         return
 
     expected = (
-        '<fetch><entity name="account" enable_prefiltering="true" '
-        'prefilter_parameter_name="foo"><attribute name="accountid" alias="pizza" '
-        'aggregate="count" groupby="true" distinct="true" date_grouping="day" '
-        'user_timezone="true" added_by="me" build="1.003017"/><filter type="or" '
-        'is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"/><link-entity '
-        'name="systemuser" to="owninguser" from="y" alias="foobar" link_type="outer" '
-        'visible="true" intersect="true" enable_prefiltering="true" '
-        'prefilter_parameter_name="xyz"/><order attribute="name" alias="x" '
+        '<fetch><entity name="account" enableprefiltering="true" '
+        'prefilterparametername="foo"><attribute name="accountid" alias="pizza" '
+        'aggregate="count" groupby="true" distinct="true" dategrouping="day" '
+        'usertimezone="true" addedby="me" build="1.003017"/><filter type="or" '
+        'isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"/><link-entity name="systemuser" '
+        'to="owninguser" from="y" alias="foobar" link-type="outer" visible="true" '
+        'intersect="true" enableprefiltering="true" '
+        'prefilterparametername="xyz"/><order attribute="name" alias="x" '
         'descending="true"/></entity></fetch>'
     )
 
@@ -196,22 +196,22 @@ def test_fech_xml__all_linked_entity_options():
 
     expected = (
         '<fetch><entity name="account"><link-entity name="systemuser" to="owninguser" '
-        'from="y" alias="foobar" link_type="outer" visible="true" intersect="true" '
-        'enable_prefiltering="true" prefilter_parameter_name="xyz"><attribute '
+        'from="y" alias="foobar" link-type="outer" visible="true" intersect="true" '
+        'enableprefiltering="true" prefilterparametername="xyz"><attribute '
         'name="accountid" alias="pizza" aggregate="count" groupby="true" '
-        'distinct="true" date_grouping="day" user_timezone="true" added_by="me" '
-        'build="1.003017"/><filter type="or" is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"/><order attribute="name" '
+        'distinct="true" dategrouping="day" usertimezone="true" addedby="me" '
+        'build="1.003017"/><filter type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"/><order attribute="name" '
         'alias="x" descending="true"/></link-entity><link-entity name="systemuser" '
-        'to="owninguser" from="y" alias="foobar" link_type="outer" visible="true" '
-        'intersect="true" enable_prefiltering="true" '
-        'prefilter_parameter_name="xyz"><link-entity name="systemuser-nested" '
-        'to="owninguser-nested" from="y" alias="foobar" link_type="outer" '
-        'visible="true" intersect="true" enable_prefiltering="true" '
-        'prefilter_parameter_name="xyz"/><link-entity name="systemuser-nested2" '
-        'to="owninguser-nested2" from="y" alias="foobar" link_type="outer" '
-        'visible="true" intersect="true" enable_prefiltering="true" '
-        'prefilter_parameter_name="xyz"/></link-entity></entity></fetch>'
+        'to="owninguser" from="y" alias="foobar" link-type="outer" visible="true" '
+        'intersect="true" enableprefiltering="true" '
+        'prefilterparametername="xyz"><link-entity name="systemuser-nested" '
+        'to="owninguser-nested" from="y" alias="foobar" link-type="outer" '
+        'visible="true" intersect="true" enableprefiltering="true" '
+        'prefilterparametername="xyz"/><link-entity name="systemuser-nested2" '
+        'to="owninguser-nested2" from="y" alias="foobar" link-type="outer" '
+        'visible="true" intersect="true" enableprefiltering="true" '
+        'prefilterparametername="xyz"/></link-entity></entity></fetch>'
     )
 
     assert fetch_xml == expected
@@ -250,18 +250,17 @@ def test_fech_xml__all_filter_options():
         return
 
     expected = (
-        '<fetch><entity name="account"><filter type="or" is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"><condition attribute="foo" '
-        'operator="eq" value="1" values="[\'foo\', \'bar\']" value_of="xxx" '
-        'column="xyz" entity_name="account" aggregate="count" '
-        'row_aggregate="countchildren" alias="python" uiname="what" uitype="is" '
+        '<fetch><entity name="account"><filter type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"><condition attribute="foo" '
+        'operator="eq" value="1" values="[\'foo\', \'bar\']" valueof="xxx" '
+        'column="xyz" entityname="account" aggregate="count" '
+        'rowaggregate="countchildren" alias="python" uiname="what" uitype="is" '
         'uihidden="1"/></filter><link-entity name="systemuser" '
-        'to="owninguser"><filter type="or" is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"/><filter type="and" '
-        'is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"><filter type="or" '
-        'is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"/></filter></link-entity></entity></fetch>'
+        'to="owninguser"><filter type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"/><filter type="and" '
+        'isquickfindfields="true" overridequickfindrecordlimitenabled="true"><filter '
+        'type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"/></filter></link-entity></entity></fetch>'
     )
 
     assert fetch_xml == expected
@@ -290,17 +289,16 @@ def test_fech_xml__adding_linked_entities_after_filter():
         return
 
     expected = (
-        '<fetch><entity name="account"><filter type="or" is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="true"><condition attribute="1" '
+        '<fetch><entity name="account"><filter type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="true"><condition attribute="1" '
         'operator="ne"/></filter><link-entity name="x" to="y"><filter type="and" '
-        'is_quick_find_fields="false" '
-        'override_quick_find_record_limit_enabled="true"><filter type="or" '
-        'is_quick_find_fields="true" '
-        'override_quick_find_record_limit_enabled="false"><condition attribute="1" '
+        'isquickfindfields="false" overridequickfindrecordlimitenabled="true"><filter '
+        'type="or" isquickfindfields="true" '
+        'overridequickfindrecordlimitenabled="false"><condition attribute="1" '
         'operator="lt"/></filter><condition attribute="1" '
         'operator="eq"/></filter></link-entity><link-entity name="foo" '
-        'to="bar"><filter type="or" is_quick_find_fields="false" '
-        'override_quick_find_record_limit_enabled="false"><condition attribute="1" '
+        'to="bar"><filter type="or" isquickfindfields="false" '
+        'overridequickfindrecordlimitenabled="false"><condition attribute="1" '
         'operator="gt"/></filter></link-entity></entity></fetch>'
     )
 

@@ -89,17 +89,17 @@ class FetchXMLBuilder:
         if distinct is not None:
             self._attrs["distinct"] = _serialize_bool(distinct)
         if paging_cookie is not None:
-            self._attrs["paging_cookie"] = paging_cookie
+            self._attrs["paging-cookie"] = paging_cookie
         if utc_offset is not None:
-            self._attrs["utc_offset"] = str(utc_offset)
+            self._attrs["utc-offset"] = str(utc_offset)
         if output_format is not None:
-            self._attrs["output_format"] = output_format
+            self._attrs["output-format"] = output_format
         if min_active_row_version is not None:
-            self._attrs["min_active_row_version"] = _serialize_bool(min_active_row_version)
+            self._attrs["min-active-row-version"] = _serialize_bool(min_active_row_version)
         if return_total_record_count is not None:
-            self._attrs["return_total_record_count"] = _serialize_bool(return_total_record_count)
+            self._attrs["returntotalrecordcount"] = _serialize_bool(return_total_record_count)
         if no_lock is not None:
-            self._attrs["no_lock"] = "true" if no_lock else "false"
+            self._attrs["no-lock"] = "true" if no_lock else "false"
 
         self.__linked_table_count = 0
 
@@ -233,9 +233,9 @@ class _EntityBuilder:
         self._attrs = FetchXMLEntityType(name=name)
 
         if enable_prefiltering is not None:
-            self._attrs["enable_prefiltering"] = _serialize_bool(enable_prefiltering)
+            self._attrs["enableprefiltering"] = _serialize_bool(enable_prefiltering)
         if prefilter_parameter_name is not None:
-            self._attrs["prefilter_parameter_name"] = prefilter_parameter_name
+            self._attrs["prefilterparametername"] = prefilter_parameter_name
 
         self._order: Optional[FetchXMLOrderType] = None
         self._all_attributes = False
@@ -307,11 +307,11 @@ class _EntityBuilder:
         if distinct is not None:
             attribute["distinct"] = _serialize_bool(distinct)
         if date_grouping is not None:
-            attribute["date_grouping"] = date_grouping
+            attribute["dategrouping"] = date_grouping
         if user_timezone is not None:
-            attribute["user_timezone"] = _serialize_bool(user_timezone)
+            attribute["usertimezone"] = _serialize_bool(user_timezone)
         if added_by is not None:
-            attribute["added_by"] = added_by
+            attribute["addedby"] = added_by
         if build is not None:
             attribute["build"] = build
 
@@ -455,15 +455,15 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
         if alias is not None:
             self._attrs["alias"] = alias
         if link_type is not None:
-            self._attrs["link_type"] = link_type
+            self._attrs["link-type"] = link_type
         if visible is not None:
             self._attrs["visible"] = _serialize_bool(visible)
         if intersect is not None:
             self._attrs["intersect"] = _serialize_bool(intersect)
         if enable_prefiltering is not None:
-            self._attrs["enable_prefiltering"] = _serialize_bool(enable_prefiltering)
+            self._attrs["enableprefiltering"] = _serialize_bool(enable_prefiltering)
         if prefilter_parameter_name is not None:
-            self._attrs["prefilter_parameter_name"] = prefilter_parameter_name
+            self._attrs["prefilterparametername"] = prefilter_parameter_name
 
         self._order: Optional[FetchXMLOrderType] = None
         self._all_attributes = False
@@ -535,11 +535,11 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
         if distinct is not None:
             attribute["distinct"] = _serialize_bool(distinct)
         if date_grouping is not None:
-            attribute["date_grouping"] = date_grouping
+            attribute["dategrouping"] = date_grouping
         if user_timezone is not None:
-            attribute["user_timezone"] = _serialize_bool(user_timezone)
+            attribute["usertimezone"] = _serialize_bool(user_timezone)
         if added_by is not None:
-            attribute["added_by"] = added_by
+            attribute["addedby"] = added_by
         if build is not None:
             attribute["build"] = build
 
@@ -712,9 +712,9 @@ class _FilterBuilder:
         self._attrs = FetchXMLFilterType(type=type_)
 
         if is_quick_find_fields is not None:
-            self._attrs["is_quick_find_fields"] = _serialize_bool(is_quick_find_fields)
+            self._attrs["isquickfindfields"] = _serialize_bool(is_quick_find_fields)
         if override_quick_find_record_limit_enabled is not None:
-            self._attrs["override_quick_find_record_limit_enabled"] = _serialize_bool(
+            self._attrs["overridequickfindrecordlimitenabled"] = _serialize_bool(
                 override_quick_find_record_limit_enabled
             )
 
@@ -769,15 +769,15 @@ class _FilterBuilder:
         if values is not None:
             condition["values"] = [str(v) for v in values]
         if value_of is not None:
-            condition["value_of"] = value_of
+            condition["valueof"] = value_of
         if column is not None:
             condition["column"] = column
         if entity_name is not None:
-            condition["entity_name"] = entity_name
+            condition["entityname"] = entity_name
         if aggregate is not None:
             condition["aggregate"] = aggregate
         if row_aggregate is not None:
-            condition["row_aggregate"] = row_aggregate
+            condition["rowaggregate"] = row_aggregate
         if alias is not None:
             condition["alias"] = alias
         if uiname is not None:

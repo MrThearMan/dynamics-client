@@ -92,77 +92,110 @@ FetchXMLFilterOperatorType = Literal["and", "or"]
 FetchXMLFetchMappingType = Literal["internal", "logical"]
 
 
-class FetchXMLCondition(TypedDict, total=False):
-    column: str
-    attribute: str
-    operator: FetchXMLOperator
-    value: str
-    values: List[str]
-    value_of: str
-    entity_name: str
-    aggregate: FetchXMLAggregateType
-    row_aggregate: Literal["countchildren"]
-    alias: str
-    uiname: str
-    uitype: str
-    uihidden: Literal["0", "1"]
+FetchXMLCondition = TypedDict(
+    "FetchXMLCondition",
+    {
+        "column": str,
+        "attribute": str,
+        "operator": FetchXMLOperator,
+        "value": str,
+        "values": List[str],
+        "valueof": str,
+        "entityname": str,
+        "aggregate": FetchXMLAggregateType,
+        "rowaggregate": Literal["countchildren"],
+        "alias": str,
+        "uiname": str,
+        "uitype": str,
+        "uihidden": Literal["0", "1"],
+    },
+    total=False,
+)
 
 
-class FetchXMLAttributeType(TypedDict, total=False):
-    name: str
-    alias: str
-    aggregate: FetchXMLAggregateType
-    groupby: LiteralBool
-    distinct: LiteralBool
-    date_grouping: FetchXMLDateGroupingType
-    user_timezone: LiteralBool
-    added_by: str
-    build: FetchXMLBuildType
+FetchXMLAttributeType = TypedDict(
+    "FetchXMLAttributeType",
+    {
+        "name": str,
+        "alias": str,
+        "aggregate": FetchXMLAggregateType,
+        "groupby": LiteralBool,
+        "distinct": LiteralBool,
+        "dategrouping": FetchXMLDateGroupingType,
+        "usertimezone": LiteralBool,
+        "addedby": str,
+        "build": FetchXMLBuildType,
+    },
+    total=False,
+)
 
 
-class FetchXMLOrderType(TypedDict, total=False):
-    attribute: str
-    alias: str
-    descending: LiteralBool
+FetchXMLOrderType = TypedDict(
+    "FetchXMLOrderType",
+    {
+        "attribute": str,
+        "alias": str,
+        "descending": LiteralBool,
+    },
+    total=False,
+)
 
 
-class FetchXMLType(TypedDict, total=False):
-    mapping: FetchXMLFetchMappingType
-    version: str
-    count: str
-    page: str
-    top: str
-    aggregate: LiteralBool
-    distinct: LiteralBool
-    paging_cookie: str
-    utc_offset: str
-    output_format: FetchXMLOutputFormat
-    min_active_row_version: LiteralBool
-    return_total_record_count: LiteralBool
-    no_lock: str
+FetchXMLType = TypedDict(
+    "FetchXMLType",
+    {
+        "mapping": FetchXMLFetchMappingType,
+        "version": str,
+        "count": str,
+        "page": str,
+        "top": str,
+        "aggregate": LiteralBool,
+        "distinct": LiteralBool,
+        "paging-cookie": str,
+        "utc-offset": str,
+        "output-format": FetchXMLOutputFormat,
+        "min-active-row-version": LiteralBool,
+        "returntotalrecordcount": LiteralBool,
+        "no-lock": str,
+    },
+    total=False,
+)
 
 
-class FetchXMLEntityType(TypedDict, total=False):
-    name: str
-    enable_prefiltering: LiteralBool
-    prefilter_parameter_name: str
+FetchXMLEntityType = TypedDict(
+    "FetchXMLEntityType",
+    {
+        "name": str,
+        "enableprefiltering": LiteralBool,
+        "prefilterparametername": str,
+    },
+    total=False,
+)
 
 
-_LEB = TypedDict("_LEB", {"from": str}, total=False)
+FetchXMLLinkedEntity = TypedDict(
+    "FetchXMLLinkedEntity",
+    {
+        "name": str,
+        "to": str,
+        "from": str,
+        "alias": str,
+        "link-type": str,
+        "visible": LiteralBool,
+        "intersect": LiteralBool,
+        "enableprefiltering": LiteralBool,
+        "prefilterparametername": str,
+    },
+    total=False,
+)
 
 
-class FetchXMLLinkedEntity(_LEB, total=False):
-    name: str
-    to: str
-    alias: str
-    link_type: str
-    visible: LiteralBool
-    intersect: LiteralBool
-    enable_prefiltering: LiteralBool
-    prefilter_parameter_name: str
-
-
-class FetchXMLFilterType(TypedDict, total=False):
-    type: FetchXMLFilterOperatorType
-    is_quick_find_fields: LiteralBool
-    override_quick_find_record_limit_enabled: LiteralBool
+FetchXMLFilterType = TypedDict(
+    "FetchXMLFilterType",
+    {
+        "type": FetchXMLFilterOperatorType,
+        "isquickfindfields": LiteralBool,
+        "overridequickfindrecordlimitenabled": LiteralBool,
+    },
+    total=False,
+)
