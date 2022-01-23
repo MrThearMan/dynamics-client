@@ -134,7 +134,7 @@ class ClientResponse(DynamicsClient):
 
         self.__content = [session_response, method, client_response]
 
-    def __iter__(self):  # pylint: disable=E0301
+    def __iter__(self):  # pragma: no cover pylint: disable=E0301
         return self
 
     def __getitem__(self, item: int):

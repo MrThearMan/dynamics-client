@@ -296,6 +296,20 @@ By default, this is set to 5000, which is the maximum.
 
 ---
 
+#### *client.fetch_xml: str → str*
+
+Set a query using the FetchXML query language.
+Must set table, but cannot set any other query options!
+Queries can be constructed with the included `FetchXMLBuilder`.
+
+XML Shema:
+[https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema)
+
+How to use:
+[https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query)
+
+---
+
 ## Exceptions
 
 ```python
@@ -581,6 +595,38 @@ Aggregate column with some aggregation function, and alias the result under some
 - group_by_columns: List[str] - Columns to group by.
 
 Group filtered values by columns.
+
+---
+
+## FetchXML Builder
+
+```python
+from dynamics.fetchxml import FetchXMLBuilder
+```
+
+This builder can be used to build FetchXML queries for the client.
+It uses the Builder design pattern. Here is an example:
+
+```python
+from dynamics.fetchxml import FetchXMLBuilder
+
+fetch_xml = (
+    FetchXMLBuilder(mapping="logical")
+    .add_entity(name="account")
+    .add_attribute(name="accountid")
+    .add_attribute(name="name")
+    .add_attribute(name="accountnumber")
+    .order(attribute="name")
+    .filter()
+    .add_condition(attribute="accountnumber", operator="gt", value=1000)
+    .add_linked_entity(name="systemuser", to="owninguser")
+    .build()
+)
+```
+
+Refer to the [FetchXML documentation](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query),
+and the builder docstrings for more details.
+
 
 ---
 

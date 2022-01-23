@@ -11,6 +11,7 @@
 ```shell
 pip install dynamics-client
 ```
+
 ---
 
 **Documentation**: [https://mrthearman.github.io/dynamics-client/](https://mrthearman.github.io/dynamics-client/)

@@ -162,7 +162,7 @@ class SQLiteCache:
 
     @staticmethod
     def _stream(value: Any) -> bytes:
-        return pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+        return pickle.dumps(value)
 
     @staticmethod
     def _unstream(value: bytes) -> Any:

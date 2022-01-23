@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamics-client"
-version = "0.2.5"
+version = "0.3.0"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
@@ -46,14 +46,14 @@ djangorestframework = {version = ">=3.12", optional = true}
 [tool.poetry.dev-dependencies]
 pytest-cov = "^3.0.0"
 tomli = "1.2.3"
-pre-commit = "^2.16.0"
+pre-commit = "^2.17.0"
 tox = "^3.24.5"
-tox-gh-actions = "^2.8.1"
+tox-gh-actions = "^2.9.1"
 coveralls = "^3.3.1"
 black = "^21.12b0"
 isort = "^5.10.1"
 flake8 = "^4.0.1"
-mypy = "^0.930"
+mypy = "^0.931"
 pylint = "^2.12.2"
 mkdocs = "^1.2.3"
 pymdown-extensions = "^9.1"
@@ -107,7 +107,7 @@ omit = [
 exclude_lines = [
     "if TYPE_CHECKING:",
     "except ImportError:",
-    "return self",
+    "pragma: no cover"
 ]
 
 [tool.tox]

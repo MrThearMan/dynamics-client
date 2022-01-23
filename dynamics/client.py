@@ -10,6 +10,7 @@ Date: April 5th, 2021.
 import json
 import logging
 import os
+from urllib.parse import quote
 
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
@@ -91,7 +92,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         self._api_url = api_url.rstrip("/") + "/"
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
         token = get_token()
-        if token is None:
+        if token is None:  # pragma: no cover
             token = self._session.fetch_token(token_url=token_url, client_secret=client_secret, scope=scope)
             set_token(token)
         else:
@@ -115,6 +116,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         self._add_ref_to_property = ""
         self._pre_expand = ""
         self._apply = ""
+        self._fetch_xml = ""
 
         self._headers: Dict[str, str] = {}
         self._pagesize: int = 5000
@@ -177,6 +179,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             [
                 statement
                 for statement in [
+                    self._compile_fetch_xml(),
                     self._compile_expand(),
                     self._compile_apply(),
                     self._compile_select(),
@@ -211,6 +214,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         self._add_ref_to_property = ""
         self._pre_expand = ""
         self._apply = ""
+        self._fetch_xml = ""
 
         self._headers: Dict[str, str] = {}
 
@@ -750,8 +754,33 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._pagesize = value
 
-    # TODO: fetchXml:
-    #  https://docs.microsoft.com/en-us/powerapps/developer/data-platform/
-    #   use-fetchxml-construct-query
-    #  https://docs.microsoft.com/en-us/powerapps/developer/data-platform/
-    #   webapi/retrieve-and-execute-predefined-queries#use-custom-fetchxml
+    @property
+    def fetch_xml(self) -> str:
+        """Get current FetchXML query string."""
+
+        return self._fetch_xml
+
+    @fetch_xml.setter
+    def fetch_xml(self, value: str) -> None:
+        """Set a query using the FetchXML query language.
+        Must set table, but cannot set any other query options!
+
+        Queries can be constructed with the included FetchXMLBuilder.
+
+        XML Shema:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema
+
+        How to use:
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query
+        """
+
+        self._fetch_xml = value
+
+    def _compile_fetch_xml(self, value: str = sentinel) -> str:
+        if value is sentinel:
+            value = self._fetch_xml
+
+        return "fetchXml=" + quote(value, safe="") if value else ""
+
+    # TODO: Batch requests
+    #  https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/execute-batch-operations-using-web-api

@@ -854,6 +854,31 @@ def test_client_show_annotations(dynamics_client):
     assert dynamics_client.headers == {}
 
 
+def test_client_query__fetch_xml(dynamics_client):
+    fetch_xml = (
+        '<fetch mapping="logical">'
+        '<entity name="account">'
+        '<attribute name="accountid"/>'
+        '<attribute name="name"/>'
+        '<attribute name="accountnumber"/>'
+        "</entity>"
+        "</fetch>"
+    )
+
+    dynamics_client.table = "table"
+    dynamics_client.fetch_xml = fetch_xml
+
+    expected = (
+        "%3Cfetch%20mapping%3D%22logical%22%3E%3Centity%20name%3D%22"
+        "account%22%3E%3Cattribute%20name%3D%22accountid%22%2F%3E%3C"
+        "attribute%20name%3D%22name%22%2F%3E%3Cattribute%20name%3D%22"
+        "accountnumber%22%2F%3E%3C%2Fentity%3E%3C%2Ffetch%3E"
+    )
+
+    assert dynamics_client.fetch_xml == fetch_xml
+    assert dynamics_client.current_query == f"/table?fetchXml={expected}"
+
+
 def test_client_get_next_page__before_pagesize_reached(dynamics_client):
     with dynamics_client_response(
         dynamics_client,
