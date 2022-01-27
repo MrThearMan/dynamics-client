@@ -1,4 +1,5 @@
 import os
+from json import JSONDecodeError
 from unittest import mock
 
 import pytest
@@ -17,502 +18,129 @@ from dynamics.exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from dynamics.test import ClientResponse, ResponseMock, dynamics_client_response
+from dynamics.test import MockClient
 from dynamics.typing import MethodType
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
-            method="get",
-            client_response=[{"foo": "bar", "one": 2}],
-        ),
-        ClientResponse(
-            session_response=ResponseMock(data={"value": []}, status_code=204),
-            method="get",
-            client_response=[],
-        ),
-        ClientResponse(
-            session_response=ResponseMock(data={"value": [{"foo": "bar"}, {"one": 2}]}, status_code=204),
-            method="get",
-            client_response=[{"foo": "bar"}, {"one": 2}],
-        ),
+        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
+        MockClient().internal.with_responses({"value": []}).with_status_codes(204),
+        MockClient().internal.with_responses({"value": [{"foo": "bar"}, {"one": 2}]}).with_status_codes(200),
     ],
     indirect=True,
 )
 def test_client_get_request(dynamics_client):
-    assert dynamics_client.get(not_found_ok=True) == dynamics_client._output_
+    assert dynamics_client.get(not_found_ok=True) == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        ClientResponse(
-            session_response=ResponseMock(data={"value": []}, status_code=404),
-            method="get",
-            client_response=NotFound,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a ParseError"}},
-                status_code=400,
-            ),
-            method="get",
-            client_response=ParseError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a AuthenticationFailed"}},
-                status_code=401,
-            ),
-            method="get",
-            client_response=AuthenticationFailed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a PermissionDenied"}},
-                status_code=403,
-            ),
-            method="get",
-            client_response=PermissionDenied,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a NotFound"}},
-                status_code=404,
-            ),
-            method="get",
-            client_response=NotFound,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a MethodNotAllowed"}},
-                status_code=405,
-            ),
-            method="get",
-            client_response=MethodNotAllowed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a DuplicateRecordError"}},
-                status_code=412,
-            ),
-            method="get",
-            client_response=DuplicateRecordError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a PayloadTooLarge"}},
-                status_code=413,
-            ),
-            method="get",
-            client_response=PayloadTooLarge,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a APILimitsExceeded"}},
-                status_code=429,
-            ),
-            method="get",
-            client_response=APILimitsExceeded,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DynamicsException"}},
-                status_code=500,
-            ),
-            method="get",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a OperationNotImplemented"}},
-                status_code=501,
-            ),
-            method="get",
-            client_response=OperationNotImplemented,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"value": [], "error": {"message": "This is a WebAPIUnavailable"}},
-                status_code=503,
-            ),
-            method="get",
-            client_response=WebAPIUnavailable,
-        ),
-    ],
-    indirect=True,
-)
-def test_client_get_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
-        dynamics_client.get()
-    nf_message = "No records matching the given criteria."
-    assert dynamics_client._input_.data.get("error", {}).get("message", nf_message) == exc_info.value.args[0]
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
-            method="post",
-            client_response={"foo": "bar", "one": 2},
-        ),
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
-            method="post",
-            client_response={},
-        ),
+        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
+        MockClient().internal.with_responses({}).with_status_codes(204),
     ],
     indirect=True,
 )
 def test_client_post_request(dynamics_client):
-    assert dynamics_client.post(data=dynamics_client._input_.data) == dynamics_client._output_
+    assert dynamics_client.post(data={}) == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a ParseError"}},
-                status_code=400,
-            ),
-            method="post",
-            client_response=ParseError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a AuthenticationFailed"}},
-                status_code=401,
-            ),
-            method="post",
-            client_response=AuthenticationFailed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PermissionDenied"}},
-                status_code=403,
-            ),
-            method="post",
-            client_response=PermissionDenied,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a NotFound"}},
-                status_code=404,
-            ),
-            method="post",
-            client_response=NotFound,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a MethodNotAllowed"}},
-                status_code=405,
-            ),
-            method="post",
-            client_response=MethodNotAllowed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DuplicateRecordError"}},
-                status_code=412,
-            ),
-            method="post",
-            client_response=DuplicateRecordError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PayloadTooLarge"}},
-                status_code=413,
-            ),
-            method="post",
-            client_response=PayloadTooLarge,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a APILimitsExceeded"}},
-                status_code=429,
-            ),
-            method="post",
-            client_response=APILimitsExceeded,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DynamicsException"}},
-                status_code=500,
-            ),
-            method="post",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a OperationNotImplemented"}},
-                status_code=501,
-            ),
-            method="post",
-            client_response=OperationNotImplemented,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a WebAPIUnavailable"}},
-                status_code=503,
-            ),
-            method="post",
-            client_response=WebAPIUnavailable,
-        ),
-    ],
-    indirect=True,
-)
-def test_client_post_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
-        dynamics_client.post({})
-
-    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
-            method="patch",
-            client_response={"foo": "bar", "one": 2},
-        ),
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
-            method="patch",
-            client_response={},
-        ),
+        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
+        MockClient().internal.with_responses({}).with_status_codes(204),
     ],
     indirect=True,
 )
 def test_client_patch_request(dynamics_client):
-    assert dynamics_client.patch(data=dynamics_client._input_.data) == dynamics_client._output_
+    assert dynamics_client.patch(data={}) == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a ParseError"}},
-                status_code=400,
-            ),
-            method="patch",
-            client_response=ParseError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a AuthenticationFailed"}},
-                status_code=401,
-            ),
-            method="patch",
-            client_response=AuthenticationFailed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PermissionDenied"}},
-                status_code=403,
-            ),
-            method="patch",
-            client_response=PermissionDenied,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a NotFound"}},
-                status_code=404,
-            ),
-            method="patch",
-            client_response=NotFound,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a MethodNotAllowed"}},
-                status_code=405,
-            ),
-            method="patch",
-            client_response=MethodNotAllowed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DuplicateRecordError"}},
-                status_code=412,
-            ),
-            method="patch",
-            client_response=DuplicateRecordError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PayloadTooLarge"}},
-                status_code=413,
-            ),
-            method="patch",
-            client_response=PayloadTooLarge,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a APILimitsExceeded"}},
-                status_code=429,
-            ),
-            method="patch",
-            client_response=APILimitsExceeded,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DynamicsException"}},
-                status_code=500,
-            ),
-            method="patch",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a OperationNotImplemented"}},
-                status_code=501,
-            ),
-            method="patch",
-            client_response=OperationNotImplemented,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a WebAPIUnavailable"}},
-                status_code=503,
-            ),
-            method="patch",
-            client_response=WebAPIUnavailable,
-        ),
-    ],
-    indirect=True,
-)
-def test_client_patch_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
-        dynamics_client.patch({})
-
-    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=200),
-            method="delete",
-            client_response=None,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(data={"foo": "bar", "one": 2}, status_code=204),
-            method="delete",
-            client_response=None,
-        ),
+        MockClient().internal.with_status_codes(204),
     ],
     indirect=True,
 )
 def test_client_delete_request(dynamics_client):
-    assert dynamics_client.delete() == dynamics_client._output_
+    assert dynamics_client.delete() == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a ParseError"}},
-                status_code=400,
-            ),
-            method="delete",
-            client_response=ParseError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a AuthenticationFailed"}},
-                status_code=401,
-            ),
-            method="delete",
-            client_response=AuthenticationFailed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PermissionDenied"}},
-                status_code=403,
-            ),
-            method="delete",
-            client_response=PermissionDenied,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a NotFound"}},
-                status_code=404,
-            ),
-            method="delete",
-            client_response=NotFound,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a MethodNotAllowed"}},
-                status_code=405,
-            ),
-            method="delete",
-            client_response=MethodNotAllowed,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DuplicateRecordError"}},
-                status_code=412,
-            ),
-            method="delete",
-            client_response=DuplicateRecordError,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a PayloadTooLarge"}},
-                status_code=413,
-            ),
-            method="delete",
-            client_response=PayloadTooLarge,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a APILimitsExceeded"}},
-                status_code=429,
-            ),
-            method="delete",
-            client_response=APILimitsExceeded,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a DynamicsException"}},
-                status_code=500,
-            ),
-            method="delete",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a OperationNotImplemented"}},
-                status_code=501,
-            ),
-            method="delete",
-            client_response=OperationNotImplemented,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"error": {"message": "This is a WebAPIUnavailable"}},
-                status_code=503,
-            ),
-            method="delete",
-            client_response=WebAPIUnavailable,
-        ),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a ParseError"}}, cycle=True)
+        .with_status_codes(400, cycle=True)
+        .with_exceptions(ParseError("This is a ParseError")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a AuthenticationFailed"}}, cycle=True)
+        .with_status_codes(401, cycle=True)
+        .with_exceptions(AuthenticationFailed("This is a AuthenticationFailed")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a PermissionDenied"}}, cycle=True)
+        .with_status_codes(403, cycle=True)
+        .with_exceptions(PermissionDenied("This is a PermissionDenied")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a NotFound"}}, cycle=True)
+        .with_status_codes(404, cycle=True)
+        .with_exceptions(NotFound("This is a NotFound")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a MethodNotAllowed"}}, cycle=True)
+        .with_status_codes(405, cycle=True)
+        .with_exceptions(MethodNotAllowed("This is a MethodNotAllowed")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a DuplicateRecordError"}}, cycle=True)
+        .with_status_codes(412, cycle=True)
+        .with_exceptions(DuplicateRecordError("This is a DuplicateRecordError")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a PayloadTooLarge"}}, cycle=True)
+        .with_status_codes(413, cycle=True)
+        .with_exceptions(PayloadTooLarge("This is a PayloadTooLarge")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a APILimitsExceeded"}}, cycle=True)
+        .with_status_codes(429, cycle=True)
+        .with_exceptions(APILimitsExceeded("This is a APILimitsExceeded")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a DynamicsException"}}, cycle=True)
+        .with_status_codes(500, cycle=True)
+        .with_exceptions(DynamicsException("This is a DynamicsException")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a OperationNotImplemented"}}, cycle=True)
+        .with_status_codes(501, cycle=True)
+        .with_exceptions(OperationNotImplemented("This is a OperationNotImplemented")),
+        MockClient()
+        .internal.with_responses({"error": {"message": "This is a WebAPIUnavailable"}}, cycle=True)
+        .with_status_codes(503, cycle=True)
+        .with_exceptions(WebAPIUnavailable("This is a WebAPIUnavailable")),
     ],
     indirect=True,
 )
-def test_client_delete_request__errors(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
+def test_client_error_handling(dynamics_client):
+    error = dynamics_client.next_exception
+
+    with pytest.raises(error.__class__, match=error.args[0]):
+        dynamics_client.get()
+
+    with pytest.raises(error.__class__, match=error.args[0]):
+        dynamics_client.post({})
+
+    with pytest.raises(error.__class__, match=error.args[0]):
+        dynamics_client.patch({})
+
+    with pytest.raises(error.__class__, match=error.args[0]):
         dynamics_client.delete()
 
-    assert dynamics_client._input_.data.get("error", {}).get("message") == exc_info.value.args[0]
+
+def test_client_error_handling__get_return_no_items(dynamics_client):
+    dynamics_client.internal.with_responses({"value": []})
+
+    with pytest.raises(NotFound, match="No records matching the given criteria."):
+        dynamics_client.get()
 
 
 @pytest.mark.parametrize(
@@ -582,7 +210,8 @@ def test_client_init_from_environment():
     os.environ["DYNAMICS_SCOPE"] = "scope"
 
     try:
-        client = DynamicsClient.from_environment()
+        with mock.patch("dynamics.client.get_token"):
+            client = DynamicsClient.from_environment()
     except KeyError as error:
         pytest.fail(f"Wrong environment variables: {error}")
         return
@@ -592,7 +221,7 @@ def test_client_init_from_environment():
 
 
 def test_client_init_from_cache():
-    with mock.patch("dynamics.utils.SQLiteCache.get", mock.MagicMock(return_value="token")):
+    with mock.patch("dynamics.client.get_token", mock.MagicMock(return_value="token")):
         client = DynamicsClient("", "", "", "", [])
 
     assert client._session.token == "token"
@@ -820,13 +449,9 @@ def test_client_query__count(dynamics_client):
     assert dynamics_client.count is True
     assert dynamics_client.current_query == "/table?$count=true"
 
-    with dynamics_client_response(
-        dynamics_client,
-        session_response=ResponseMock(data={"@odata.count": 1, "value": [{"foo": "bar"}]}, status_code=200),
-        method="get",
-        client_response=[1, {"foo": "bar"}],
-    ):
-        assert dynamics_client.get() == dynamics_client._output_  # noqa
+    dynamics_client.internal.with_responses({"value": [{"foo": "bar"}], "@odata.count": 1})
+
+    assert dynamics_client.get() == [1, {"foo": "bar"}]
 
 
 def test_client_pagesize(dynamics_client):
@@ -880,171 +505,63 @@ def test_client_query__fetch_xml(dynamics_client):
 
 
 def test_client_get_next_page__before_pagesize_reached(dynamics_client):
-    with dynamics_client_response(
-        dynamics_client,
-        session_response=ResponseMock(
-            data={"foo": ["bar"], "foo@odata.nextLink": "link-to-next-page"},
-            status_code=200,
-        ),
-        method="get",
-        client_response=[{"foo": ["bar"]}],
-    ):
-        assert dynamics_client.get() == dynamics_client._output_  # noqa
+    dynamics_client.internal.with_responses({"value": [{"foo": "bar", "foo@odata.nextLink": "link-to-next-page"}]})
+    assert dynamics_client.get() == [{"foo": "bar"}]
 
 
 def test_client_get_next_page__over_pagesize(dynamics_client):
     dynamics_client.pagesize = 1
 
-    with dynamics_client_response(
-        dynamics_client,
-        session_response=[
-            ResponseMock(
-                data={"foo": [{"@odata.etag": "12345", "bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"},
-                status_code=200,
-            ),
-            ResponseMock(
-                data={"@odata.etag": "23456", "fizz": "buzz"},
-                status_code=200,
-            ),
-        ],
-        method="get",
-        client_response=[
-            {
-                "foo": [
-                    {"@odata.etag": "12345", "bar": "baz"},
-                    {"@odata.etag": "23456", "fizz": "buzz"},
-                ],
-            },
-        ],
-    ):
-        assert dynamics_client.get() == dynamics_client._output_  # noqa
+    dynamics_client.internal.with_responses(
+        {"value": [{"foo": [{"@odata.etag": "12345", "bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}]},
+        {"value": [{"@odata.etag": "23456", "fizz": "buzz"}]},
+    )
 
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="get",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="post",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="patch",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="delete",
-            client_response=DynamicsException,
-        ),
-    ],
-    indirect=True,
-)
-def test_client_simplify_errors(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
-        if dynamics_client._method_ == "get":
-            dynamics_client.get(simplify_errors=True)
-        elif dynamics_client._method_ == "post":
-            dynamics_client.post({}, simplify_errors=True)
-        elif dynamics_client._method_ == "patch":
-            dynamics_client.patch({}, simplify_errors=True)
-        elif dynamics_client._method_ == "delete":
-            dynamics_client.delete(simplify_errors=True)
-
-    assert exc_info.value.args[0] == dynamics_client.simplified_error_message
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="get",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=TypeError("Unexpected Error!"),
-            method="get",
-            client_response=TypeError,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="post",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=TypeError("Unexpected Error!"),
-            method="post",
-            client_response=TypeError,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="patch",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=TypeError("Unexpected Error!"),
-            method="patch",
-            client_response=TypeError,
-        ),
-        ClientResponse(
-            session_response=ValueError("Unexpected Error!"),
-            method="delete",
-            client_response=DynamicsException,
-        ),
-        ClientResponse(
-            session_response=TypeError("Unexpected Error!"),
-            method="delete",
-            client_response=TypeError,
-        ),
-    ],
-    indirect=True,
-)
-def test_client_simplify_errors__raise_separately(dynamics_client):
-    with pytest.raises(dynamics_client._output_) as exc_info:
-        if dynamics_client._method_ == "get":
-            dynamics_client.get(simplify_errors=True, raise_separately=[TypeError])
-        elif dynamics_client._method_ == "post":
-            dynamics_client.post({}, simplify_errors=True, raise_separately=[TypeError])
-        elif dynamics_client._method_ == "patch":
-            dynamics_client.patch({}, simplify_errors=True, raise_separately=[TypeError])
-        elif dynamics_client._method_ == "delete":
-            dynamics_client.delete(simplify_errors=True, raise_separately=[TypeError])
-
-    msg = dynamics_client._input_.args[0]
-    if issubclass(dynamics_client._output_, DynamicsException):
-        msg = dynamics_client.simplified_error_message
-
-    assert exc_info.value.args[0] == msg
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=[
-                ResponseMock(
-                    data={"foo": "bar"},
-                    status_code=200,
-                ),
-                ResponseMock(
-                    data={"foo": "baz"},
-                    status_code=200,
-                ),
+    assert dynamics_client.get() == [
+        {
+            "foo": [
+                {"@odata.etag": "12345", "bar": "baz"},
+                {"@odata.etag": "23456", "fizz": "buzz"},
             ],
-            method="get",
-            client_response=DynamicsException,
-        ),
-    ],
-    indirect=True,
-)
+        },
+    ]
+
+
+def test_client_simplify_errors(dynamics_client):
+    dynamics_client.internal.with_responses(*[DynamicsException()] * 4)
+
+    with pytest.raises(DynamicsException, match=dynamics_client.simplified_error_message):
+        dynamics_client.get(simplify_errors=True)
+
+    with pytest.raises(DynamicsException, match=dynamics_client.simplified_error_message):
+        dynamics_client.post({}, simplify_errors=True)
+
+    with pytest.raises(DynamicsException, match=dynamics_client.simplified_error_message):
+        dynamics_client.patch({}, simplify_errors=True)
+
+    with pytest.raises(DynamicsException, match=dynamics_client.simplified_error_message):
+        dynamics_client.delete(simplify_errors=True)
+
+
+def test_client_simplify_errors__raise_separately(dynamics_client):
+    dynamics_client.internal.with_responses(TypeError("Foo"), cycle=True)
+
+    with pytest.raises(TypeError, match="Foo"):
+        dynamics_client.get(simplify_errors=True, raise_separately=[TypeError])
+
+    with pytest.raises(TypeError, match="Foo"):
+        dynamics_client.post({}, simplify_errors=True, raise_separately=[TypeError])
+
+    with pytest.raises(TypeError, match="Foo"):
+        dynamics_client.patch({}, simplify_errors=True, raise_separately=[TypeError])
+
+    with pytest.raises(TypeError, match="Foo"):
+        dynamics_client.delete(simplify_errors=True, raise_separately=[TypeError])
+
+
 def test_client_request_counter(dynamics_client):
+    dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, {"value": [{"foo": "baz"}]})
+
     assert dynamics_client.request_counter == 0
     dynamics_client.get()
     assert dynamics_client.request_counter == 1
@@ -1082,56 +599,43 @@ def test_client_reset_query(dynamics_client):
     assert dynamics_client.pagesize == 2000
 
 
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"foo": "bar"},
-                status_code=200,
-            ),
-            method="get",
-            client_response=None,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"foo": "bar"},
-                status_code=200,
-            ),
-            method="post",
-            client_response=None,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"foo": "bar"},
-                status_code=200,
-            ),
-            method="patch",
-            client_response=None,
-        ),
-        ClientResponse(
-            session_response=ResponseMock(
-                data={"foo": "bar"},
-                status_code=200,
-            ),
-            method="delete",
-            client_response=None,
-        ),
-    ],
-    indirect=True,
-)
 def test_client_headers_are_set_on_call(dynamics_client):
-    with mock.patch(
-        "dynamics.client.DynamicsClient.set_default_headers",
-        side_effect=dynamics_client.set_default_headers,
-    ) as patch:
-        if dynamics_client._method_ == "get":
-            dynamics_client.get()
-        elif dynamics_client._method_ == "post":
-            dynamics_client.post({})
-        elif dynamics_client._method_ == "patch":
-            dynamics_client.patch({})
-        elif dynamics_client._method_ == "delete":
-            dynamics_client.delete()
+
+    loc = "dynamics.client.DynamicsClient.set_default_headers"
+    dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, cycle=True)
+
+    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+        dynamics_client.get()
 
     patch.assert_called_once()
+
+    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+        dynamics_client.post({})
+
+    patch.assert_called_once()
+
+    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+        dynamics_client.patch({})
+
+    patch.assert_called_once()
+
+    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+        dynamics_client.delete()
+
+    patch.assert_called_once()
+
+
+def test_client__json_decode_error(dynamics_client):
+    dynamics_client.internal.with_responses(JSONDecodeError("foo", "bar", 1), cycle=True)
+
+    with pytest.raises(DynamicsException, match="foo"):
+        dynamics_client.get()
+
+    with pytest.raises(DynamicsException, match="foo"):
+        dynamics_client.post({})
+
+    with pytest.raises(DynamicsException, match="foo"):
+        dynamics_client.patch({})
+
+    with pytest.raises(DynamicsException, match="foo"):
+        dynamics_client.delete()

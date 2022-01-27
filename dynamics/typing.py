@@ -7,6 +7,7 @@ try:
         Any,
         Callable,
         Dict,
+        Iterator,
         List,
         Literal,
         Optional,
@@ -15,10 +16,25 @@ try:
         Tuple,
         Type,
         TypedDict,
+        TypeVar,
         Union,
     )
 except ImportError:
-    from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Type, Union
+    from typing import (
+        TYPE_CHECKING,
+        Any,
+        Callable,
+        Dict,
+        Iterator,
+        List,
+        Optional,
+        Sequence,
+        Set,
+        Tuple,
+        Type,
+        TypeVar,
+        Union,
+    )
 
     from typing_extensions import Literal, TypedDict
 
@@ -35,6 +51,8 @@ __all__ = [
     "Type",
     "Tuple",
     "TypedDict",
+    "TypeVar",
+    "Iterator",
     "TYPE_CHECKING",
     "MethodType",
     "OrderbyType",
@@ -63,7 +81,6 @@ __all__ = [
     "FetchXMLFilterOperatorType",
 ]
 
-
 MethodType = Literal["get", "post", "patch", "delete"]
 OrderbyType = Dict[str, Literal["asc", "desc"]]
 FilterType = Union[Set[str], List[str]]
@@ -82,6 +99,8 @@ ExpandValues = Union[List[str], Set[str], int, OrderbyType, Dict[str, ExpandType
 ExpandDict = Dict[str, Optional[ExpandType]]
 FieldType = Union[str, int, float, bool, None]
 CompType = Union[str, int, float]
+T = TypeVar("T")  # pylint: disable=C0103
+ResponseType = Union[Union[Dict[str, Any], List[Dict[str, Any]]], Exception, None]
 
 LiteralBool = Literal["true", "false"]
 FetchXMLOutputFormat = Literal["xml-ado", "xml-auto", "xml-elements", "xml-raw", "xml-platform"]

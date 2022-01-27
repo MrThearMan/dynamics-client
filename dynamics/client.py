@@ -10,6 +10,7 @@ Date: April 5th, 2021.
 import json
 import logging
 import os
+from json import JSONDecodeError
 from urllib.parse import quote
 
 from oauthlib.oauth2 import BackendApplicationClient
@@ -238,7 +239,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
 
-    def error_handling(self, status_code: int, error_message: str, error_code: str, method: MethodType):
+    def handled_error(self, status_code: int, error_message: str, error_code: str, method: MethodType) -> Exception:
         """Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
 
@@ -257,7 +258,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             error_code,
         )
         error = self.error_dict.get(status_code, DynamicsException)
-        raise error(error_message)
+        return error(error_message)
 
     @error_simplification_available
     def get(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -277,7 +278,15 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         else:
             response = self._session.get(self.current_query, headers=self.headers)
 
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError as error:
+            raise self.handled_error(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_message=str(error),
+                error_code="invalid_json",
+                method="get",
+            ) from error
 
         # Always returns a list, even if only one row is selected
         entities = data.get("value", [data])
@@ -285,19 +294,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         count = data.get("@odata.count", "")
 
         if errors:
-            self.error_handling(
+            raise self.handled_error(
                 status_code=response.status_code,
                 error_message=errors.get("message"),
                 error_code=errors.get("code"),
                 method="get",
             )
-        elif not entities:
+
+        if not entities:
             if not_found_ok:
                 return []
-            message = "No records matching the given criteria."
-            self.error_handling(
+
+            raise self.handled_error(
                 status_code=status.HTTP_404_NOT_FOUND,
-                error_message=message,
+                error_message="No records matching the given criteria.",
                 error_code="not_found",
                 method="get",
             )
@@ -352,11 +362,19 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
 
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError as error:
+            raise self.handled_error(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_message=str(error),
+                error_code="invalid_json",
+                method="get",
+            ) from error
 
         errors = data.get("error")
         if errors:
-            self.error_handling(
+            raise self.handled_error(
                 status_code=response.status_code,
                 error_message=errors.get("message"),
                 error_code=errors.get("code"),
@@ -384,11 +402,19 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
 
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError as error:
+            raise self.handled_error(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_message=str(error),
+                error_code="invalid_json",
+                method="get",
+            ) from error
 
         errors = data.get("error")
         if errors:
-            self.error_handling(
+            raise self.handled_error(
                 status_code=response.status_code,
                 error_message=errors.get("message"),
                 error_code=errors.get("code"),
@@ -412,11 +438,19 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return
 
-        data = response.json()
+        try:
+            data = response.json()
+        except JSONDecodeError as error:
+            raise self.handled_error(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_message=str(error),
+                error_code="invalid_json",
+                method="get",
+            ) from error
 
         errors = data.get("error")
         if errors:
-            self.error_handling(
+            raise self.handled_error(
                 status_code=response.status_code,
                 error_message=errors.get("message"),
                 error_code=errors.get("code"),

@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from typing import List, Type
 from uuid import UUID
 
 from oauthlib.oauth2 import OAuth2Token
@@ -18,7 +17,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import TYPE_CHECKING, Any, Optional
+from .typing import TYPE_CHECKING, Any, List, Optional, Type
 
 
 if TYPE_CHECKING:

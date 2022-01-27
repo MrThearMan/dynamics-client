@@ -1,30 +1,189 @@
-import json
 from contextlib import contextmanager
-from typing import Any, Dict
+from copy import deepcopy
+from itertools import cycle as _cycle
 from unittest.mock import patch
 
 import pytest
-from typing_extensions import Literal
 
 from .client import DynamicsClient
-from .typing import List, MethodType, Sequence, Type, Union
+from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
 
 
 __all__ = [
-    "dynamics_cache_constructor",
+    "MockClient",
     "dynamics_cache",
-    "dynamics_client_constructor",
     "dynamics_client",
-    "ResponseMock",
-    "ClientResponse",
-    "dynamics_client_response",
-    "dynamics_client_response_mirror",
 ]
 
 
-JsonType = Union[Dict[str, Any], List[Dict[str, Any]], None]
-RequestType = Union["ResponseMock", Sequence["ResponseMock"], Exception]
-ResponseType = Union[JsonType, Type[Exception]]
+class MockClient(DynamicsClient):
+    def __init__(self):
+        r"""A testing client for the Dynamics client.
+
+        -----------------------------------------------------------
+
+        Can be used with `pytest.mark.parametrize`::
+
+            @pytest.mark.parametrize(
+                "dynamics_client",
+                [
+                    MockClient().with_responses({"foo": "bar"}),
+                    MockClient().with_responses({"foo": "baz"}),
+                ],
+                indirect=True,  # important!
+            )
+            def test_foo(dynamics_client):
+                x = dynamics_client.get()
+
+        -----------------------------------------------------------
+
+        Can also be used without `pytest.mark.parametrize`::
+
+            def test_foo(dynamics_client):
+                dynamics_client.with_responses({"foo": "bar"})
+
+                x = dynamics_client.get()
+
+        -----------------------------------------------------------
+        """
+
+        with patch("dynamics.client.get_token"):
+            super().__init__("", "", "", "", [])
+        self.__len: int = -1
+        self.__default_status: int = 200
+        self.__internal: bool = False
+        self.__response: ResponseType = None
+        self.__responses: Iterator[ResponseType] = _cycle([None])
+        self.__status_codes: Iterator[int] = _cycle([self.__default_status])
+        self.__exceptions: Optional[Iterator[Optional[Exception]]] = None
+
+    def with_responses(self, *responses: ResponseType, cycle: bool = False) -> "MockClient":
+        """List the responses the client should return, or exceptions it should raise.
+        When the client uses one of its HTTP methods (get, post, patch, delete),
+        the responses from the list given here are patched to those methods
+        in the order they are given.
+
+        :param responses: The list of responses in the order they should be used.
+        :param cycle: Cycle the given responses when the list is exhausted.
+        :return: The current instance of the MockClient.
+        """
+        self._check_length(len(responses))
+        self.__responses = _cycle(responses) if cycle else iter(responses)
+        return self
+
+    # These are tools for testing internal behaviour
+
+    @property
+    def internal(self) -> "MockClient":
+        """Mock the OAuthSession HTTP methods instead of the Dynamics client ones.
+        This allows testing of the internal logic of the client in case, e.g.,
+        special error handling has been implemented on a client.
+        """
+        self.__internal = True
+        return self
+
+    def with_status_codes(self, *status_codes: int, cycle: bool = False) -> "MockClient":
+        """Not needed if not using the 'dynamics_client.internal'.
+
+        List the status codes the OAuthSession should return. When the client uses one of its
+        HTTP methods (get, post, patch, delete), the status code from the list given here
+        are patched to the OAuthSession response in those methods in the order they are given.
+
+        :param status_codes: List of status codes in the order they should be used.
+        :param cycle: Cycle the given status codes when the list is exhausted.
+        :return: The current instance of the MockClient.
+        """
+        self._check_length(len(status_codes))
+        self.__status_codes = _cycle(status_codes) if cycle else iter(status_codes)
+        return self
+
+    def with_exceptions(self, *exceptions: Exception, cycle: bool = False) -> "MockClient":
+        """Not needed if not using the 'dynamics_client.internal'.
+
+        List the exceptions the client should raise based on what the OAuthSession returned.
+        After setting the responses and status codes, the exceptions here can be used to verify that
+        those responses and status codes produce a given exception. This way the exceptions can be set
+        ahead of time, e.g., when using `pytest.mark.parametrize`. The exceptions are accessible from
+        `dynamics_client.next_exception`, one at a time.
+
+        When the client uses one of its HTTP methods (get, post, patch, delete),
+        the status code from the list given here are patched to the OAuthSession response
+        in those methods in the order they are given.
+
+        :param exceptions: List of exceptions in the order they should be raised.
+        :param cycle: Cycle the given exceptions when the list is exhausted.
+        :return: The current instance of the MockClient.
+        """
+        self._check_length(len(exceptions))
+        self.__exceptions = _cycle(exceptions) if cycle else iter(exceptions)
+        return self
+
+    @property
+    def next_exception(self) -> Exception:
+        """Not needed if not using the 'dynamics_client.internal'.
+
+        The next exception from the defined list.
+        """
+        try:
+            return next(self.__exceptions)
+        except TypeError as error:
+            raise TypeError("Cannot call 'next_exception' without setting exceptions first") from error
+
+    @property
+    def current_response(self) -> ResponseType:
+        """Not needed if not using the 'dynamics_client.internal'.
+
+        :return: The last expected reponse from the client.
+                 Tries to correct for some of the internal logic of the
+                 client methods, but might not be correct all of the time.
+        """
+        return self.__response
+
+    def _check_length(self, length: int) -> "MockClient":
+        if self.__len != -1 and length != self.__len:
+            raise ValueError("Mismaching number of arguments given for MockResponse")
+        self.__len = length
+        return self
+
+    @contextmanager
+    def _mock_method(self, method: MethodType):
+        try:
+            self.__response = next(self.__responses)
+        except StopIteration as error:
+            raise ValueError("Ran out of responses on the MockClient") from error
+
+        if self.__internal:
+            try:
+                status_code = next(self.__status_codes)
+            except StopIteration as error:
+                raise ValueError("Ran out of status codes on the MockClient") from error
+
+            response_mock = ResponseMock(response=deepcopy(self.__response), status_code=status_code)
+
+            if method == "get" and isinstance(self.__response, dict):
+                self.__response = self.__response.get("value", [self.__response])
+
+            with patch(f"requests_oauthlib.oauth2_session.OAuth2Session.{method}", side_effect=[response_mock]):
+                yield
+        else:
+            with patch(f"dynamics.client.DynamicsClient.{method}", side_effect=[self.__response]):
+                yield
+
+    def get(self, not_found_ok: bool = False, next_link: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+        with self._mock_method("get"):
+            return super().get(not_found_ok=not_found_ok, next_link=next_link, **kwargs)
+
+    def post(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        with self._mock_method("post"):
+            return super().post(data=data, **kwargs)
+
+    def patch(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        with self._mock_method("patch"):
+            return super().patch(data=data, **kwargs)
+
+    def delete(self, **kwargs) -> None:
+        with self._mock_method("delete"):
+            return super().delete(**kwargs)
 
 
 @pytest.fixture(scope="session")
@@ -47,135 +206,20 @@ def dynamics_cache(dynamics_cache_constructor):  # pylint: disable=W0621
     yield dynamics_cache_constructor
 
 
-@pytest.fixture(scope="session")
-def dynamics_client_constructor(dynamics_cache_constructor):  # pylint: disable=W0621,W0613
-    """Creates a mocked dynamics client for the session."""
-
-    with patch("requests_oauthlib.oauth2_session.OAuth2Session.fetch_token"), patch("dynamics.client.set_token"):
-        yield DynamicsClient("", "", "", "", [])
-
-
 @pytest.fixture
-def dynamics_client(request, dynamics_client_constructor) -> DynamicsClient:  # pylint: disable=W0621
-    """Mocked dynamics client. Use with 'ClientResponse' object
-    or 'dynamics_client_response' context manager.
-    """
-
-    dynamics_client_constructor.reset_query()
-    dynamics_client_constructor.request_counter = 0
-
+def dynamics_client(request) -> MockClient:  # pylint: disable=W0621
     if not hasattr(request, "param"):
-        yield dynamics_client_constructor
-        return
-
-    with dynamics_client_response(
-        dynamics_client_constructor,
-        session_response=request.param[0],
-        method=request.param[1],
-        client_response=request.param[2],
-    ) as client:
-        yield client
+        yield MockClient()
+    else:
+        yield request.param
 
 
 class ResponseMock:
-    """A mock object for a requests Response. Used with ClientResponse."""
-
-    def __init__(self, *, data: JsonType, status_code: int):
-        self.data = data
+    def __init__(self, *, response: ResponseType, status_code: int = 200):
+        self.response = response
         self.status_code = status_code
 
-    def json(self) -> JsonType:
-        return self.data
-
-
-class ClientResponse(DynamicsClient):
-    def __init__(  # noqa pylint: disable=W0231
-        self,
-        *,
-        session_response: RequestType,
-        method: MethodType,
-        client_response: ResponseType,
-    ):
-        r"""Used with pytest.mark.parametrize and ResponseMock to mock
-        how the Dynamics client will respond to requests. Here is an example::
-
-            @pytest.mark.parametrize(
-                "dynamics_client",
-                [
-                    ClientResponse(
-                        session_response=ResponseMock(data={"foo": "bar"}, status_code=200),
-                        method="get",
-                        client_response=[{"foo": "bar"}],
-                    ),
-                ],
-                indirect=True,  # important!
-            )
-            def test_foo(dynamics_client):
-                assert dynamics_client.get() == dynamics_client._output_
-
-        :param session_response: What the OAuth2 session should be. This can be a single ResponseMock
-                                 object, a sequence of ResponseMock objects, or an Exception.
-                                 This is saved under '_input_' attribute on the client parameter.
-        :param method: What OAuth2 session method should be mocked.
-                       This is also saved under '_method_' attribute on the client parameter.
-        :param client_response: What the DynamicsClient expected response is. The client does some
-                                processing on the OAuth2 response, so this may not be the same as that.
-                                It may also be an exception, in which case the error message from dynamics
-                                is used as the exception message (unless 'simplify_errors' is used).
-                                This is saved under '_output_' attribute on the client parameter.
-        """
-
-        self._input_ = session_response
-        """'session_response' is saved to this for use in testing."""
-        self._output_ = client_response
-        """'client_response' is saved to this for use in testing."""
-        self._method_ = method
-        """'method' is saved to this for use in testing."""
-
-        self.__content = [session_response, method, client_response]
-
-    def __iter__(self):  # pragma: no cover pylint: disable=E0301
-        return self
-
-    def __getitem__(self, item: int):
-        return self.__content[item]
-
-
-@contextmanager
-def dynamics_client_response(
-    client: DynamicsClient,
-    *,
-    session_response: RequestType,
-    method: MethodType,
-    client_response: ResponseType,
-) -> DynamicsClient:
-    """Mock dynamics client OAuthSession response for testing HTTP client methods.
-
-    :param client: Client to mock session response for.
-    :param session_response: Mocked response, or a series of responses
-                             recieved from the OAuthSession when it's called.
-    :param method: HTTP client method to mock.
-    :param client_response: Expected response from the HTTP client method.
-    """
-
-    # Save these to the client for usage in testing assertions
-    client._input_ = session_response  # pylint: disable=W0212
-    client._output_ = client_response  # pylint: disable=W0212
-    client._method_ = method  # pylint: disable=W0212
-
-    # Make side_effect a list so that ResponseMock is returned and not called
-    side_effect = [session_response] if isinstance(session_response, ResponseMock) else session_response
-
-    with patch(f"requests_oauthlib.oauth2_session.OAuth2Session.{method}", side_effect=side_effect):
-        yield client
-
-
-@contextmanager
-def dynamics_client_response_mirror(client: DynamicsClient, *, method: Literal["post", "patch"]) -> DynamicsClient:
-    """Make OAuthSessionClient mirror any post or patch data given to it."""
-
-    def mirror(url: str, data: bytes, headers: Dict[str, Any]) -> ResponseMock:  # pylint: disable=W0613
-        return ResponseMock(data=json.loads(data.decode()), status_code=200)
-
-    with patch(f"requests_oauthlib.oauth2_session.OAuth2Session.{method}", side_effect=mirror):
-        yield client
+    def json(self):
+        if isinstance(self.response, Exception):
+            raise self.response
+        return self.response
