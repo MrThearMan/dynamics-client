@@ -18,7 +18,7 @@ __all__ = [
 
 
 class BaseMockClient:
-    def __init__(self):
+    def __init__(self, *args, **kwargs):  # pylint: disable=W0613
         with patch("dynamics.client.get_token"):
             super().__init__("", "", "", "", [])
 
