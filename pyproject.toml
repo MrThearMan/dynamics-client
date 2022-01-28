@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamics-client"
-version = "0.4.0"
+version = "0.4.1"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
@@ -107,7 +107,7 @@ omit = [
 exclude_lines = [
     "if TYPE_CHECKING:",
     "except ImportError:",
-    "pragma: no cover"
+    "pragma: no cover",
 ]
 
 [tool.tox]

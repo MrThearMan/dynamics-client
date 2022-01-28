@@ -7,3 +7,6 @@ theme:
   highlightjs: true
   hljs_languages:
     - python
+
+extra_css:
+  - css/docs.css

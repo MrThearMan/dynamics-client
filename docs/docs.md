@@ -704,3 +704,73 @@ Instance of a SQLite based cache that the client uses to store the auth token so
 reused between client instances. Django's cache is prefered to this, if it is installed.
 
 ---
+
+## Testing
+
+The library comes with a testing client and some fixtures for pytest:
+
+
+### MockClient
+
+Dynamics Client that can be used fror testing purposes. It allows mocking the responses from the real
+client's HTTP methods, and can even set multiple responses at once:
+
+```python
+from dynamics.test import MockClient
+
+expected = [{"foo": "bar"}, {"fizz": "buzz"}]
+
+# MockClient is a builder class, so you can chain the
+# setup code or use on a separate line
+client = MockClient().with_responses(*expected)
+
+result = client.get()
+assert result == expected[0]
+
+result = client.get()
+assert result == expected[1]
+```
+
+If you need to configure the DynamicsClient instance, you can create a new MockClient
+by inheriting from BaseMockClient and yout custom DynamicsClient.
+
+```python
+from  dynamics import DynamicsClient
+from dynamics.test import BaseMockClient
+
+class MyDynamicsClient(DynamicsClient):
+    pass
+
+# Order is important, BaseMockClient first!
+class MyMockClient(BaseMockClient, MyDynamicsClient):
+     pass
+
+client = MyMockClient()
+```
+
+---
+
+
+### Fixtures
+
+#### dynamics_client
+
+An instance of MockClient that can be used to mock responses from the DynamicsClient.
+If you use a customized DynamicsClient, you can configure your own `dynamics_client` fixture
+like this:
+
+```python
+@pytest.fixture
+def dynamics_client(request):
+    if not hasattr(request, "param"):
+        yield MyMockClient()
+    else:
+        # When used with `pytest.mark.parametrize`
+        yield request.param
+```
+
+
+#### dynamics_cache
+
+An intance of the cache used by the client. Can be either an instance of the SQLiteCache
+that comes with the library, or Django's cache if it's installed.
