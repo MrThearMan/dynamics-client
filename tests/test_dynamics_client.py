@@ -479,6 +479,15 @@ def test_client_show_annotations(dynamics_client):
     assert dynamics_client.headers == {}
 
 
+def test_client_suppress_duplicate_detection(dynamics_client):
+    assert dynamics_client.suppress_duplicate_detection is False
+    dynamics_client.suppress_duplicate_detection = True
+    assert dynamics_client.suppress_duplicate_detection is True
+    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "true"}
+    dynamics_client.suppress_duplicate_detection = False
+    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "false"}
+
+
 def test_client_query__fetch_xml(dynamics_client):
     fetch_xml = (
         '<fetch mapping="logical">'

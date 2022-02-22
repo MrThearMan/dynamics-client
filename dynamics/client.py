@@ -551,6 +551,18 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             self.headers.pop("Prefer")
 
     @property
+    def suppress_duplicate_detection(self):
+        """If set to True, allow creating duplicate records if
+        Dynamics detects one during a POST or PATCH request.
+        https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/manage-duplicate-detection-create-update
+        """
+        return self.headers.get("MSCRM.SuppressDuplicateDetection") == "true"
+
+    @suppress_duplicate_detection.setter
+    def suppress_duplicate_detection(self, value: bool) -> None:
+        self.headers["MSCRM.SuppressDuplicateDetection"] = "true" if value else "false"
+
+    @property
     def select(self) -> List[str]:
         """Get current $select statement."""
         return self._select
