@@ -1,16 +1,15 @@
-import json
+import re
 from unittest import mock
 
 import pytest
 
-from dynamics.api_actions import Actions
 from dynamics.enums import QuoteState
-from dynamics.typing import Any, Dict, List, Optional
+from dynamics.test import MockClient
+from dynamics.typing import List, Optional
 
 
 @pytest.mark.parametrize("cc,bcc", [[["cc1"], ["bcc1"]], [None, None]])
 def test_api_actions__send_email_from_template(dynamics_client, cc: Optional[List[str]], bcc: Optional[List[str]]):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -18,7 +17,7 @@ def test_api_actions__send_email_from_template(dynamics_client, cc: Optional[Lis
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.send_email_from_template(
+        dynamics_client.actions.send_email_from_template(
             template_id="template_id",
             context_table="table",
             context_row_id="row_id",
@@ -69,7 +68,6 @@ def test_api_actions__send_email_from_template(dynamics_client, cc: Optional[Lis
 
 @pytest.mark.parametrize("select", [["select", "it"], None])
 def test_api_actions__convert_quote_to_order(dynamics_client, select: Optional[List[str]]):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -77,7 +75,7 @@ def test_api_actions__convert_quote_to_order(dynamics_client, select: Optional[L
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.convert_quote_to_order(quote_id="quote_id", select=select)
+        dynamics_client.actions.convert_quote_to_order(quote_id="quote_id", select=select)
 
     if select:
         expected_result = {"QuoteId": "quote_id", "ColumnSet": {"AllColumns": False, "Columns": select}}
@@ -90,7 +88,6 @@ def test_api_actions__convert_quote_to_order(dynamics_client, select: Optional[L
 
 @pytest.mark.parametrize("select", [["select", "it"], None])
 def test_api_actions__activate_quote(dynamics_client, select: Optional[List[str]]):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -98,7 +95,7 @@ def test_api_actions__activate_quote(dynamics_client, select: Optional[List[str]
         result = data
 
     with mock.patch("dynamics.test.MockClient.patch", mock.MagicMock(side_effect=capture_data)):
-        api_functions.activate_quote(quote_id="quote_id", select=select)
+        dynamics_client.actions.activate_quote(quote_id="quote_id", select=select)
 
     assert dynamics_client.table == "quotes"
     assert dynamics_client.row_id == "quote_id"
@@ -109,7 +106,6 @@ def test_api_actions__activate_quote(dynamics_client, select: Optional[List[str]
 
 
 def test_api_actions__win_quote(dynamics_client):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -117,7 +113,7 @@ def test_api_actions__win_quote(dynamics_client):
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.win_quote(quote_id="quote_id")
+        dynamics_client.actions.win_quote(quote_id="quote_id")
 
     assert dynamics_client.action == "WinQuote"
     assert result == {
@@ -130,7 +126,6 @@ def test_api_actions__win_quote(dynamics_client):
 
 
 def test_api_actions__close_quote(dynamics_client):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -138,7 +133,7 @@ def test_api_actions__close_quote(dynamics_client):
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.close_quote(quote_id="quote_id")
+        dynamics_client.actions.close_quote(quote_id="quote_id")
 
     assert dynamics_client.action == "CloseQuote"
     assert result == {
@@ -152,7 +147,6 @@ def test_api_actions__close_quote(dynamics_client):
 
 @pytest.mark.parametrize("select", [["select", "it"], None])
 def test_api_actions__revise_quote(dynamics_client, select: Optional[List[str]]):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -160,7 +154,7 @@ def test_api_actions__revise_quote(dynamics_client, select: Optional[List[str]])
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.revise_quote(quote_id="quote_id", select=select)
+        dynamics_client.actions.revise_quote(quote_id="quote_id", select=select)
 
     if select:
         expected_result = {"QuoteId": "quote_id", "ColumnSet": select}
@@ -171,11 +165,9 @@ def test_api_actions__revise_quote(dynamics_client, select: Optional[List[str]])
 
 
 def test_api_actions__delete_quote(dynamics_client):
-    api_functions = Actions(client=dynamics_client)
-
     dynamics_client.internal.with_responses(None).with_status_codes(204)
 
-    api_functions.delete_quote(quote_id="quote_id")
+    dynamics_client.actions.delete_quote(quote_id="quote_id")
 
     assert dynamics_client.table == "quotes"
     assert dynamics_client.row_id == "quote_id"
@@ -183,7 +175,6 @@ def test_api_actions__delete_quote(dynamics_client):
 
 @pytest.mark.parametrize("reason", [1, None])
 def test_api_actions__calculate_quote_price(dynamics_client, reason: int):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -191,7 +182,7 @@ def test_api_actions__calculate_quote_price(dynamics_client, reason: int):
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.calculate_quote_price(quote_id="quote_id")
+        dynamics_client.actions.calculate_quote_price(quote_id="quote_id")
 
     assert dynamics_client.action == "CalculatePrice"
     assert result == {
@@ -204,7 +195,6 @@ def test_api_actions__calculate_quote_price(dynamics_client, reason: int):
 
 @pytest.mark.parametrize("reason", [1, None])
 def test_api_actions__cancel_order(dynamics_client, reason: int):
-    api_functions = Actions(client=dynamics_client)
     result = None
 
     def capture_data(data, *args, **kwargs):
@@ -212,7 +202,7 @@ def test_api_actions__cancel_order(dynamics_client, reason: int):
         result = data
 
     with mock.patch("dynamics.test.MockClient.post", mock.MagicMock(side_effect=capture_data)):
-        api_functions.cancel_order(order_id="order_id", reason=reason)
+        dynamics_client.actions.cancel_order(order_id="order_id", reason=reason)
 
     reason = reason if reason else 4
 
@@ -227,11 +217,14 @@ def test_api_actions__cancel_order(dynamics_client, reason: int):
 
 
 def test_api_actions__delete_order(dynamics_client):
-    api_functions = Actions(client=dynamics_client)
-
     dynamics_client.internal.with_responses(None).with_status_codes(204)
 
-    api_functions.delete_order(order_id="order_id")
+    dynamics_client.actions.delete_order(order_id="order_id")
 
     assert dynamics_client.table == "salesorders"
     assert dynamics_client.row_id == "order_id"
+
+
+def test_api_cations__called_on_class():
+    with pytest.raises(RuntimeError, match=re.escape("Actions can only be used on DynamicsClient instances.")):
+        MockClient.actions.delete_order(order_id="order_id")

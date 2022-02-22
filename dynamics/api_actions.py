@@ -20,8 +20,12 @@ __all__ = ["Actions"]
 class Actions:
     """Predefined Dynamics API actions."""
 
-    def __init__(self, client: "DynamicsClient"):
-        self.client = client
+    def __get__(self, instance, owner):
+        if instance is None:
+            raise RuntimeError("Actions can only be used on DynamicsClient instances.")
+
+        self.client: "DynamicsClient" = instance  # pylint: disable=W0201
+        return self
 
     def send_email_from_template(  # pylint: disable=R0913
         self,

@@ -33,19 +33,7 @@ from .exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from .typing import (
-    Any,
-    Dict,
-    ExpandDict,
-    ExpandKeys,
-    ExpandValues,
-    FilterType,
-    List,
-    MethodType,
-    Optional,
-    OrderbyType,
-    Type,
-)
+from .typing import Any, Dict, ExpandDict, ExpandKeys, ExpandValues, FilterType, List, MethodType, Optional, OrderbyType
 from .utils import cache, error_simplification_available, sentinel
 
 
@@ -60,9 +48,10 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
     request_counter: int = 0
     cache_key: str = "dynamics-client-token"
-    actions_class: Type[Actions] = Actions
-    functions_class: Type[Functions] = Functions
     simplified_error_message: str = "There was a problem communicating with the server."
+
+    actions = Actions()
+    functions = Functions()
 
     error_dict = {
         status.HTTP_400_BAD_REQUEST: ParseError,
@@ -100,11 +89,6 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             self.set_token(token)
         else:
             self._session.token = token
-
-        self.actions = self.actions_class(client=self)
-        """Predefined dynamics API actions. Used to make certain changes to data."""
-        self.functions = self.functions_class(client=self)
-        """Predefined dynamics API functions. Used to fetch certain types of data."""
 
         self._select: List[str] = []
         self._expand: ExpandDict = {}

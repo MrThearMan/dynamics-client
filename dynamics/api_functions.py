@@ -17,8 +17,12 @@ __all__ = ["Functions"]
 class Functions:
     """Predefined Dynamics API functions."""
 
-    def __init__(self, client: "DynamicsClient"):
-        self.client = client
+    def __get__(self, instance, owner):
+        if instance is None:
+            raise RuntimeError("Functions can only be used on DynamicsClient instances.")
+
+        self.client: "DynamicsClient" = instance  # pylint: disable=W0201
+        return self
 
     def expand_calendar(self, start: str, end: str, **kwargs) -> List[Dict[str, Any]]:
         """Converts the calendar rules to an array of available time blocks for the specified period."""
