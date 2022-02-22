@@ -2,19 +2,16 @@
 """
 Dynamics Api Client. API Reference Docs:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
-
-Author: Matti Lamppu.
-Date: April 5th, 2021.
 """
 
 import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from json import JSONDecodeError
 from urllib.parse import quote
 
 from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
+from requests import JSONDecodeError  # noqa
 from requests_oauthlib import OAuth2Session
 
 from . import status

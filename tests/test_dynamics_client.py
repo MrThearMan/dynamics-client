@@ -1,9 +1,9 @@
 import os
-from json import JSONDecodeError
 from unittest import mock
 
 import pytest
 from oauthlib.oauth2 import OAuth2Token
+from requests import JSONDecodeError  # noqa
 
 from dynamics.client import DynamicsClient
 from dynamics.exceptions import (
