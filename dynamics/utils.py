@@ -14,7 +14,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import TYPE_CHECKING, Any, List, Optional, Type
+from .typing import TYPE_CHECKING, Any, Callable, List, Optional, P, T, Type
 
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
     return local_time
 
 
-def sqlite_method(method):
+def sqlite_method(method: Callable[P, T]) -> Callable[P, T]:
     """Wrapped method is executed under an open sqlite3 connection.
     Method's class should contain a 'self.connection_string' that is used to make the connection.
     This decorator then updates a 'self.con' object inside the class to the current connection.
@@ -87,7 +87,7 @@ def sqlite_method(method):
     """
 
     @wraps(method)
-    def inner(*args, **kwargs):
+    def inner(*args: P.args, **kwargs: P.kwargs) -> T:
         self = args[0]
         self.con = sqlite3.connect(self.connection_string)
         self._apply_pragma()  # pylint: disable=W0212
@@ -195,7 +195,7 @@ except ImportError:
     cache = SQLiteCache()
 
 
-def error_simplification_available(func):
+def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
     """Errors in the function decorated with this decorator can be simplified to just a
     DynamicsException with default error message using the keyword: 'simplify_errors'.
     This is useful if you want to hide error details from frontend users.
@@ -207,7 +207,7 @@ def error_simplification_available(func):
     """
 
     @wraps(func)
-    def inner(*args, **kwargs):
+    def inner(*args: P.args, **kwargs: P.kwargs) -> T:
         simplify_errors: bool = kwargs.pop("simplify_errors", False)
         raise_separately: List[Type[Exception]] = kwargs.pop("raise_separately", [])
 

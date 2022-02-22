@@ -11,6 +11,7 @@ try:
         List,
         Literal,
         Optional,
+        ParamSpec,
         Sequence,
         Set,
         Tuple,
@@ -36,7 +37,7 @@ except ImportError:
         Union,
     )
 
-    from typing_extensions import Literal, TypedDict
+    from typing_extensions import Literal, ParamSpec, TypedDict
 
 
 __all__ = [
@@ -52,8 +53,10 @@ __all__ = [
     "Tuple",
     "TypedDict",
     "TypeVar",
+    "ParamSpec",
     "Iterator",
     "TYPE_CHECKING",
+    "ResponseType",
     "MethodType",
     "OrderbyType",
     "FilterType",
@@ -79,6 +82,8 @@ __all__ = [
     "FetchXMLBuildType",
     "FetchXMLFetchMappingType",
     "FetchXMLFilterOperatorType",
+    "T",
+    "P",
 ]
 
 MethodType = Literal["get", "post", "patch", "delete"]
@@ -100,6 +105,7 @@ ExpandDict = Dict[str, Optional[ExpandType]]
 FieldType = Union[str, int, float, bool, None]
 CompType = Union[str, int, float]
 T = TypeVar("T")  # pylint: disable=C0103
+P = ParamSpec("P")  # pylint: disable=C0103
 ResponseType = Union[Union[Dict[str, Any], List[Dict[str, Any]]], Exception, None]
 
 LiteralBool = Literal["true", "false"]
