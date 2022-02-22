@@ -10,10 +10,11 @@ Date: April 5th, 2021.
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from json import JSONDecodeError
 from urllib.parse import quote
 
-from oauthlib.oauth2 import BackendApplicationClient
+from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
 from requests_oauthlib import OAuth2Session
 
 from . import status
@@ -45,7 +46,7 @@ from .typing import (
     OrderbyType,
     Type,
 )
-from .utils import error_simplification_available, get_token, sentinel, set_token
+from .utils import cache, error_simplification_available, sentinel
 
 
 __all__ = ["DynamicsClient"]
@@ -58,6 +59,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
+    cache_key: str = "dynamics-client-token"
     actions_class: Type[Actions] = Actions
     functions_class: Type[Functions] = Functions
     simplified_error_message: str = "There was a problem communicating with the server."
@@ -92,10 +94,10 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._api_url = api_url.rstrip("/") + "/"
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
-        token = get_token()
+        token = self.get_token()
         if token is None:  # pragma: no cover
             token = self._session.fetch_token(token_url=token_url, client_secret=client_secret, scope=scope)
-            set_token(token)
+            self.set_token(token)
         else:
             self._session.token = token
 
@@ -127,6 +129,27 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
     def __setitem__(self, key, value):
         self.headers[key] = value
+
+    def get_token(self) -> OAuth2Token:
+        """Get dynamics client token in a thread, so it can be done in an async context."""
+
+        def task() -> OAuth2Token:
+            return cache.get(self.cache_key, None)
+
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(task)
+            return future.result()
+
+    def set_token(self, token: OAuth2Token):
+        """Set dynamics client token in a thread, so it can be done in an async context."""
+
+        def task():
+            expires = int(token["expires_in"]) - 60
+            cache.set(self.cache_key, token, expires)
+
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(task)
+            return future.result()
 
     @classmethod
     def from_environment(cls):
@@ -576,7 +599,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if values is sentinel:
             values = self._select
 
-        return "$select=" + ",".join([key for key in values]) if values else ""
+        return "$select=" + ",".join(list(values)) if values else ""
 
     @property
     def expand(self) -> ExpandDict:

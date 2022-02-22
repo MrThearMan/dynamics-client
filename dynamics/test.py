@@ -19,7 +19,7 @@ __all__ = [
 
 class BaseMockClient:
     def __init__(self, *args, **kwargs):  # pylint: disable=W0613
-        with patch("dynamics.client.get_token"):
+        with patch("dynamics.client.DynamicsClient.get_token"):
             super().__init__("", "", "", "", [])
 
         self.__len: int = -1
@@ -113,7 +113,7 @@ class BaseMockClient:
         return self.__response
 
     def _check_length(self, length: int) -> "BaseMockClient":
-        if self.__len != -1 and length != self.__len:
+        if self.__len not in (length, -1):
             raise ValueError("Mismaching number of arguments given for MockResponse")
         self.__len = length
         return self
@@ -179,7 +179,15 @@ class MockClient(BaseMockClient, DynamicsClient):
             indirect=True,  # important!
         )
         def test_foo(dynamics_client):
+            # Use as-is
             x = dynamics_client.get()
+
+            # ...or patch usage
+            with mock.patch("path.to.client.DynamicsClient", return_value=dynamics_client):
+                ...
+
+            with mock.patch("path.to.client.DynamicsClient.from_environment", return_value=dynamics_client):
+                ...
 
     -----------------------------------------------------------
 

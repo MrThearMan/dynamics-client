@@ -3,6 +3,7 @@ from json import JSONDecodeError
 from unittest import mock
 
 import pytest
+from oauthlib.oauth2 import OAuth2Token
 
 from dynamics.client import DynamicsClient
 from dynamics.exceptions import (
@@ -210,7 +211,7 @@ def test_client_init_from_environment():
     os.environ["DYNAMICS_SCOPE"] = "scope"
 
     try:
-        with mock.patch("dynamics.client.get_token"):
+        with mock.patch("dynamics.client.DynamicsClient.get_token"):
             client = DynamicsClient.from_environment()
     except KeyError as error:
         pytest.fail(f"Wrong environment variables: {error}")
@@ -221,7 +222,7 @@ def test_client_init_from_environment():
 
 
 def test_client_init_from_cache():
-    with mock.patch("dynamics.client.get_token", mock.MagicMock(return_value="token")):
+    with mock.patch("dynamics.client.DynamicsClient.get_token", mock.MagicMock(return_value="token")):
         client = DynamicsClient("", "", "", "", [])
 
     assert client._session.token == "token"
@@ -648,3 +649,23 @@ def test_client__json_decode_error(dynamics_client):
 
     with pytest.raises(DynamicsException, match="foo"):
         dynamics_client.delete()
+
+
+def test_utils__get_token(dynamics_cache, dynamics_client):
+    value = dynamics_client.get_token()
+    assert value is None
+    token = OAuth2Token(params={"foo": "bar"})
+    dynamics_cache.set(dynamics_client.cache_key, token)
+
+    value = dynamics_client.get_token()
+    assert value == token
+
+
+def test_utils__set_token(dynamics_cache, dynamics_client):
+    value = dynamics_cache.get(dynamics_client.cache_key, None)
+    assert value is None
+    token = OAuth2Token(params={"foo": "bar", "expires_in": 3600})
+    dynamics_client.set_token(token)
+
+    value = dynamics_cache.get(dynamics_client.cache_key, None)
+    assert value == token

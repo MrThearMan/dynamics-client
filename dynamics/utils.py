@@ -1,13 +1,10 @@
 import logging
 import pickle
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 from uuid import UUID
-
-from oauthlib.oauth2 import OAuth2Token
 
 from .exceptions import DynamicsException
 
@@ -31,8 +28,6 @@ __all__ = [
     "is_valid_uuid",
     "SQLiteCache",
     "cache",
-    "get_token",
-    "set_token",
     "error_simplification_available",
 ]
 
@@ -117,7 +112,7 @@ class SQLiteCache:
 
     DEFAULT_TIMEOUT = 300
     DEFAULT_PRAGMA = {
-        "mmap_size": 2 ** 26,  # https://www.sqlite.org/pragma.html#pragma_mmap_size
+        "mmap_size": 2**26,  # https://www.sqlite.org/pragma.html#pragma_mmap_size
         "cache_size": 8192,  # https://www.sqlite.org/pragma.html#pragma_cache_size
         "wal_autocheckpoint": 1000,  # https://www.sqlite.org/pragma.html#pragma_wal_autocheckpoint
         "auto_vacuum": "none",  # https://www.sqlite.org/pragma.html#pragma_auto_vacuum
@@ -198,30 +193,6 @@ try:
     from django.core.cache import cache
 except ImportError:
     cache = SQLiteCache()
-
-
-def get_token() -> OAuth2Token:
-    """Get dynamics client token in a thread, so it can be done in an async context."""
-
-    def task() -> OAuth2Token:
-        return cache.get("dynamics-client-token", None)
-
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(task)
-        return future.result()
-
-
-def set_token(token: OAuth2Token):
-    """Set dynamics client token in a thread, so it can be done in an async context."""
-
-    def task():
-        name = "dynamics-client-token"
-        expires = int(token["expires_in"]) - 60
-        cache.set(name, token, expires)
-
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(task)
-        return future.result()
 
 
 def error_simplification_available(func):
