@@ -1,12 +1,12 @@
 # Dynamics Web API Client
 
-[![Coverage Status](https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main)](https://coveralls.io/github/MrThearMan/dynamics-client?branch=main)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Tests)](https://github.com/MrThearMan/dynamics-client/actions/workflows/main.yml)
-[![PyPI - Version](https://img.shields.io/pypi/v/dynamics-client)](https://pypi.org/project/dynamics-client)
-[![License](https://img.shields.io/github/license/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE)
-[![GitHub last commit](https://img.shields.io/github/last-commit/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/commits/main)
-[![GitHub issues](https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/issues)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dynamics-client)](https://pypi.org/project/dynamics-client)
+[![Coverage Status][coverage-badge]][coverage]
+[![GitHub Workflow Status][status-badge]][status]
+[![PyPI][pypi-badge]][pypi]
+[![GitHub][licence-badge]][licence]
+[![GitHub Last Commit][repo-badge]][repo]
+[![GitHub Issues][issues-badge]][issues]
+[![Python Version][version-badge]][pypi]
 
 ```shell
 pip install dynamics-client
@@ -16,14 +16,14 @@ pip install dynamics-client
 
 **Documentation**: [https://mrthearman.github.io/dynamics-client/](https://mrthearman.github.io/dynamics-client/)
 
-**Source Code**: [https://github.com/MrThearMan/dynamics-client](https://github.com/MrThearMan/dynamics-client)
+**Source Code**: [https://github.com/MrThearMan/dynamics-client/](https://github.com/MrThearMan/dynamics-client/)
 
 ---
 
-
 Client for making Web API request from a Microsoft Dynamics 365 Database.
 
-You should also read the [Dynamics Web API Reference Docs](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api):
+You should also read the [Dynamics Web API Reference Docs][ref-docs]:
+
 
 ## Basic usage:
 
@@ -153,3 +153,21 @@ client.row_id = result["contactid"]
 
 client.delete()
 ```
+
+
+[ref-docs]: https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
+
+[coverage-badge]: https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main
+[status-badge]: https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Tests
+[pypi-badge]: https://img.shields.io/pypi/v/dynamics-client
+[licence-badge]: https://img.shields.io/github/license/MrThearMan/dynamics-client
+[repo-badge]: https://img.shields.io/github/last-commit/MrThearMan/dynamics-client
+[issues-badge]: https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client
+[version-badge]: https://img.shields.io/pypi/pyversions/dynamics-client
+
+[coverage]: https://coveralls.io/github/MrThearMan/dynamics-client?branch=main
+[status]: https://github.com/MrThearMan/dynamics-client/actions/workflows/main.yml
+[pypi]: https://pypi.org/project/dynamics-client
+[licence]: https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE
+[repo]: https://github.com/MrThearMan/dynamics-client/commits/main
+[issues]: https://github.com/MrThearMan/dynamics-client/issues
