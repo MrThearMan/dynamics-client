@@ -21,7 +21,6 @@ except ImportError:
                 code = self.default_code
 
             self.detail = f"[{self.status_code}] {detail} <{code}>"
-            logger.error(self.detail)
             super().__init__(detail)
 
         def __str__(self):

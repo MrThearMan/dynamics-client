@@ -1,4 +1,6 @@
 import os
+import re
+import sys
 from unittest import mock
 
 import pytest
@@ -19,7 +21,7 @@ from dynamics.exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from dynamics.test import MockClient
+from dynamics.test import MockClient, ResponseMock
 from dynamics.typing import MethodType
 
 
@@ -193,8 +195,8 @@ def test_client_error_handling__get_return_no_items(dynamics_client):
     ],
 )
 def test_client_set_default_headers(dynamics_client, method: MethodType, headers: dict):
-    dynamics_client.set_default_headers(method=method)
-    assert dynamics_client.headers == headers
+    default_headers = dynamics_client.default_headers(method=method)
+    assert default_headers == headers
 
 
 def test_client_headers(dynamics_client):
@@ -611,25 +613,25 @@ def test_client_reset_query(dynamics_client):
 
 def test_client_headers_are_set_on_call(dynamics_client):
 
-    loc = "dynamics.client.DynamicsClient.set_default_headers"
+    loc = "dynamics.client.DynamicsClient.default_headers"
     dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, cycle=True)
 
-    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+    with mock.patch(loc, side_effect=dynamics_client.default_headers) as patch:
         dynamics_client.get()
 
     patch.assert_called_once()
 
-    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+    with mock.patch(loc, side_effect=dynamics_client.default_headers) as patch:
         dynamics_client.post({})
 
     patch.assert_called_once()
 
-    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+    with mock.patch(loc, side_effect=dynamics_client.default_headers) as patch:
         dynamics_client.patch({})
 
     patch.assert_called_once()
 
-    with mock.patch(loc, side_effect=dynamics_client.set_default_headers) as patch:
+    with mock.patch(loc, side_effect=dynamics_client.default_headers) as patch:
         dynamics_client.delete()
 
     patch.assert_called_once()
@@ -669,3 +671,99 @@ def test_utils__set_token(dynamics_cache, dynamics_client):
 
     value = dynamics_cache.get(dynamics_client.cache_key, None)
     assert value == token
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="TaskGroups only available from python 3.11 onwards.")
+async def test_client_task_group():
+    os.environ["DYNAMICS_API_URL"] = "apiurl"
+    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
+    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
+    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
+    os.environ["DYNAMICS_SCOPE"] = "scope"
+
+    r1 = ResponseMock(response={"value": [{"x": 1}]})
+    r2 = ResponseMock(response={"y": 2})
+    r3 = ResponseMock(response={"value": []})
+    r4 = ResponseMock(response=None, status_code=204)
+
+    p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
+    p2 = mock.patch("dynamics.client.OAuth2Session.get", return_value=r1)
+    p3 = mock.patch("dynamics.client.OAuth2Session.patch", return_value=r2)
+    p4 = mock.patch("dynamics.client.OAuth2Session.delete", return_value=r3)
+    p5 = mock.patch("dynamics.client.OAuth2Session.post", return_value=r4)
+
+    with p1, p2, p3, p4, p5:
+        async with DynamicsClient.from_environment() as client:
+            client.table = "foo"
+            client.select = ["bar"]
+            task_1 = client.create_task(client.get, not_found_ok=True)
+            client.reset_query()
+
+            client.table = "fizz"
+            client.select = ["buzz"]
+            task_2 = client.create_task(client.patch, data={"1": "2"}, simplify_errors=True)
+            client.reset_query()
+
+            client.table = "xxx"
+            client.row_id = "yyy"
+            task_3 = client.create_task(client.delete)
+            client.reset_query()
+
+            task4 = client.create_task(client.actions.win_quote, quote_id="abc")
+            client.reset_query()
+
+    assert task_1.result() == [{"x": 1}]
+    assert task_2.result() == {"y": 2}
+    assert task_3.result() is None
+    assert task4.result() is None
+
+
+def test_client_task_group__outside_context_manager():
+    os.environ["DYNAMICS_API_URL"] = "apiurl"
+    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
+    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
+    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
+    os.environ["DYNAMICS_SCOPE"] = "scope"
+
+    with mock.patch("dynamics.client.DynamicsClient.get_token"):
+        client = DynamicsClient.from_environment()
+
+    msg = (
+        "TaskGroup not created. Either python version does not support TaskGroups, "
+        "or client not used as an async context manager."
+    )
+
+    with pytest.raises(RuntimeError, match=re.escape(msg)):
+        client.create_task(client.get, not_found_ok=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(sys.version_info >= (3, 11), reason="TaskGroups available from python 3.11 onwards.")
+async def test_client_task_group__no_taskgroup():
+    os.environ["DYNAMICS_API_URL"] = "apiurl"
+    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
+    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
+    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
+    os.environ["DYNAMICS_SCOPE"] = "scope"
+
+    r1 = ResponseMock(response={"value": [{"x": 1}]})
+
+    p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
+    p2 = mock.patch("dynamics.client.OAuth2Session.get", return_value=r1)
+
+    msg = (
+        "TaskGroup not created. Either python version does not support TaskGroups, "
+        "or client not used as an async context manager."
+    )
+
+    with p1, p2:
+        async with DynamicsClient.from_environment() as client:
+            client.table = "foo"
+            client.select = ["bar"]
+            result = client.get()
+
+            with pytest.raises(RuntimeError, match=re.escape(msg)):
+                client.create_task(client.get)
+
+    assert result == [{"x": 1}]

@@ -1,9 +1,10 @@
+from asyncio import iscoroutinefunction
 from datetime import datetime
 from time import sleep
 
 import pytest
 
-from dynamics.utils import from_dynamics_date_format, is_valid_uuid, to_dynamics_date_format
+from dynamics.utils import from_dynamics_date_format, is_valid_uuid, to_coroutine, to_dynamics_date_format
 
 
 @pytest.mark.parametrize(
@@ -52,3 +53,15 @@ def test_utils__cache(dynamics_cache):
 
     with pytest.raises(AttributeError):
         dynamics_cache.set("foo", lambda x: 100, 0.5)
+
+
+@pytest.mark.asyncio
+async def test_to_coroutine():
+    def func():
+        return 1
+
+    coro = to_coroutine(func)
+
+    assert iscoroutinefunction(coro)
+    assert coro != func
+    assert await coro() == 1

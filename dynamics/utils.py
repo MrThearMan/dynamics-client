@@ -14,7 +14,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import TYPE_CHECKING, Any, Callable, List, Optional, P, T, Type
+from .typing import TYPE_CHECKING, Any, Awaitable, Callable, List, Optional, P, T, Type
 
 
 if TYPE_CHECKING:
@@ -29,6 +29,7 @@ __all__ = [
     "SQLiteCache",
     "cache",
     "error_simplification_available",
+    "to_coroutine",
 ]
 
 
@@ -221,3 +222,13 @@ def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
             raise DynamicsException(self.simplified_error_message) from error
 
     return inner
+
+
+def to_coroutine(func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+    """Convert passed callable into a coroutine."""
+
+    @wraps(func)
+    async def wrapper(*args: P.args, **kw: P.kwargs) -> Any:
+        return func(*args, **kw)
+
+    return wrapper

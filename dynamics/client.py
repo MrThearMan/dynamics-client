@@ -3,11 +3,12 @@
 Dynamics Api Client. API Reference Docs:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
 """
-
+import asyncio
 import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from types import TracebackType
 from urllib.parse import quote
 
 from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
@@ -30,14 +31,32 @@ from .exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from .typing import Any, Dict, ExpandDict, ExpandKeys, ExpandValues, FilterType, List, MethodType, Optional, OrderbyType
-from .utils import cache, error_simplification_available, sentinel
+from .typing import (
+    Any,
+    Callable,
+    Dict,
+    ExpandDict,
+    ExpandKeys,
+    ExpandValues,
+    FilterType,
+    List,
+    MethodType,
+    Optional,
+    OrderbyType,
+    P,
+    T,
+    Type,
+    TypeVar,
+)
+from .utils import cache, error_simplification_available, sentinel, to_coroutine
 
 
 __all__ = ["DynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
+EXC = TypeVar("EXC", bound=BaseException)
+DClient = TypeVar("DClient", bound="DynamicsClient")
 
 
 class DynamicsClient:  # pylint: disable=R0904,R0902
@@ -110,6 +129,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
     def __setitem__(self, key, value):
         self.headers[key] = value
+
+    async def __aenter__(self: DClient) -> DClient:
+        if hasattr(asyncio, "TaskGroup"):
+            self.__tg = asyncio.TaskGroup()  # pylint: disable=W0201
+            await self.__tg.__aenter__()
+
+        return self
+
+    async def __aexit__(self, exc_type: Optional[Type[EXC]], exc: EXC, traceback: TracebackType) -> None:
+        if hasattr(asyncio, "TaskGroup"):
+            try:
+                await self.__tg.__aexit__(exc_type, exc, traceback)
+            finally:
+                del self.__tg
 
     def get_token(self) -> OAuth2Token:
         """Get dynamics client token in a thread, so it can be done in an async context."""
@@ -223,25 +256,51 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._headers: Dict[str, str] = {}
 
-    def set_default_headers(self, method: MethodType):
-        """Sets per method default headers. Does not override user added headers."""
+    def default_headers(self, method: MethodType):
+        """Get method default headers for given method."""
 
-        self.headers.setdefault("OData-MaxVersion", "4.0")
-        self.headers.setdefault("OData-Version", "4.0")
-        self.headers.setdefault("Accept", "application/json; odata.metadata=minimal")
+        headers = {
+            "OData-MaxVersion": "4.0",
+            "OData-Version": "4.0",
+        }
 
-        if method in ["post", "patch", "delete"]:
-            self.headers.setdefault("Content-Type", "application/json; charset=utf-8")
+        if method == "get":
+            headers.update(
+                {
+                    "Accept": "application/json; odata.metadata=minimal",
+                    "Prefer": f"odata.maxpagesize={self.pagesize}",
+                }
+            )
+        elif method == "post":
+            headers.update(
+                {
+                    "Accept": "application/json; odata.metadata=minimal",
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Prefer": "return=representation",
+                    "MSCRM.SuppressDuplicateDetection": "false",
+                }
+            )
+        elif method == "patch":
+            headers.update(
+                {
+                    "Accept": "application/json; odata.metadata=minimal",
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Prefer": "return=representation",
+                    "MSCRM.SuppressDuplicateDetection": "false",
+                    "If-None-Match": "null",
+                    "If-Match": "*",
+                }
+            )
+        elif method == "delete":
+            headers.update(
+                {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Accept": "application/json; odata.metadata=minimal",
+                    "Prefer": f"odata.maxpagesize={self.pagesize}",
+                }
+            )
 
-        if method in ["post", "patch"]:
-            self.headers.setdefault("Prefer", "return=representation")
-            self.headers.setdefault("MSCRM.SuppressDuplicateDetection", "false")
-
-        if method in ["patch"]:
-            self.headers.setdefault("If-None-Match", "null")
-            self.headers.setdefault("If-Match", "*")
-
-        self.headers.setdefault("Prefer", f"odata.maxpagesize={self.pagesize}")
+        return headers
 
     def handled_error(self, status_code: int, error_message: str, error_code: str, method: MethodType) -> Exception:
         """Error handling based on these expected error statuses:
@@ -265,22 +324,24 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         return error(error_message)
 
     @error_simplification_available
-    def get(self, not_found_ok: bool = False, next_link: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
 
         Please also read the decorator's documentation!
 
         :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
-        :param next_link: Request the next set of records from this link instead.
+        :param query: Use this url instead of building it from current query parameters.
         """
 
         self.request_counter += 1
-        self.set_default_headers("get")
 
-        if next_link is not None:
-            response = self._session.get(next_link, headers=self.headers)
-        else:
-            response = self._session.get(self.current_query, headers=self.headers)
+        if query is None:
+            query = self.current_query
+
+        response = self._session.get(
+            url=query,
+            headers={**self.default_headers("get"), **self.headers},
+        )
 
         try:
             data = response.json()
@@ -295,7 +356,6 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         # Always returns a list, even if only one row is selected
         entities = data.get("value", [data])
         errors = data.get("error", {})
-        count = data.get("@odata.count", "")
 
         if errors:
             raise self.handled_error(
@@ -326,7 +386,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                     # therefore, if the @odata.next link appears before that, we can ignore it.
                     #
                     key = column_key[:-15]
-                    if len(entities[i][key]) < self.pagesize:
+                    if len(row[key]) < self.pagesize:
                         row.pop(column_key)
                         continue
 
@@ -336,32 +396,39 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                     #
                     # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#retrieve-related-tables-by-expanding-navigation-properties
                     #
-                    extra = self.get(not_found_ok=not_found_ok, next_link=row.pop(column_key))
-                    id_tags = [value["@odata.etag"] for value in entities[i][key]]
+                    extra = self.get(not_found_ok=not_found_ok, query=row.pop(column_key))
+                    id_tags = [value["@odata.etag"] for value in row[key]]
                     extra = [value for value in extra if value["@odata.etag"] not in id_tags]
 
                     entities[i][key] += extra
 
+        count = data.get("@odata.count", "")
         if count:
             entities.insert(0, count)
 
         return entities
 
     @error_simplification_available
-    def post(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def post(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
         """Create new row in a table. Must have 'table' attribute set.
         Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
 
         :param data: POST data.
+        :param query: Use this url instead of building it from current query parameters.
         """
 
         self.request_counter += 1
-        self.set_default_headers("post")
 
-        data = json.dumps(data).encode()
-        response = self._session.post(self.current_query, data=data, headers=self.headers)
+        if query is None:
+            query = self.current_query
+
+        response = self._session.post(
+            url=query,
+            data=json.dumps(data).encode(),
+            headers={**self.default_headers("post"), **self.headers},
+        )
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -388,20 +455,26 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         return data
 
     @error_simplification_available
-    def patch(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def patch(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
         """Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
 
         :param data: PATCH data.
+        :param query: Use this url instead of building it from current query parameters.
         """
 
         self.request_counter += 1
-        self.set_default_headers("patch")
 
-        data = json.dumps(data).encode()
-        response = self._session.patch(self.current_query, data=data, headers=self.headers)
+        if query is None:
+            query = self.current_query
+
+        response = self._session.patch(
+            url=query,
+            data=json.dumps(data).encode(),
+            headers={**self.default_headers("patch"), **self.headers},
+        )
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return {}
@@ -428,16 +501,23 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         return data
 
     @error_simplification_available
-    def delete(self) -> None:
+    def delete(self, *, query: Optional[str] = None) -> None:
         """Delete row in a table. Must have 'table' and 'row_id' attributes set.
 
         Please also read the decorator's documentation!
+
+        :param query: Use this url instead of building it from current query parameters.
         """
 
         self.request_counter += 1
-        self.set_default_headers("delete")
 
-        response = self._session.delete(self.current_query, headers=self.headers)
+        if query is None:
+            query = self.current_query
+
+        response = self._session.delete(
+            url=query,
+            headers={**self.default_headers("delete"), **self.headers},
+        )
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return
@@ -460,6 +540,26 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                 error_code=errors.get("code"),
                 method="delete",
             )
+
+    def create_task(self, method: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> asyncio.Task:
+        """Create task when the client is used as an async context manager.
+
+        :param method: Client method to create task for.
+        :param args: Positional arguments passed to the method.
+        :param kwargs: Keyword arguments passed to the method.
+        """
+
+        if not hasattr(self, "_DynamicsClient__tg"):
+            msg = (
+                "TaskGroup not created. Either python version does not support TaskGroups, "
+                "or client not used as an async context manager."
+            )
+            raise RuntimeError(msg)
+
+        if method in {self.get, self.post, self.patch, self.delete}:
+            kwargs["query"] = self.current_query
+
+        return self.__tg.create_task(to_coroutine(method)(*args, **kwargs))
 
     @property
     def table(self) -> str:

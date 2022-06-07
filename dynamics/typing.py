@@ -5,6 +5,7 @@ try:
     from typing import (
         TYPE_CHECKING,
         Any,
+        Awaitable,
         Callable,
         Dict,
         Iterator,
@@ -24,6 +25,7 @@ except ImportError:
     from typing import (
         TYPE_CHECKING,
         Any,
+        Awaitable,
         Callable,
         Dict,
         Iterator,
@@ -44,6 +46,7 @@ __all__ = [
     "List",
     "Dict",
     "Optional",
+    "Awaitable",
     "Any",
     "Literal",
     "Union",

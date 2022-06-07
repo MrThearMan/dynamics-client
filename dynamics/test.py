@@ -146,9 +146,9 @@ class BaseMockClient:
             with patch(f"{class_dot_path}.{method}", side_effect=[self.__response]):
                 yield
 
-    def get(self, not_found_ok: bool = False, next_link: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
         with self._mock_method("get"):
-            return super().get(not_found_ok=not_found_ok, next_link=next_link, **kwargs)  # noqa pylint: disable=E1101
+            return super().get(not_found_ok=not_found_ok, query=query, **kwargs)  # noqa pylint: disable=E1101
 
     def post(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         with self._mock_method("post"):

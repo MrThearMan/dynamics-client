@@ -50,12 +50,12 @@ client = DynamicsClient(...)
 
 - not_found_ok: bool = False - No entities found should not raise NotFound error,
   but return empty list instead.
-- next_link: Optional[str] = None - Request the next set of records from this link instead.
+- query: Optional[str] = None - Use this url instead of building it from current query parameters.
 
 Make a GET request to the Dataverse API with currently added query options.
 
-[**Error Simplification Available**:
-This and the other HTTP-method -functions are decorated with a decorator,
+**Error Simplification Available**:
+This and the other HTTP-methods are decorated with a decorator,
 that can take some extra options: `simplify_errors` (If set `True`, will simplify all errors occurring
 during the excecution of the function to just a single DynamicsException with a default
 error message) and `raise_separately` (A list exception types to exclude from the simplification,
@@ -67,29 +67,60 @@ hide implementation details recieved in errors from frontend users.
 #### *client.post(...) → Dict[str, Any]*
 
 - data: Dict[str, Any] - POST data.
+- query: Optional[str] = None - Use this url instead of building it from current query parameters.
 
 Create new row in a table or execute an API action or function.
 Must have 'table' query option set.
 
-**Error Simplification Available**: See client.GET()
+**Error Simplification Available**: See client.get()
 
 ---
 
 #### *client.patch(...) → Dict[str, Any]*
 
 - data: Dict[str, Any] - PATCH data.
+- query: Optional[str] = None - Use this url instead of building it from current query parameters.
 
 Update row in a table. Must have 'table' and 'row_id' query option set.
 
-**Error Simplification Available**: See client.GET()
+**Error Simplification Available**: See client.get()
 
 ---
 
 #### *client.delete() → None*
 
+- query: Optional[str] = None - Use this url instead of building it from current query parameters.
+
 Delete row in a table. Must have 'table' and 'row_id' query option set.
 
-**Error Simplification Available**: See client.GET()
+**Error Simplification Available**: See client.get()
+
+---
+
+#### *client.create_task(...) -> asyncio.Task*
+
+- method: Callable[P, T] - Client method to create task for.
+- args & kwargs: Any - Arguments passed to the method.
+
+Can be used to create tasks in a python [asyncio.TaskGroup](https://github.com/python/cpython/issues/90908),
+which are then run asynchronously. Can only be used when using DynamicsClient as an async context manager.
+
+```python
+async with DynamicsClient.from_environment() as client:
+    client.table = "foo"
+    client.select = ["bar"]
+    # Uses defined query options
+    task_1 = client.create_task(client.get)
+
+    # Remember to call this!
+    client.reset_query()
+
+    # Passes args and kwargs to given method
+    task_2 = client.create_task(client.actions.win_quote, quote_id="...")
+
+# Get result
+data = task_1.result()
+```
 
 ---
 
@@ -114,12 +145,11 @@ Resets all client options and headers.
 
 ---
 
-#### *client.set_default_headers(...) → None*
+#### *client.default_headers(...) → Dict[str, str]*
 
 - method: Literal["get", "post", "patch", "delete"]
 
-Sets per method default headers. Applied automatically on each request.
-Does not override user added headers.
+Get method default headers for given method. Applied automatically on each request.
 
 ___
 
