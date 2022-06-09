@@ -102,24 +102,32 @@ Delete row in a table. Must have 'table' and 'row_id' query option set.
 - method: Callable[P, T] - Client method to create task for.
 - args & kwargs: Any - Arguments passed to the method.
 
-Can be used to create tasks in a python [asyncio.TaskGroup](https://github.com/python/cpython/issues/90908),
-which are then run asynchronously. Can only be used when using DynamicsClient as an async context manager.
+Can be used to create [asyncio.Tasks](https://docs.python.org/3/library/asyncio-task.html#asyncio.Task),
+which will be run using the defined query options before the task was created.
+This way, you can queue up many tasks and run them asynchonously, either with
+[asyncio.gather](https://docs.python.org/3/library/asyncio-task.html#asyncio.gather),
+or from python 3.11, [asyncio.TaskGroups](https://github.com/python/cpython/issues/90908).
+To use TaskGroups, just use the DynamicsClient as an async context manager.
+The async context manager behaves like a TaskGroup from 3.11 up,
+otherwise just instantiates a dynamics client like normal.
 
 ```python
 async with DynamicsClient.from_environment() as client:
     client.table = "foo"
     client.select = ["bar"]
-    # Uses defined query options
     task_1 = client.create_task(client.get)
 
-    # Remember to call this!
-    client.reset_query()
+    client.reset_query()  # Remember to call this!
 
-    # Passes args and kwargs to given method
     task_2 = client.create_task(client.actions.win_quote, quote_id="...")
 
-# Get result
 data = task_1.result()
+
+# Can also be used without the context manager
+client.table = "foo"
+client.select = ["bar"]
+task3 = client.create_task(client.post, data={"foo": "bar"})
+result = await task3
 ```
 
 ---

@@ -719,7 +719,8 @@ async def test_client_task_group():
     assert task4.result() is None
 
 
-def test_client_task_group__outside_context_manager():
+@pytest.mark.asyncio
+async def test_client_task_group__outside_context_manager():
     os.environ["DYNAMICS_API_URL"] = "apiurl"
     os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
     os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
@@ -729,13 +730,11 @@ def test_client_task_group__outside_context_manager():
     with mock.patch("dynamics.client.DynamicsClient.get_token"):
         client = DynamicsClient.from_environment()
 
-    msg = (
-        "TaskGroup not created. Either python version does not support TaskGroups, "
-        "or client not used as an async context manager."
-    )
+    with mock.patch("dynamics.client.OAuth2Session.get", return_value=ResponseMock(response={"value": []})):
+        task = client.create_task(client.get, not_found_ok=True)
+        result = await task
 
-    with pytest.raises(RuntimeError, match=re.escape(msg)):
-        client.create_task(client.get, not_found_ok=True)
+    assert result == []
 
 
 @pytest.mark.asyncio
@@ -752,18 +751,11 @@ async def test_client_task_group__no_taskgroup():
     p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
     p2 = mock.patch("dynamics.client.OAuth2Session.get", return_value=r1)
 
-    msg = (
-        "TaskGroup not created. Either python version does not support TaskGroups, "
-        "or client not used as an async context manager."
-    )
-
     with p1, p2:
         async with DynamicsClient.from_environment() as client:
             client.table = "foo"
             client.select = ["bar"]
-            result = client.get()
-
-            with pytest.raises(RuntimeError, match=re.escape(msg)):
-                client.create_task(client.get)
+            task = client.create_task(client.get)
+            result = await task
 
     assert result == [{"x": 1}]

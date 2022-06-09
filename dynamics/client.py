@@ -131,14 +131,14 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         self.headers[key] = value
 
     async def __aenter__(self: DClient) -> DClient:
-        if hasattr(asyncio, "TaskGroup"):
+        if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
             self.__tg = asyncio.TaskGroup()  # pylint: disable=W0201
             await self.__tg.__aenter__()
 
         return self
 
     async def __aexit__(self, exc_type: Optional[Type[EXC]], exc: EXC, traceback: TracebackType) -> None:
-        if hasattr(asyncio, "TaskGroup"):
+        if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
             try:
                 await self.__tg.__aexit__(exc_type, exc, traceback)
             finally:
@@ -549,17 +549,13 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         :param kwargs: Keyword arguments passed to the method.
         """
 
-        if not hasattr(self, "_DynamicsClient__tg"):
-            msg = (
-                "TaskGroup not created. Either python version does not support TaskGroups, "
-                "or client not used as an async context manager."
-            )
-            raise RuntimeError(msg)
-
         if method in {self.get, self.post, self.patch, self.delete}:
             kwargs["query"] = self.current_query
 
-        return self.__tg.create_task(to_coroutine(method)(*args, **kwargs))
+        if hasattr(self, "_DynamicsClient__tg"):  # pragma: no cover; python 3.11 only
+            return self.__tg.create_task(to_coroutine(method)(*args, **kwargs))
+
+        return asyncio.create_task(to_coroutine(method)(*args, **kwargs))
 
     @property
     def table(self) -> str:

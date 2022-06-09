@@ -150,17 +150,17 @@ class BaseMockClient:
         with self._mock_method("get"):
             return super().get(not_found_ok=not_found_ok, query=query, **kwargs)  # noqa pylint: disable=E1101
 
-    def post(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    def post(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         with self._mock_method("post"):
-            return super().post(data=data, **kwargs)  # noqa pylint: disable=E1101
+            return super().post(data=data, query=query, **kwargs)  # noqa pylint: disable=E1101
 
-    def patch(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    def patch(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         with self._mock_method("patch"):
-            return super().patch(data=data, **kwargs)  # noqa pylint: disable=E1101
+            return super().patch(data=data, query=query, **kwargs)  # noqa pylint: disable=E1101
 
-    def delete(self, **kwargs) -> None:
+    def delete(self, *, query: Optional[str] = None, **kwargs) -> None:
         with self._mock_method("delete"):
-            return super().delete(**kwargs)  # noqa pylint: disable=E1101
+            return super().delete(query=query, **kwargs)  # noqa pylint: disable=E1101
 
 
 class MockClient(BaseMockClient, DynamicsClient):
