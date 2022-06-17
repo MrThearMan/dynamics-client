@@ -1,23 +1,28 @@
-name: Release
+name: Docs
 
 on:
-  release:
-    types:
-      - created
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
 
 env:
   POETRY_VIRTUALENVS_IN_PROJECT: true
   POETRY_NO_INTERACTION: 1
-  POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  publish:
+  submit-docs:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Set up python
+        id: setup-python
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
@@ -28,18 +33,18 @@ jobs:
           poetry-version: "1.1.13"
 
       - name: Load cached venv
-        id: cache
+        id: cache-venv
         uses: actions/cache@v3
         with:
           path: .venv
-          key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-release-v1
+          key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-docs-v1
 
       - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: poetry install --no-dev --no-root
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: poetry install --no-root
 
       - name: Install project
         run: poetry install
 
-      - name: Publish on PyPi
-        run: poetry publish --build
+      - name: Deploy docs
+        run: poetry run mkdocs gh-deploy --force --strict --verbose
