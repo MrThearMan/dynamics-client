@@ -1,0 +1,11 @@
+blockquote {
+    background: #eee;
+    border: 1px solid #ddd;
+    border-left: 4px solid #2980b9;
+    margin-left: 0 !important;
+    padding: 16px 12px 0 24px;
+}
+
+blockquote code {
+    line-height: normal;
+}

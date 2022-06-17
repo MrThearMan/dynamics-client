@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Documentation - Dynamics Web API Client</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Documentation";
+        var mkdocs_page_input_path = "docs.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/python.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dynamics Web API Client
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Documentation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#client-class-methods-and-properties">Client class methods and properties</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#dynamicsclient">DynamicsClient(...)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dynamicsclientfrom_environment">DynamicsClient.from_environment()</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dynamicsclientrequest_counter-int-int">DynamicsClient.request_counter: int → int</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#client-instance-methods-and-properties">Client instance methods and properties</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#clientget-listdictstr-any">client.get(...) → List[Dict[str, Any]]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientpost-dictstr-any">client.post(...) → Dict[str, Any]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientpatch-dictstr-any">client.patch(...) → Dict[str, Any]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientdelete-none">client.delete() → None</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientcreate_task-asynciotask">client.create_task(...) -&gt; asyncio.Task</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientcurrent_query-str">client.current_query() → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientheaders-dictstr-str">client.headers → Dict[str, str]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientreset_query-none">client.reset_query() → None</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientdefault_headers-dictstr-str">client.default_headers(...) → Dict[str, str]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientactions-actions">client.actions: Actions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientfunctions-functions">client.functions: Functions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clienttable-str-str">client.table: str → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientaction-str-str">client.action: str → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientrow_id-str-str">client.row_id: str → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientadd_ref_to_property-str-str">client.add_ref_to_property: str → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientpre_expand-str-str">client.pre_expand: str → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientshow_annotations-bool-bool">client.show_annotations: bool → bool</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientselect-liststr">client.select(...) → List[str]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientexpand-dictstr-optionalexpandtype">client.expand(...) → Dict[str, Optional[ExpandType]]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientfilter-unionsetstr-liststr">client.filter(...) → Union[Set[str], List[str]]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientapply-str">client.apply(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clienttop-int">client.top(...) → int</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientorderby-dictstr-literalasc-desc">client.orderby(...) → Dict[str, Literal["asc", "desc"]]</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientcount-bool">client.count(...) → bool</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientpagesize-int-int">client.pagesize: int → int</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#clientfetch_xml-str-str">client.fetch_xml: str → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exceptions">Exceptions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#api-query-functions">API Query Functions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#comparison-operations">Comparison operations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ftreq-str">ftr.eq(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrne-str">ftr.ne(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrgt-str">ftr.gt(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrge-str">ftr.ge(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlt-str">ftr.lt(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrle-str">ftr.le(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#logical-operations">Logical operations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrand_-str">ftr.and_(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftror_-str">ftr.or_(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_-str">ftr.not_(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#standard-query-functions">Standard query functions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrcontains-str">ftr.contains(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrendswith-str">ftr.endswith(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrstartswith-str">ftr.startswith(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#lambda-operations">Lambda operations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrany_-str">ftr.any_(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrall_-str">ftr.all_(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#special-query-functions">Special query functions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_-str">ftr.in_(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_in-str">ftr.not_in(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrbetween-str">ftr.between(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_between-str">ftr.not_between(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrcontain_values-str">ftr.contain_values(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_contain_values-str">ftr.not_contain_values(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrabove-str">ftr.above(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrabove_or_equal-str">ftr.above_or_equal(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrunder-str">ftr.under(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrunder_or_equal-str">ftr.under_or_equal(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_under-str">ftr.not_under(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrtoday-str">ftr.today(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrtomorrow-str">ftr.tomorrow(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftryesterday-str">ftr.yesterday(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftron-str">ftr.on(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftron_or_after-str">ftr.on_or_after(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftron_or_before-str">ftr.on_or_before(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrthis_month-str">ftr.this_month(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrthis_week-str">ftr.this_week(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrthis_year-str">ftr.this_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_month-str">ftr.last_month(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_week-str">ftr.last_week(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_year-str">ftr.last_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_month-str">ftr.next_month(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_week-str">ftr.next_week(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_year-str">ftr.next_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_7_days-str">ftr.last_7_days(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_days-str">ftr.last_x_days(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_hours-str">ftr.last_x_hours(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_months-str">ftr.last_x_months(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_weeks-str">ftr.last_x_weeks(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_years-str">ftr.last_x_years(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_days-str">ftr.next_x_days(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_hours-str">ftr.next_x_hours(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_months-str">ftr.next_x_months(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_weeks-str">ftr.next_x_weeks(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_years-str">ftr.next_x_years(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_days-str">ftr.older_than_x_days(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_hours-str">ftr.older_than_x_hours(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_minutes-str">ftr.older_than_x_minutes(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_months-str">ftr.older_than_x_months(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_weeks-str">ftr.older_than_x_weeks(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrolder_than_x_years-str">ftr.older_than_x_years(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_fiscal_period-str">ftr.in_fiscal_period(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_fiscal_period_and_year-str">ftr.in_fiscal_period_and_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_fiscal_year-str">ftr.in_fiscal_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_or_after_fiscal_period_and_year-str">ftr.in_or_after_fiscal_period_and_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrin_or_before_fiscal_period_and_year-str">ftr.in_or_before_fiscal_period_and_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrthis_fiscal_period-str">ftr.this_fiscal_period(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrthis_fiscal_year-str">ftr.this_fiscal_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_fiscal_period-str">ftr.last_fiscal_period(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_fiscal_year-str">ftr.last_fiscal_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_fiscal_period-str">ftr.next_fiscal_period(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_fiscal_year-str">ftr.next_fiscal_year(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_fiscal_periods-str">ftr.last_x_fiscal_periods(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrlast_x_fiscal_years-str">ftr.last_x_fiscal_years(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_fiscal_periods-str">ftr.next_x_fiscal_periods(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnext_x_fiscal_periods-str_1">ftr.next_x_fiscal_periods(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_business_id-str">ftr.equal_business_id(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_business_id-str">ftr.not_business_id(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_id-str">ftr.equal_user_id(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrnot_user_id-str">ftr.not_user_id(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_language-str">ftr.equal_user_language(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_or_user_hierarchy-str">ftr.equal_user_or_user_hierarchy(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_or_user_hierarchy_and_teams-str">ftr.equal_user_or_user_hierarchy_and_teams(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_or_user_teams-str">ftr.equal_user_or_user_teams(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ftrequal_user_teams-str">ftr.equal_user_teams(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#api-apply-functions">API Apply Functions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#aplgroupby-str">apl.groupby(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aplaggregate-str">apl.aggregate(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aplfilter-str">apl.filter(...) → str</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#fetchxml-builder">FetchXML Builder</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#normalizers">Normalizers</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#as_int-int">as_int(...) → int</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#as_float-float">as_float(...) → float</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#as_str-str">as_str(...) → str</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#as_bool-bool">as_bool(...) → bool</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#str_as_datetime-datetime">str_as_datetime(...) → datetime</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#utils">Utils</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#to_dynamics_date_format-str">to_dynamics_date_format(...) → str</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#from_dynamics_date_format-datetime">from_dynamics_date_format(...) → datetime</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#cache-sqlitecache">cache → SQLiteCache:</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#mockclient">MockClient</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fixtures">Fixtures</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#dynamics_client">dynamics_client</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#dynamics_cache">dynamics_cache</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dynamics Web API Client</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>Documentation</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="documentation">Documentation</h1>
+<h2 id="client-class-methods-and-properties">Client class methods and properties</h2>
+<pre><code class="language-python">from dynamics import DynamicsClient
+</code></pre>
+<h4 id="dynamicsclient"><em>DynamicsClient(...)</em></h4>
+<ul>
+<li>api_url: str - Url in form: 'https://[Organization URI]/api/data/v{api_version}'</li>
+<li>token_url: str - Url in form: 'https://[Dynamics Token URI]/path/to/token'</li>
+<li>client_id: str - Client id (e.g. UUID).</li>
+<li>client_secret: str - Client secret (e.g. OAuth password).</li>
+<li>scope: List[str] - List of urls in form: 'https://[Organization URI]/scope'. Defines the database records that the API connection has access to.</li>
+</ul>
+<p>Establish a Microsoft Dynamics 365 Dataverse API client connection
+using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
+created in Dynamics, and granting it an appropriate security role.</p>
+<hr />
+<h4 id="dynamicsclientfrom_environment"><em>DynamicsClient.from_environment()</em></h4>
+<p>Create a Dynamics client from environment variables:</p>
+<ol>
+<li>DYNAMICS_API_URL</li>
+<li>DYNAMICS_TOKEN_URL</li>
+<li>DYNAMICS_CLIENT_ID</li>
+<li>DYNAMICS_CLIENT_SECRET</li>
+<li>DYNAMICS_SCOPE</li>
+</ol>
+<hr />
+<h4 id="dynamicsclientrequest_counter-int-int"><em>DynamicsClient.request_counter: int → int</em></h4>
+<p>How many request have been made by the client so far.</p>
+<hr />
+<h2 id="client-instance-methods-and-properties">Client instance methods and properties</h2>
+<pre><code class="language-python">client = DynamicsClient(...)
+</code></pre>
+<hr />
+<h4 id="clientget-listdictstr-any"><em>client.get(...) → List[Dict[str, Any]]</em></h4>
+<ul>
+<li>not_found_ok: bool = False - No entities found should not raise NotFound error,
+  but return empty list instead.</li>
+<li>query: Optional[str] = None - Use this url instead of building it from current query parameters.</li>
+</ul>
+<p>Make a GET request to the Dataverse API with currently added query options.</p>
+<p><strong>Error Simplification Available</strong>:
+This and the other HTTP-methods are decorated with a decorator,
+that can take some extra options: <code>simplify_errors</code> (If set <code>True</code>, will simplify all errors occurring
+during the excecution of the function to just a single DynamicsException with a default
+error message) and <code>raise_separately</code> (A list exception types to exclude from the simplification,
+if <code>simplify_errors=True</code>, so that they can be handled separately). These are useful when you want to
+hide implementation details recieved in errors from frontend users.</p>
+<hr />
+<h4 id="clientpost-dictstr-any"><em>client.post(...) → Dict[str, Any]</em></h4>
+<ul>
+<li>data: Dict[str, Any] - POST data.</li>
+<li>query: Optional[str] = None - Use this url instead of building it from current query parameters.</li>
+</ul>
+<p>Create new row in a table or execute an API action or function.
+Must have 'table' query option set.</p>
+<p><strong>Error Simplification Available</strong>: See client.get()</p>
+<hr />
+<h4 id="clientpatch-dictstr-any"><em>client.patch(...) → Dict[str, Any]</em></h4>
+<ul>
+<li>data: Dict[str, Any] - PATCH data.</li>
+<li>query: Optional[str] = None - Use this url instead of building it from current query parameters.</li>
+</ul>
+<p>Update row in a table. Must have 'table' and 'row_id' query option set.</p>
+<p><strong>Error Simplification Available</strong>: See client.get()</p>
+<hr />
+<h4 id="clientdelete-none"><em>client.delete() → None</em></h4>
+<ul>
+<li>query: Optional[str] = None - Use this url instead of building it from current query parameters.</li>
+</ul>
+<p>Delete row in a table. Must have 'table' and 'row_id' query option set.</p>
+<p><strong>Error Simplification Available</strong>: See client.get()</p>
+<hr />
+<h4 id="clientcreate_task-asynciotask"><em>client.create_task(...) -&gt; asyncio.Task</em></h4>
+<ul>
+<li>method: Callable[P, T] - Client method to create task for.</li>
+<li>args &amp; kwargs: Any - Arguments passed to the method.</li>
+</ul>
+<p>Can be used to create <a href="https://docs.python.org/3/library/asyncio-task.html#asyncio.Task">asyncio.Tasks</a>,
+which will be run using the defined query options before the task was created.
+This way, you can queue up many tasks and run them asynchonously, either with
+<a href="https://docs.python.org/3/library/asyncio-task.html#asyncio.gather">asyncio.gather</a>,
+or from python 3.11, <a href="https://github.com/python/cpython/issues/90908">asyncio.TaskGroups</a>.
+To use TaskGroups, just use the DynamicsClient as an async context manager.
+The async context manager behaves like a TaskGroup from 3.11 up,
+otherwise just instantiates a dynamics client like normal.</p>
+<pre><code class="language-python">async with DynamicsClient.from_environment() as client:
+    client.table = &quot;foo&quot;
+    client.select = [&quot;bar&quot;]
+    task_1 = client.create_task(client.get)
+
+    client.reset_query()  # Remember to call this!
+
+    task_2 = client.create_task(client.actions.win_quote, quote_id=&quot;...&quot;)
+
+data = task_1.result()
+
+# Can also be used without the context manager
+client.table = &quot;foo&quot;
+client.select = [&quot;bar&quot;]
+task3 = client.create_task(client.post, data={&quot;foo&quot;: &quot;bar&quot;})
+result = await task3
+</code></pre>
+<hr />
+<h4 id="clientcurrent_query-str"><em>client.current_query() → str</em></h4>
+<p>Current compiled query string.</p>
+<hr />
+<h4 id="clientheaders-dictstr-str"><em>client.headers → Dict[str, str]</em></h4>
+<p>Note: Read only. To set headers, use <code>client[name] = value</code>.
+Similarly, you can get headers with <code>client[name]</code>.</p>
+<p>Currently set request headers. Doesn't include per method default headers.</p>
+<hr />
+<h4 id="clientreset_query-none"><em>client.reset_query() → None</em></h4>
+<p>Resets all client options and headers.</p>
+<hr />
+<h4 id="clientdefault_headers-dictstr-str"><em>client.default_headers(...) → Dict[str, str]</em></h4>
+<ul>
+<li>method: Literal["get", "post", "patch", "delete"]</li>
+</ul>
+<p>Get method default headers for given method. Applied automatically on each request.</p>
+<hr />
+<h4 id="clientactions-actions"><em>client.actions: Actions</em></h4>
+<p>Injected instance of predefined Dynamics actions. Calling methods under this property execute the actions
+without needing to use the POST, PATCH, or DELETE methods. It is recommended to read the
+<a href="https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions">API Action Reference</a>
+and how to <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions">Use Web API Actions</a>.</p>
+<hr />
+<h4 id="clientfunctions-functions"><em>client.functions: Functions</em></h4>
+<p>Injected instance of predefined Dynamics functions. Calling methods under this property run the functions
+without needing to use the GET method. It is recommended to read the
+<a href="https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions">API Function Reference</a>
+and how to <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-functions">Use Web API Functions</a>.</p>
+<hr />
+<h4 id="clienttable-str-str"><em>client.table: str → str</em></h4>
+<p>Set the table to search in.</p>
+<hr />
+<h4 id="clientaction-str-str"><em>client.action: str → str</em></h4>
+<p>Set the Dynamics Web API action or function to use. Most of the time you don't need to set this,
+since you can use the <code>.actions</code> and <code>.functions</code> attributes to make these queries.</p>
+<hr />
+<h4 id="clientrow_id-str-str"><em>client.row_id: str → str</em></h4>
+<p>Search only from the table row with this id.
+If the table has an alternate key defined, you can use
+<code>'foo=bar'</code> or <code>'foo=bar,fizz=buzz'</code> to retrive a single row.
+Alternate keys are not enabled by default in Dynamics, so those might not work at all.</p>
+<hr />
+<h4 id="clientadd_ref_to_property-str-str"><em>client.add_ref_to_property: str → str</em></h4>
+<p>Add reference for this navigation property. This indicates,
+that POST data will contain the API url to a matching row id
+in the table this navigation property is meant to link to,
+like this: <code>"@odata.id": "&lt;API URI&gt;/&lt;table&gt;(&lt;id&gt;)"</code>.</p>
+<p>This should only be used to link existing rows. Adding references
+for new rows can be done on create with this in POST data:
+<code>"&lt;nav_property&gt;@odata.bind": "/&lt;table&gt;(&lt;id&gt;)"</code>.</p>
+<hr />
+<h4 id="clientpre_expand-str-str"><em>client.pre_expand: str → str</em></h4>
+<p>Expand/navigate to some linked table in this table
+before taking any query options into account.
+This will save you having to use the expand statement itself,
+if all you are looking for is under this table anyway.</p>
+<hr />
+<h4 id="clientshow_annotations-bool-bool"><em>client.show_annotations: bool → bool</em></h4>
+<p>Show annotations for returned data, e.g. enum values, GUID names, etc
+by setting <code>Prefer: odata.include-annotations="*"</code> header.
+Helpful for development and debugging.</p>
+<hr />
+<h4 id="clientselect-liststr"><em>client.select(...) → List[str]</em></h4>
+<ul>
+<li>items: List[str] - Columns to select.</li>
+</ul>
+<p>Set <code>$select</code> statement. Limits the properties returned from the current table.</p>
+<hr />
+<h4 id="clientexpand-dictstr-optionalexpandtype"><em>client.expand(...) → Dict[str, Optional[ExpandType]]</em></h4>
+<ul>
+<li>items: Dict[str, Optional[ExpandType]] -
+    What linked tables (a.k.a. naviagation properties) to expand and
+    what queries to make inside the expanded tables.
+    Refer to the <code>ExpandType</code> TypedDict below on what queries are available,
+    and what values they expect. Queries can be an empty dict or None,
+    in which case no query Options are used.</li>
+</ul>
+<pre><code class="language-python">from typing import List, Dict, TypedDict, Union, Set, Literal
+
+class ExpandType(TypedDict):
+    select: List[str]
+    filter: Union[Set[str], List[str]]
+    top: int
+    orderby: Dict[str, Literal[&quot;asc&quot;, &quot;desc&quot;]]
+    expand: Dict[str, &quot;ExpandType&quot;]
+</code></pre>
+<p>Set <code>$expand</code> statement, with possible nested statements.
+Controls what data from related entities is returned.</p>
+<p>Nested expand statement limitations (WEB API v9.1):</p>
+<ol>
+<li>
+<p>Nested expand statements can <em>only</em> be applied to <strong>many-to-one/single-valued</strong> relationships.
+This means nested expands for collections do not work!</p>
+</li>
+<li>
+<p>Each request can include a maximum of 10 expand statements.
+This applies to non-nested statements as well! There is no limit on the depth of nested
+expand statements, so long as the total is 10.</p>
+</li>
+</ol>
+<hr />
+<h4 id="clientfilter-unionsetstr-liststr"><em>client.filter(...) → Union[Set[str], List[str]]</em></h4>
+<ul>
+<li>items: Union[Set[str], List[str]] - If a list-object, 'and' the items. If a set-object, 'or' the items.</li>
+</ul>
+<p>Set <code>$filter</code> statement. Sets the criteria for which entities will be returned. It is recommended to read the
+<a href="https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions">API Query Function Reference</a>
+and how to <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api">Query data using the Web API</a>.
+You can input the filters as strings, or use the included <code>ftr</code> object to construct them.</p>
+<hr />
+<h4 id="clientapply-str"><em>client.apply(...) → str</em></h4>
+<ul>
+<li>statement: str - aggregate, groupby, or filter apply-string.</li>
+</ul>
+<p>Set the <code>$apply</code> statement. Aggregates or groups results. It is recommended to read
+<a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results">Aggregate and grouping results</a>
+and the <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation">FetchXML aggregation documentation</a>
+You can input the apply-statement as a string, or use the included <code>apl</code>-object to construct it.</p>
+<hr />
+<h4 id="clienttop-int"><em>client.top(...) → int</em></h4>
+<ul>
+<li>number: int - Maximum number of results to return.</li>
+</ul>
+<p>Set <code>$top</code> statement. Limits the number of results returned.
+Default is to get the alphabetically first items, but <code>client.orderby(...)</code> can be used change this.</p>
+<p>Note: You should not use <code>client.top(...)</code> and <code>client.count(...)</code> in the same query.
+Also, using <code>$top</code> will override <code>Prefer: odata.maxpagesize=...</code> header preference setting.</p>
+<hr />
+<h4 id="clientorderby-dictstr-literalasc-desc"><em>client.orderby(...) → Dict[str, Literal["asc", "desc"]]</em></h4>
+<ul>
+<li>items: Dict[str, Literal["asc", "desc"]] - Key indicates the column to order, and value indicates
+  ascending (asc) or descending (desc) order respectively.</li>
+</ul>
+<p>Set <code>$orderby</code> statement. Specifies the order in which items are returned.</p>
+<hr />
+<h4 id="clientcount-bool"><em>client.count(...) → bool</em></h4>
+<ul>
+<li>value: bool - If True, include the count (otherwise not included by default).</li>
+</ul>
+<p>Set to True to include a <code>$count</code> statement. This adds the count of entities that match the
+filter criteria in the results. Count will be the first item in the list of results.</p>
+<p>Note: You should not use <code>client.count(...)</code> and <code>client.top(...)</code> in the same query.</p>
+<hr />
+<h4 id="clientpagesize-int-int"><em>client.pagesize: int → int</em></h4>
+<p>Specify the number of tables to return in a page.
+By default, this is set to 5000, which is the maximum.</p>
+<hr />
+<h4 id="clientfetch_xml-str-str"><em>client.fetch_xml: str → str</em></h4>
+<p>Set a query using the FetchXML query language.
+Must set table, but cannot set any other query options!
+Queries can be constructed with the included <code>FetchXMLBuilder</code>.</p>
+<p>XML Shema:
+<a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema">https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema</a></p>
+<p>How to use:
+<a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query">https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query</a></p>
+<hr />
+<h2 id="exceptions">Exceptions</h2>
+<pre><code class="language-python">from dynamics.exceptions import *
+</code></pre>
+<p>If <a href="https://www.django-rest-framework.org/">Django REST framework</a> is installed,
+exceptions subclass from rest_framework.exceptions.APIException,
+otherwise a similar class is created and used instead.</p>
+<ul>
+<li>DynamicsException - Dynamics Web API call failed</li>
+<li>ParseError - Malformed request</li>
+<li>AuthenticationFailed - Incorrect authentication credentials</li>
+<li>PermissionDenied - You do not have permission to perform this action</li>
+<li>NotFound - Not found</li>
+<li>MethodNotAllowed - Method x not allowed</li>
+<li>DuplicateRecordError - Trying to save a duplicate record</li>
+<li>PayloadTooLarge - Request length is too large</li>
+<li>APILimitsExceeded - Dynamics Web API limits were exceeded</li>
+<li>OperationNotImplemented - Requested operation isn't implemented</li>
+<li>WebAPIUnavailable - Web API service isn't available</li>
+</ul>
+<hr />
+<h2 id="api-query-functions">API Query Functions</h2>
+<pre><code class="language-python">from dynamics import ftr
+</code></pre>
+<p>Object that holds <code>$filter</code> query string construction convenience methods. It is recommended to read the
+<a href="https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions">API Query Function Reference</a>
+and how to <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api">Query data using the Web API</a>.</p>
+<h2 id="comparison-operations">Comparison operations</h2>
+<h4 id="ftreq-str"><em>ftr.eq(...) → str</em></h4>
+<h4 id="ftrne-str"><em>ftr.ne(...) → str</em></h4>
+<h4 id="ftrgt-str"><em>ftr.gt(...) → str</em></h4>
+<h4 id="ftrge-str"><em>ftr.ge(...) → str</em></h4>
+<h4 id="ftrlt-str"><em>ftr.lt(...) → str</em></h4>
+<h4 id="ftrle-str"><em>ftr.le(...) → str</em></h4>
+<ul>
+<li>column: str - Column to apply the operation to.</li>
+<li>value: Union[str, int, float, bool, None] - Value to compare against.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<h2 id="logical-operations">Logical operations</h2>
+<h4 id="ftrand_-str"><em>ftr.and_(...) → str</em></h4>
+<h4 id="ftror_-str"><em>ftr.or_(...) → str</em></h4>
+<ul>
+<li>*<em>args</em>: str - Other filter operation strings to and/or together.</li>
+<li>**<em>kwargs</em>: If has <code>group=True</code> - Group the operation inside parentheses.</li>
+</ul>
+<h4 id="ftrnot_-str"><em>ftr.not_(...) → str</em></h4>
+<ul>
+<li>operation: str - Invert this operation. Only works on standard operators!</li>
+<li>group : bool = False - Group the operation inside parentheses.</li>
+</ul>
+<h2 id="standard-query-functions">Standard query functions</h2>
+<h4 id="ftrcontains-str"><em>ftr.contains(...) → str</em></h4>
+<h4 id="ftrendswith-str"><em>ftr.endswith(...) → str</em></h4>
+<h4 id="ftrstartswith-str"><em>ftr.startswith(...) → str</em></h4>
+<ul>
+<li>column: str - Column to apply the operation to.</li>
+<li>value: Union[str, int, float, bool, None] - Value to compare against.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<h2 id="lambda-operations">Lambda operations</h2>
+<h4 id="ftrany_-str"><em>ftr.any_(...) → str</em></h4>
+<h4 id="ftrall_-str"><em>ftr.all_(...) → str</em></h4>
+<ul>
+<li>collection: str - Name of the collection-valued navigation property for some table,
+  for the members of which the given operation is evaluated.</li>
+<li>indicator: str - Item indicator to use inside the statement, typically a single letter.
+  The same indicator should be given to the operation(s) evaluated inside this operation.</li>
+<li>operation: str = None - Operation(s) evaluated inside this operation.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<h2 id="special-query-functions">Special query functions</h2>
+<h4 id="ftrin_-str"><em>ftr.in_(...) → str</em></h4>
+<h4 id="ftrnot_in-str"><em>ftr.not_in(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>values: List[Union[str, int, float, bool, None]] - Values to evaluate against.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluate whether the value in the given column exists/doesn't exist in a list of values.</p>
+<h4 id="ftrbetween-str"><em>ftr.between(...) → str</em></h4>
+<h4 id="ftrnot_between-str"><em>ftr.not_between(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>values: Tuple[Union[str, int, float], Union[str, int, float]] - Values that define the range.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluate whether the value in the given column is/is not between two values.</p>
+<h4 id="ftrcontain_values-str"><em>ftr.contain_values(...) → str</em></h4>
+<h4 id="ftrnot_contain_values-str"><em>ftr.not_contain_values(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>values: List[Union[str, int, float, bool, None]] - Values that the column may contain.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluate whether the value in the given column contains/doesn't contain the listed values.</p>
+<h4 id="ftrabove-str"><em>ftr.above(...) → str</em></h4>
+<h4 id="ftrabove_or_equal-str"><em>ftr.above_or_equal(...) → str</em></h4>
+<h4 id="ftrunder-str"><em>ftr.under(...) → str</em></h4>
+<h4 id="ftrunder_or_equal-str"><em>ftr.under_or_equal(...) → str</em></h4>
+<h4 id="ftrnot_under-str"><em>ftr.not_under(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>ref: Union[str, int, float, bool, None] - Referenced</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the value in column is
+above/above or equal/under/under or equal/not under ref in the hierarchy.</p>
+<h4 id="ftrtoday-str"><em>ftr.today(...) → str</em></h4>
+<h4 id="ftrtomorrow-str"><em>ftr.tomorrow(...) → str</em></h4>
+<h4 id="ftryesterday-str"><em>ftr.yesterday(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the value in the given column equals today's/tomorrow's/yesterday’s date.</p>
+<h4 id="ftron-str"><em>ftr.on(...) → str</em></h4>
+<h4 id="ftron_or_after-str"><em>ftr.on_or_after(...) → str</em></h4>
+<h4 id="ftron_or_before-str"><em>ftr.on_or_before(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>date: str - ISO date string (format: YYYY-mm-ddTHH:MM:SSZ) to evaluate against.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the date in the given column is on/on or after/on or before the specified date.</p>
+<h4 id="ftrthis_month-str"><em>ftr.this_month(...) → str</em></h4>
+<h4 id="ftrthis_week-str"><em>ftr.this_week(...) → str</em></h4>
+<h4 id="ftrthis_year-str"><em>ftr.this_year(...) → str</em></h4>
+<h4 id="ftrlast_month-str"><em>ftr.last_month(...) → str</em></h4>
+<h4 id="ftrlast_week-str"><em>ftr.last_week(...) → str</em></h4>
+<h4 id="ftrlast_year-str"><em>ftr.last_year(...) → str</em></h4>
+<h4 id="ftrnext_month-str"><em>ftr.next_month(...) → str</em></h4>
+<h4 id="ftrnext_week-str"><em>ftr.next_week(...) → str</em></h4>
+<h4 id="ftrnext_year-str"><em>ftr.next_year(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the date in the given column is within the current/last/next month/week/year.</p>
+<h4 id="ftrlast_7_days-str"><em>ftr.last_7_days(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the date in the given column in the last 7 days.</p>
+<h4 id="ftrlast_x_days-str"><em>ftr.last_x_days(...) → str</em></h4>
+<h4 id="ftrlast_x_hours-str"><em>ftr.last_x_hours(...) → str</em></h4>
+<h4 id="ftrlast_x_months-str"><em>ftr.last_x_months(...) → str</em></h4>
+<h4 id="ftrlast_x_weeks-str"><em>ftr.last_x_weeks(...) → str</em></h4>
+<h4 id="ftrlast_x_years-str"><em>ftr.last_x_years(...) → str</em></h4>
+<h4 id="ftrnext_x_days-str"><em>ftr.next_x_days(...) → str</em></h4>
+<h4 id="ftrnext_x_hours-str"><em>ftr.next_x_hours(...) → str</em></h4>
+<h4 id="ftrnext_x_months-str"><em>ftr.next_x_months(...) → str</em></h4>
+<h4 id="ftrnext_x_weeks-str"><em>ftr.next_x_weeks(...) → str</em></h4>
+<h4 id="ftrnext_x_years-str"><em>ftr.next_x_years(...) → str</em></h4>
+<h4 id="ftrolder_than_x_days-str"><em>ftr.older_than_x_days(...) → str</em></h4>
+<h4 id="ftrolder_than_x_hours-str"><em>ftr.older_than_x_hours(...) → str</em></h4>
+<h4 id="ftrolder_than_x_minutes-str"><em>ftr.older_than_x_minutes(...) → str</em></h4>
+<h4 id="ftrolder_than_x_months-str"><em>ftr.older_than_x_months(...) → str</em></h4>
+<h4 id="ftrolder_than_x_weeks-str"><em>ftr.older_than_x_weeks(...) → str</em></h4>
+<h4 id="ftrolder_than_x_years-str"><em>ftr.older_than_x_years(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>x: int - How many of the specified unit to check for.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the date in the given column in the last x/in the next x/is older than x specified units.</p>
+<h4 id="ftrin_fiscal_period-str"><em>ftr.in_fiscal_period(...) → str</em></h4>
+<h4 id="ftrin_fiscal_period_and_year-str"><em>ftr.in_fiscal_period_and_year(...) → str</em></h4>
+<h4 id="ftrin_fiscal_year-str"><em>ftr.in_fiscal_year(...) → str</em></h4>
+<h4 id="ftrin_or_after_fiscal_period_and_year-str"><em>ftr.in_or_after_fiscal_period_and_year(...) → str</em></h4>
+<h4 id="ftrin_or_before_fiscal_period_and_year-str"><em>ftr.in_or_before_fiscal_period_and_year(...) → str</em></h4>
+<h4 id="ftrthis_fiscal_period-str"><em>ftr.this_fiscal_period(...) → str</em></h4>
+<h4 id="ftrthis_fiscal_year-str"><em>ftr.this_fiscal_year(...) → str</em></h4>
+<h4 id="ftrlast_fiscal_period-str"><em>ftr.last_fiscal_period(...) → str</em></h4>
+<h4 id="ftrlast_fiscal_year-str"><em>ftr.last_fiscal_year(...) → str</em></h4>
+<h4 id="ftrnext_fiscal_period-str"><em>ftr.next_fiscal_period(...) → str</em></h4>
+<h4 id="ftrnext_fiscal_year-str"><em>ftr.next_fiscal_year(...) → str</em></h4>
+<h4 id="ftrlast_x_fiscal_periods-str"><em>ftr.last_x_fiscal_periods(...) → str</em></h4>
+<h4 id="ftrlast_x_fiscal_years-str"><em>ftr.last_x_fiscal_years(...) → str</em></h4>
+<h4 id="ftrnext_x_fiscal_periods-str"><em>ftr.next_x_fiscal_periods(...) → str</em></h4>
+<h4 id="ftrnext_x_fiscal_periods-str_1"><em>ftr.next_x_fiscal_periods(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>Needed based on function:</li>
+<li>period: int - Fiscal period to evaluate against.</li>
+<li>year: int - Fiscal year to evaluate against.</li>
+<li>x: int - How many of the specified unit to check for.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates value in the given column against specified fiscal period(s) and/or year(s).</p>
+<h4 id="ftrequal_business_id-str"><em>ftr.equal_business_id(...) → str</em></h4>
+<h4 id="ftrnot_business_id-str"><em>ftr.not_business_id(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the value in the given column is equal/not equal to the specified business ID.</p>
+<h4 id="ftrequal_user_id-str"><em>ftr.equal_user_id(...) → str</em></h4>
+<h4 id="ftrnot_user_id-str"><em>ftr.not_user_id(...) → str</em></h4>
+<ul>
+<li>column: str - Column to check.</li>
+<li>lambda_indicator: str = None - If this operation is evaluated inside a lambda operation,
+  provide the lambda operations item indicator here.</li>
+<li>group: bool = False - Group the operation inside parentheses.</li>
+</ul>
+<p>Evaluates whether the value in the given column is equal/not equal to the ID of the user.</p>
+<h4 id="ftrequal_user_language-str"><em>ftr.equal_user_language(...) → str</em></h4>
+<h4 id="ftrequal_user_or_user_hierarchy-str"><em>ftr.equal_user_or_user_hierarchy(...) → str</em></h4>
+<h4 id="ftrequal_user_or_user_hierarchy_and_teams-str"><em>ftr.equal_user_or_user_hierarchy_and_teams(...) → str</em></h4>
+<h4 id="ftrequal_user_or_user_teams-str"><em>ftr.equal_user_or_user_teams(...) → str</em></h4>
+<h4 id="ftrequal_user_teams-str"><em>ftr.equal_user_teams(...) → str</em></h4>
+<p>Evaluates whether the value in the given column is equal to the what's asked.</p>
+<hr />
+<h2 id="api-apply-functions">API Apply Functions</h2>
+<pre><code class="language-python">from dynamics import apl
+</code></pre>
+<p>Object that holds <code>$apply</code> string construction convenience methods. It is recommended to read
+<a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results">Aggregate and grouping results</a>
+and the <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation">FetchXML aggregation documentation</a></p>
+<h4 id="aplgroupby-str"><em>apl.groupby(...) → str</em></h4>
+<ul>
+<li>columns: List[str] - Columns to group by.</li>
+<li>aggregate: str = None - Aggregate grouped results by this <code>apl.aggregate</code>-function.</li>
+</ul>
+<p>Group results by columns, optionally aggregate.</p>
+<h4 id="aplaggregate-str"><em>apl.aggregate(...) → str</em></h4>
+<ul>
+<li>col_: str - Column to aggregate over.</li>
+<li>with_: Literal["average", "sum", "min", "max", "count"] - How to aggregate the columns.</li>
+<li>as_: str - Aggregate result alias.</li>
+</ul>
+<p>Aggregate column with some aggregation function, and alias the result under some name.</p>
+<h4 id="aplfilter-str"><em>apl.filter(...) → str</em></h4>
+<ul>
+<li>by: filter_type - Filter results by this filter string before applying grouping.
+  Use the <code>ftr</code>-object to construct this.</li>
+<li>group_by_columns: List[str] - Columns to group by.</li>
+</ul>
+<p>Group filtered values by columns.</p>
+<hr />
+<h2 id="fetchxml-builder">FetchXML Builder</h2>
+<pre><code class="language-python">from dynamics.fetchxml import FetchXMLBuilder
+</code></pre>
+<p>This builder can be used to build FetchXML queries for the client.
+It uses the Builder design pattern. Here is an example:</p>
+<pre><code class="language-python">from dynamics.fetchxml import FetchXMLBuilder
+
+fetch_xml = (
+    FetchXMLBuilder(mapping=&quot;logical&quot;)
+    .add_entity(name=&quot;account&quot;)
+    .add_attribute(name=&quot;accountid&quot;)
+    .add_attribute(name=&quot;name&quot;)
+    .add_attribute(name=&quot;accountnumber&quot;)
+    .order(attribute=&quot;name&quot;)
+    .filter()
+    .add_condition(attribute=&quot;accountnumber&quot;, operator=&quot;gt&quot;, value=1000)
+    .add_linked_entity(name=&quot;systemuser&quot;, to=&quot;owninguser&quot;)
+    .build()
+)
+</code></pre>
+<p>Refer to the <a href="https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query">FetchXML documentation</a>,
+and the builder docstrings for more details.</p>
+<hr />
+<h2 id="normalizers">Normalizers</h2>
+<pre><code class="language-python">from dynamics.normalizers import *
+</code></pre>
+<p>Included normalizers can be used to process the returned values to quarantee wanted types.
+The most common case is missing data in the Dynamics database, in which case None would be returned.
+Normalizer can be used to convert this to, e.g., an empty string, or any other default value.
+They can also be used to specify numeric data as float or int.</p>
+<h4 id="as_int-int"><em>as_int(...) → int</em></h4>
+<ul>
+<li>value: Any - Value to normalize.</li>
+<li>default: int = 0 - Default to return if casting value to int fails.</li>
+</ul>
+<h4 id="as_float-float"><em>as_float(...) → float</em></h4>
+<ul>
+<li>value: Any - Value to normalize.</li>
+<li>default: int = 0.0 - Default to return if casting value to float fails.</li>
+</ul>
+<h4 id="as_str-str"><em>as_str(...) → str</em></h4>
+<ul>
+<li>value: Any - Value to normalize.</li>
+<li>default: int = "" - Default to return if casting value to string fails.</li>
+</ul>
+<h4 id="as_bool-bool"><em>as_bool(...) → bool</em></h4>
+<ul>
+<li>value: Any - Value to normalize.</li>
+<li>default: int = False - Default to return if casting value to bool fails.</li>
+</ul>
+<h4 id="str_as_datetime-datetime"><em>str_as_datetime(...) → datetime</em></h4>
+<ul>
+<li>value: str - Value to normalize.</li>
+<li>default: Any = None - Default to return if casting value to datetime fails.</li>
+</ul>
+<hr />
+<h3 id="utils">Utils</h3>
+<pre><code class="language-python">from dynamics.utils import *
+</code></pre>
+<p>This library includes a number of helpful utilities.</p>
+<h4 id="to_dynamics_date_format-str"><em>to_dynamics_date_format(...) → str</em></h4>
+<ul>
+<li>date: datetime - Datetime object to convert.</li>
+<li>from_timezone: str = None - Name of the timezone, from 'pytz.all_timezones', the date is in.</li>
+</ul>
+<p>Convert a datetime-object to Dynamics compatible ISO formatted date string.</p>
+<hr />
+<h4 id="from_dynamics_date_format-datetime"><em>from_dynamics_date_format(...) → datetime</em></h4>
+<ul>
+<li>date: str - ISO datestring from Dynamics database, in form: YYYY-mm-ddTHH:MM:SSZ.</li>
+<li>to_timezone: str = "UCT" - Name of the timezone, from 'pytz.all_timezones', to convert the date to.
+                             This won't add 'tzinfo', instead the actual time part will be changed from UCT
+                             to what the time is at 'to_timezone'.</li>
+</ul>
+<p>Convert a ISO datestring from Dynamics database to a datetime-object.</p>
+<hr />
+<h4 id="cache-sqlitecache"><em>cache → SQLiteCache:</em></h4>
+<p>Instance of a SQLite based cache that the client uses to store the auth token so that it can be
+reused between client instances. Django's cache is prefered to this, if it is installed.</p>
+<hr />
+<h2 id="testing">Testing</h2>
+<p>The library comes with a testing client and some fixtures for pytest:</p>
+<h3 id="mockclient">MockClient</h3>
+<p>Dynamics Client that can be used fror testing purposes. It allows mocking the responses from the real
+client's HTTP methods, and can even set multiple responses at once:</p>
+<pre><code class="language-python">from dynamics.test import MockClient
+
+expected = [{&quot;foo&quot;: &quot;bar&quot;}, {&quot;fizz&quot;: &quot;buzz&quot;}]
+
+# MockClient is a builder class, so you can chain the
+# setup code or use on a separate line
+client = MockClient().with_responses(*expected)
+
+result = client.get()
+assert result == expected[0]
+
+result = client.get()
+assert result == expected[1]
+</code></pre>
+<p>If you need to configure the DynamicsClient instance, you can create a new MockClient
+by inheriting from BaseMockClient and yout custom DynamicsClient.</p>
+<pre><code class="language-python">from  dynamics import DynamicsClient
+from dynamics.test import BaseMockClient
+
+class MyDynamicsClient(DynamicsClient):
+    pass
+
+# Order is important, BaseMockClient first!
+class MyMockClient(BaseMockClient, MyDynamicsClient):
+     pass
+
+client = MyMockClient()
+</code></pre>
+<hr />
+<h3 id="fixtures">Fixtures</h3>
+<h4 id="dynamics_client">dynamics_client</h4>
+<p>An instance of MockClient that can be used to mock responses from the DynamicsClient.
+If you use a customized DynamicsClient, you can configure your own <code>dynamics_client</code> fixture
+like this:</p>
+<pre><code class="language-python">@pytest.fixture
+def dynamics_client(request):
+    if not hasattr(request, &quot;param&quot;):
+        yield MyMockClient()
+    else:
+        # When used with `pytest.mark.parametrize`
+        yield request.param
+</code></pre>
+<h4 id="dynamics_cache">dynamics_cache</h4>
+<p>An intance of the cache used by the client. Can be either an instance of the SQLiteCache
+that comes with the library, or Django's cache if it's installed.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
