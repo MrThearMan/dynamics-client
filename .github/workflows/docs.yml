@@ -15,7 +15,6 @@ env:
 
 jobs:
   submit-docs:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
