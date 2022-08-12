@@ -17,7 +17,7 @@ pip install dynamics-client
 
 **Documentation**: [https://mrthearman.github.io/dynamics-client/](https://mrthearman.github.io/dynamics-client/)
 
-**Source Code**: [https://github.com/MrThearMan/dynamics-client](https://github.com/MrThearMan/dynamics-client)
+**Source Code**: [https://github.com/MrThearMan/dynamics-client/](https://github.com/MrThearMan/dynamics-client/)
 
 ---
 
