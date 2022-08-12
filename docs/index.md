@@ -1,12 +1,13 @@
 # Dynamics Web API Client
 
-[![Coverage Status](https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main)](https://coveralls.io/github/MrThearMan/dynamics-client?branch=main)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Tests)](https://github.com/MrThearMan/dynamics-client/actions/workflows/main.yml)
-[![PyPI](https://img.shields.io/pypi/v/dynamics-client)](https://pypi.org/project/dynamics-client)
-[![GitHub](https://img.shields.io/github/license/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE)
-[![GitHub last commit](https://img.shields.io/github/last-commit/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/commits/main)
-[![GitHub issues](https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client)](https://github.com/MrThearMan/dynamics-client/issues)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dynamics-client)](https://pypi.org/project/dynamics-client)
+[![Coverage Status][coverage-badge]][coverage]
+[![GitHub Workflow Status][status-badge]][status]
+[![PyPI][pypi-badge]][pypi]
+[![GitHub][licence-badge]][licence]
+[![GitHub Last Commit][repo-badge]][repo]
+[![GitHub Issues][issues-badge]][issues]
+[![Downloads][downloads-badge]][pypi]
+[![Python Version][version-badge]][pypi]
 
 ```shell
 pip install dynamics-client
@@ -148,3 +149,22 @@ client.row_id = result["contactid"]
 
 client.delete()
 ```
+
+
+[ref-docs]: https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
+
+[coverage-badge]: https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main
+[status-badge]: https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Test
+[pypi-badge]: https://img.shields.io/pypi/v/dynamics-client
+[licence-badge]: https://img.shields.io/github/license/MrThearMan/dynamics-client
+[repo-badge]: https://img.shields.io/github/last-commit/MrThearMan/dynamics-client
+[issues-badge]: https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client
+[version-badge]: https://img.shields.io/pypi/pyversions/dynamics-client
+[downloads-badge]: https://img.shields.io/pypi/dm/dynamics-client
+
+[coverage]: https://coveralls.io/github/MrThearMan/dynamics-client?branch=main
+[status]: https://github.com/MrThearMan/dynamics-client/actions/workflows/test.yml
+[pypi]: https://pypi.org/project/dynamics-client
+[licence]: https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE
+[repo]: https://github.com/MrThearMan/dynamics-client/commits/main
+[issues]: https://github.com/MrThearMan/dynamics-client/issues

@@ -6,6 +6,7 @@
 [![GitHub][licence-badge]][licence]
 [![GitHub Last Commit][repo-badge]][repo]
 [![GitHub Issues][issues-badge]][issues]
+[![Downloads][downloads-badge]][pypi]
 [![Python Version][version-badge]][pypi]
 
 ```shell
@@ -158,15 +159,16 @@ client.delete()
 [ref-docs]: https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
 
 [coverage-badge]: https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main
-[status-badge]: https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Tests
+[status-badge]: https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Test
 [pypi-badge]: https://img.shields.io/pypi/v/dynamics-client
 [licence-badge]: https://img.shields.io/github/license/MrThearMan/dynamics-client
 [repo-badge]: https://img.shields.io/github/last-commit/MrThearMan/dynamics-client
 [issues-badge]: https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client
 [version-badge]: https://img.shields.io/pypi/pyversions/dynamics-client
+[downloads-badge]: https://img.shields.io/pypi/dm/dynamics-client
 
 [coverage]: https://coveralls.io/github/MrThearMan/dynamics-client?branch=main
-[status]: https://github.com/MrThearMan/dynamics-client/actions/workflows/main.yml
+[status]: https://github.com/MrThearMan/dynamics-client/actions/workflows/test.yml
 [pypi]: https://pypi.org/project/dynamics-client
 [licence]: https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE
 [repo]: https://github.com/MrThearMan/dynamics-client/commits/main
