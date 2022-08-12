@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from copy import deepcopy
 from itertools import cycle as _cycle
 from unittest.mock import patch
 
@@ -131,7 +130,7 @@ class BaseMockClient:
             except StopIteration as error:
                 raise ValueError("Ran out of status codes on the MockClient") from error
 
-            response_mock = ResponseMock(response=deepcopy(self.__response), status_code=status_code)
+            response_mock = ResponseMock(response=self.__response, status_code=status_code)
 
             if method == "get" and isinstance(self.__response, dict):
                 self.__response = self.__response.get("value", [self.__response])
