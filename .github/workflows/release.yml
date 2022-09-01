@@ -23,9 +23,9 @@ jobs:
           python-version: "3.10"
 
       - name: Set up poetry
-        uses: abatilo/actions-poetry@v2.1.4
+        uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: "1.1.13"
+          poetry-version: "1.2.0"
 
       - name: Load cached venv
         id: cache

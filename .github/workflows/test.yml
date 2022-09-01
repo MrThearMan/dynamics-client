@@ -8,6 +8,7 @@ on:
       - "**.py"
       - "pyproject.toml"
       - "poetry.lock"
+      - ".github/workflows/test.yml"
 
 env:
   POETRY_VIRTUALENVS_IN_PROJECT: true
@@ -23,7 +24,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11.0b1 - 3.11"]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     env:
       COVERALLS_FLAG_NAME: python${{ matrix.python-version }}-${{ matrix.os }}
@@ -39,9 +40,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Set up poetry
-        uses: abatilo/actions-poetry@v2.1.4
+        uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: "1.1.13"
+          poetry-version: "1.2.0"
 
       - name: Load cached venv
         id: cache-venv
@@ -79,9 +80,9 @@ jobs:
           python-version: "3.10"
 
       - name: Set up poetry
-        uses: abatilo/actions-poetry@v2.1.4
+        uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: "1.1.13"
+          poetry-version: "1.2.0"
 
       - name: Load cached venv
         id: cache-venv
