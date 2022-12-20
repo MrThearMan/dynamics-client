@@ -639,16 +639,16 @@ def test_client_headers_are_set_on_call(dynamics_client):
 def test_client__json_decode_error(dynamics_client):
     dynamics_client.internal.with_responses(JSONDecodeError("foo", "bar", 1), cycle=True)
 
-    with pytest.raises(DynamicsException, match="foo"):
+    with pytest.raises(DynamicsException):
         dynamics_client.get()
 
-    with pytest.raises(DynamicsException, match="foo"):
+    with pytest.raises(DynamicsException):
         dynamics_client.post({})
 
-    with pytest.raises(DynamicsException, match="foo"):
+    with pytest.raises(DynamicsException):
         dynamics_client.patch({})
 
-    with pytest.raises(DynamicsException, match="foo"):
+    with pytest.raises(DynamicsException):
         dynamics_client.delete()
 
 

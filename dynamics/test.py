@@ -1,3 +1,4 @@
+import json
 from contextlib import contextmanager
 from itertools import cycle as _cycle
 from unittest.mock import patch
@@ -235,7 +236,13 @@ class ResponseMock:
         self.response = response
         self.status_code = status_code
 
-    def json(self):
+    def json(self) -> ResponseType:
         if isinstance(self.response, Exception):
             raise self.response
         return self.response
+
+    @property
+    def text(self) -> str:
+        if isinstance(self.response, Exception):
+            return str(self.response)
+        return json.dumps(self.response)

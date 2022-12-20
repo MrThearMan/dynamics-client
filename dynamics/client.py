@@ -348,7 +348,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         except JSONDecodeError as error:
             raise self.handled_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_message=str(error),
+                error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="get",
             ) from error
@@ -438,7 +438,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         except JSONDecodeError as error:
             raise self.handled_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_message=str(error),
+                error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="get",
             ) from error
@@ -484,7 +484,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         except JSONDecodeError as error:
             raise self.handled_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_message=str(error),
+                error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="get",
             ) from error
@@ -527,7 +527,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         except JSONDecodeError as error:
             raise self.handled_error(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_message=str(error),
+                error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="get",
             ) from error
