@@ -35,7 +35,7 @@ def _serialize_bool(value: bool) -> LiteralBool:
 
 
 class FetchXMLBuilder:
-    def __init__(  # pylint: disable=R0912
+    def __init__(  # noqa: C901
         self,
         *,
         mapping: Optional[FetchXMLFetchMappingType] = None,
@@ -721,7 +721,7 @@ class _FilterBuilder:
         self._conditions: List[FetchXMLCondition] = []
         self._filters: List[_FilterBuilder] = []
 
-    def add_condition(  # pylint: disable=R0912
+    def add_condition(  # noqa: C901
         self,
         *,
         attribute: str,
@@ -732,7 +732,7 @@ class _FilterBuilder:
         column: Optional[str] = None,
         entity_name: Optional[str] = None,
         aggregate: Optional[FetchXMLAggregateType] = None,
-        row_aggregate: Optional[Literal["countchildren"]] = None,
+        row_aggregate: Optional[Literal["countchildren"]] = None,  # noqa: F821
         alias: Optional[str] = None,
         uiname: Optional[str] = None,
         uitype: Optional[str] = None,

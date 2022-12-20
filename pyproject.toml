@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamics-client"
-version = "0.5.5"
+version = "0.5.6"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
@@ -63,6 +63,7 @@ coveralls = "3.3.1"
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.4.2"
 pymdown-extensions = "9.9"
+mkdocs-mermaid2-plugin = "0.6.0"
 
 [tool.poetry.group.lint.dependencies]
 mypy = "0.991"

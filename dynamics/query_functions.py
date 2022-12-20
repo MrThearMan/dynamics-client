@@ -236,7 +236,7 @@ class ftr:  # pylint: disable=R0904
         :param args: Other filter operation strings to `and` together.
         :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return ftr._join_multiple(operator="and", group=kwargs.get("group", False), *args)
+        return ftr._join_multiple(operator="and", group=kwargs.get("group", False), *args)  # noqa: B026
 
     @staticmethod
     def or_(*args: str, **kwargs) -> str:
@@ -245,7 +245,7 @@ class ftr:  # pylint: disable=R0904
         :param args: Other filter operation strings to `or` together.
         :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return ftr._join_multiple(operator="or", group=kwargs.get("group", False), *args)
+        return ftr._join_multiple(operator="or", group=kwargs.get("group", False), *args)  # noqa: B026
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:

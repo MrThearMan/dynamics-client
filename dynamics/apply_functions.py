@@ -27,7 +27,7 @@ class apl:
         return f"groupby(({','.join(columns)}){aggregate})"
 
     @staticmethod
-    def aggregate(*, col_: str, with_: Literal["average", "sum", "min", "max", "count"], as_: str) -> str:
+    def aggregate(*, col_: str, with_: Literal["average", "sum", "min", "max", "count"], as_: str) -> str:  # noqa: F821
         """Aggregate column with some aggregation function, and alias the result under some name.
 
         :param col_: Column to aggregate over.

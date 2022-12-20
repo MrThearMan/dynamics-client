@@ -1,12 +1,28 @@
 site_name: Dynamics Web API Client
+
 nav:
   - Home: index.md
   - Documentation: docs.md
+
 theme:
   name: readthedocs
   highlightjs: true
-  hljs_languages:
+  hljs_languages:  # https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
     - python
+    - console
+    - json
+
+markdown_extensions:
+  pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:mermaid2.fence_mermaid
+
+plugins:
+  - search:
+  - mermaid2:
+      version: 9.1.6
 
 extra_css:
   - css/docs.css

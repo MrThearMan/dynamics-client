@@ -324,7 +324,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         return error(error_message)
 
     @error_simplification_available
-    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:  # noqa: C901
         """Make a request to the Dataverse API with currently added query options.
 
         Please also read the decorator's documentation!
