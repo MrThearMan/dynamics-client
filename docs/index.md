@@ -154,7 +154,7 @@ client.delete()
 [ref-docs]: https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
 
 [coverage-badge]: https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main
-[status-badge]: https://img.shields.io/github/workflow/status/MrThearMan/dynamics-client/Test
+[status-badge]: https://img.shields.io/github/actions/workflow/status/MrThearMan/dynamics-client/test.yml?branch=main
 [pypi-badge]: https://img.shields.io/pypi/v/dynamics-client
 [licence-badge]: https://img.shields.io/github/license/MrThearMan/dynamics-client
 [repo-badge]: https://img.shields.io/github/last-commit/MrThearMan/dynamics-client
