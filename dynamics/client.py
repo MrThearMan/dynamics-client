@@ -50,7 +50,6 @@ from .typing import (
 )
 from .utils import cache, error_simplification_available, sentinel, to_coroutine
 
-
 __all__ = ["DynamicsClient"]
 
 

@@ -8,14 +8,12 @@ from uuid import UUID
 
 from .exceptions import DynamicsException
 
-
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
 from .typing import TYPE_CHECKING, Any, Awaitable, Callable, List, Optional, P, T, Type
-
 
 if TYPE_CHECKING:
     from . import DynamicsClient

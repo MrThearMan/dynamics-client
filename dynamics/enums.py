@@ -1,6 +1,5 @@
 from enum import Enum, IntEnum
 
-
 __all__ = [
     "QuoteState",
     "OrderState",

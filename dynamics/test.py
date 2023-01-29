@@ -8,7 +8,6 @@ import pytest
 from .client import DynamicsClient
 from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
 
-
 __all__ = [
     "MockClient",
     "BaseMockClient",

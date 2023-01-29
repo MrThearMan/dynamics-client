@@ -9,7 +9,6 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-we
 from .enums import QuoteState
 from .typing import TYPE_CHECKING, Any, Dict, List, Literal
 
-
 if TYPE_CHECKING:
     from .client import DynamicsClient  # pylint: disable=R0401
 

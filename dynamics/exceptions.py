@@ -2,7 +2,6 @@ import logging
 
 from . import status
 
-
 try:
     from rest_framework.exceptions import APIException
 

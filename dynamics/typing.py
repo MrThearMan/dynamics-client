@@ -1,6 +1,5 @@
 from .enums import FetchXMLOperator
 
-
 try:
     from typing import (
         TYPE_CHECKING,

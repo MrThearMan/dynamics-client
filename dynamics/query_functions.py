@@ -13,7 +13,6 @@ https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfu
 from .typing import CompType, FieldType, List, Optional, Tuple
 from .utils import is_valid_uuid
 
-
 __all__ = ["ftr"]
 
 

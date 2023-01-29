@@ -6,7 +6,6 @@ https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functio
 from .enums import EntityFilter, TargetFieldType
 from .typing import TYPE_CHECKING, Any, Dict, List
 
-
 if TYPE_CHECKING:
     from .client import DynamicsClient  # pylint: disable=R0401
 

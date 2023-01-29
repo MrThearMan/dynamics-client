@@ -9,7 +9,6 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-
 
 from .typing import FilterType, List, Literal
 
-
 __all__ = ["apl"]
 
 

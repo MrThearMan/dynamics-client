@@ -9,7 +9,6 @@ from datetime import datetime
 from .typing import Any, Optional
 from .utils import from_dynamics_date_format
 
-
 __all__ = [
     "as_int",
     "as_float",

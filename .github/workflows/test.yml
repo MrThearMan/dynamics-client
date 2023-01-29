@@ -1,7 +1,6 @@
 name: Test
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
@@ -10,94 +9,10 @@ on:
       - "pyproject.toml"
       - "poetry.lock"
       - ".github/workflows/test.yml"
-
-env:
-  POETRY_VIRTUALENVS_IN_PROJECT: true
-  POETRY_NO_INTERACTION: 1
-  DJANGO_SETTINGS_MODULE: tests.django.settings
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  COVERALLS_PARALLEL: true
+  workflow_dispatch:
 
 jobs:
-
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-
-    env:
-      COVERALLS_FLAG_NAME: python${{ matrix.python-version }}-${{ matrix.os }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
-      - name: Set up python
-        id: setup-python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Set up poetry
-        uses: abatilo/actions-poetry@v2.2.0
-        with:
-          poetry-version: "1.3.1"
-
-      - name: Load cached venv
-        id: cache-venv
-        uses: actions/cache@v3
-        with:
-          path: |
-            .venv
-            .tox
-          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-tox-v1
-
-      - name: Install dependencies
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: poetry install --no-root
-
-      - name: Install project
-        run: poetry install
-
-      - name: Run tox
-        run: poetry run tox
-
-      - name: Submit coverage
-        run: poetry run coveralls --service=github
-
-  submit-coverage:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
-      - name: Set up python
-        id: setup-python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Set up poetry
-        uses: abatilo/actions-poetry@v2.2.0
-        with:
-          poetry-version: "1.3.1"
-
-      - name: Load cached venv
-        id: cache-venv
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: ${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}-cov-v1
-
-      - name: Install dependencies
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: poetry install --no-root
-
-      - name: Install project
-        run: poetry install
-
-      - name: Finnish coverage report
-        run: poetry run coveralls --service=github --finish
+    uses: MrThearMan/CI/.github/workflows/test.yml@v0.3.0
+    with:
+      python-version: '["3.8", "3.9", "3.10", "3.11"]'
