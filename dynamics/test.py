@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from itertools import cycle as _cycle
 from unittest.mock import patch
 
+import httpx
 import pytest
-from requests import HTTPError
 
 from .client import DynamicsClient
 from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
@@ -133,7 +133,7 @@ class BaseMockClient:
             if method == "get" and isinstance(self.__response, dict):
                 self.__response = self.__response.get("value", [self.__response])
 
-            with patch(f"requests_oauthlib.oauth2_session.OAuth2Session.{method}", side_effect=[response_mock]):
+            with patch(f"authlib.integrations.httpx_client.OAuth2Client.{method}", side_effect=[response_mock]):
                 yield
         else:
 
@@ -245,5 +245,5 @@ class ResponseMock:
         return json.dumps(self.response)
 
     def raise_for_status(self) -> None:
-        if isinstance(self.response, HTTPError):
+        if isinstance(self.response, httpx.HTTPStatusError):
             raise self.response

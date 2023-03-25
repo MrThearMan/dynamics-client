@@ -12,9 +12,10 @@ from types import TracebackType
 from typing import Union
 from urllib.parse import quote
 
-from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
-from requests import HTTPError, JSONDecodeError  # noqa
-from requests_oauthlib import OAuth2Session
+import httpx
+from authlib.integrations.httpx_client import OAuth2Client
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+from requests import JSONDecodeError  # noqa
 
 from . import status
 from .api_actions import Actions
@@ -114,15 +115,15 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             )
 
         self._api_url = api_url.rstrip("/") + "/"
-        self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
+        self._oauth_client = OAuth2Client(client_id, client_secret, scope=scope)
         token = self.get_token()
         if token is None:  # pragma: no cover
-            token = self._session.fetch_token(
-                token_url=token_url, client_secret=client_secret, scope=scope, resource=resource
+            token = self._oauth_client.fetch_token(
+                token_url, grant_type="client_credentials", scope=scope, resource=resource
             )
             self.set_token(token)
         else:
-            self._session.token = token
+            self._oauth_client.token = token
 
         self._select: List[str] = []
         self._expand: ExpandDict = {}
@@ -367,14 +368,14 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if query is None:
             query = self.current_query
 
-        response = self._session.get(
+        response = self._oauth_client.get(
             url=query,
             headers={**self.default_headers("get"), **self.headers},
         )
 
         try:
             response.raise_for_status()
-        except HTTPError as error:
+        except httpx.HTTPStatusError as error:
             raise self.handled_error(
                 status_code=error.response.status_code,
                 error_message=f"{str(error)}. Response: {error.response.text}",
@@ -463,7 +464,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if query is None:
             query = self.current_query
 
-        response = self._session.post(
+        response = self._oauth_client.post(
             url=query,
             data=json.dumps(data).encode(),
             headers={**self.default_headers("post"), **self.headers},
@@ -474,7 +475,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         try:
             response.raise_for_status()
-        except HTTPError as error:
+        except httpx.HTTPStatusError as error:
             raise self.handled_error(
                 status_code=error.response.status_code,
                 error_message=f"{str(error)}. Response: {error.response.text}",
@@ -489,7 +490,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
-                method="get",
+                method="post",
             ) from error
 
         errors = data.get("error")
@@ -519,7 +520,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if query is None:
             query = self.current_query
 
-        response = self._session.patch(
+        response = self._oauth_client.patch(
             url=query,
             data=json.dumps(data).encode(),
             headers={**self.default_headers("patch"), **self.headers},
@@ -530,7 +531,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         try:
             response.raise_for_status()
-        except HTTPError as error:
+        except httpx.HTTPStatusError as error:
             raise self.handled_error(
                 status_code=error.response.status_code,
                 error_message=f"{str(error)}. Response: {error.response.text}",
@@ -545,7 +546,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
-                method="get",
+                method="patch",
             ) from error
 
         errors = data.get("error")
@@ -573,7 +574,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if query is None:
             query = self.current_query
 
-        response = self._session.delete(
+        response = self._oauth_client.delete(
             url=query,
             headers={**self.default_headers("delete"), **self.headers},
         )
@@ -583,7 +584,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         try:
             response.raise_for_status()
-        except HTTPError as error:
+        except httpx.HTTPStatusError as error:
             raise self.handled_error(
                 status_code=error.response.status_code,
                 error_message=f"{str(error)}. Response: {error.response.text}",
@@ -598,7 +599,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
-                method="get",
+                method="delete",
             ) from error
 
         errors = data.get("error")

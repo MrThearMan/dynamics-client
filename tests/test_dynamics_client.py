@@ -4,9 +4,10 @@ import sys
 from types import SimpleNamespace
 from unittest import mock
 
+import httpx
 import pytest
-from oauthlib.oauth2 import OAuth2Token
-from requests import JSONDecodeError, HTTPError  # noqa
+from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+from requests import JSONDecodeError  # noqa
 
 from dynamics.client import DynamicsClient
 from dynamics.exceptions import (
@@ -335,7 +336,7 @@ def test_client_init_from_cache():
             "http://dynamics.local/", "http://token.local", "client_id", "client_secret", ["http://scope.local/"]
         )
 
-    assert client._session.token == "token"
+    assert client._oauth_client.token == "token"
 
 
 def test_client_query__table(dynamics_client):
@@ -749,8 +750,10 @@ def test_client_headers_are_set_on_call(dynamics_client):
 
 
 def test_client__http_error(dynamics_client):
+    request = {}
     response = SimpleNamespace(text="response", status_code=401)
-    dynamics_client.internal.with_responses(HTTPError(response=response), cycle=True)
+    exception = httpx.HTTPStatusError(message="TEST", request=request, response=response)
+    dynamics_client.internal.with_responses(exception, cycle=True)
 
     with pytest.raises(DynamicsException):
         dynamics_client.get()
@@ -816,10 +819,10 @@ async def test_client_task_group():
     r4 = ResponseMock(response=None, status_code=204)
 
     p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
-    p2 = mock.patch("dynamics.client.OAuth2Session.get", return_value=r1)
-    p3 = mock.patch("dynamics.client.OAuth2Session.patch", return_value=r2)
-    p4 = mock.patch("dynamics.client.OAuth2Session.delete", return_value=r3)
-    p5 = mock.patch("dynamics.client.OAuth2Session.post", return_value=r4)
+    p2 = mock.patch("dynamics.client.OAuth2Client.get", return_value=r1)
+    p3 = mock.patch("dynamics.client.OAuth2Client.patch", return_value=r2)
+    p4 = mock.patch("dynamics.client.OAuth2Client.delete", return_value=r3)
+    p5 = mock.patch("dynamics.client.OAuth2Client.post", return_value=r4)
 
     with p1, p2, p3, p4, p5:
         async with DynamicsClient.from_environment() as client:
@@ -858,7 +861,7 @@ async def test_client_task_group__outside_context_manager():
     with mock.patch("dynamics.client.DynamicsClient.get_token"):
         client = DynamicsClient.from_environment()
 
-    with mock.patch("dynamics.client.OAuth2Session.get", return_value=ResponseMock(response={"value": []})):
+    with mock.patch("dynamics.client.OAuth2Client.get", return_value=ResponseMock(response={"value": []})):
         task = client.create_task(client.get, not_found_ok=True)
         result = await task
 
@@ -877,7 +880,7 @@ async def test_client_task_group__no_taskgroup():
     r1 = ResponseMock(response={"value": [{"x": 1}]})
 
     p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
-    p2 = mock.patch("dynamics.client.OAuth2Session.get", return_value=r1)
+    p2 = mock.patch("dynamics.client.OAuth2Client.get", return_value=r1)
 
     with p1, p2:
         async with DynamicsClient.from_environment() as client:
