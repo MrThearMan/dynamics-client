@@ -4,22 +4,20 @@ from itertools import cycle as _cycle
 from unittest.mock import patch
 
 import pytest
+from requests import HTTPError
 
 from .client import DynamicsClient
 from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
 
-__all__ = [
-    "MockClient",
-    "BaseMockClient",
-    "dynamics_cache",
-    "dynamics_client",
-]
+__all__ = ["MockClient", "BaseMockClient", "dynamics_cache", "dynamics_client"]
 
 
 class BaseMockClient:
     def __init__(self, *args, **kwargs):  # pylint: disable=W0613
         with patch("dynamics.client.DynamicsClient.get_token"):
-            super().__init__("", "", "", "", [])
+            super().__init__(
+                "http://dynamics.local/", "http://token.local", "client_id", "client_secret", ["http://scope.local/"]
+            )
 
         self.__len: int = -1
         self.__default_status: int = 200
@@ -105,7 +103,7 @@ class BaseMockClient:
     def current_response(self) -> ResponseType:
         """Not needed if not using the 'dynamics_client.internal'.
 
-        :return: The last expected reponse from the client.
+        :return: The last expected response from the client.
                  Tries to correct for some of the internal logic of the
                  client methods, but might not be correct all of the time.
         """
@@ -113,7 +111,7 @@ class BaseMockClient:
 
     def _check_length(self, length: int) -> "BaseMockClient":
         if self.__len not in (length, -1):
-            raise ValueError("Mismaching number of arguments given for MockResponse")
+            raise ValueError("Mismatching number of arguments given for MockResponse")
         self.__len = length
         return self
 
@@ -245,3 +243,7 @@ class ResponseMock:
         if isinstance(self.response, Exception):
             return str(self.response)
         return json.dumps(self.response)
+
+    def raise_for_status(self) -> None:
+        if isinstance(self.response, HTTPError):
+            raise self.response

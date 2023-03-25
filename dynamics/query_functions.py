@@ -216,7 +216,7 @@ class ftr:  # pylint: disable=R0904
 
     @staticmethod
     def le(column: str, value: FieldType, lambda_indicator: str = None, group: bool = False) -> str:
-        """Evaluate whether the value in the given column is less than or equel to value.
+        """Evaluate whether the value in the given column is less than or equal to value.
 
         :param column: Column to apply the operation to.
         :param value: Value that the column should less than or equal to.

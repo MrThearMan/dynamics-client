@@ -12,11 +12,22 @@ from dynamics import DynamicsClient
 - token_url: str - Url in form: 'https://[Dynamics Token URI]/path/to/token'
 - client_id: str - Client id (e.g. UUID).
 - client_secret: str - Client secret (e.g. OAuth password).
-- scope: List[str] - List of urls in form: 'https://[Organization URI]/scope'. Defines the database records that the API connection has access to.
+
+
+- *scope: Optional[str | List[str]] - Url or list of urls in form: 'https://[Organization URI]/scope'. Defines the database records that the API connection has access to.*
+- *resource: Optional[str] - Url in form: 'https://[Organization URI]'. Defines the database records that the API connection has access to.*
+
+*NOTE: at least one of `scope` or `resource` must be provided.*
 
 Establish a Microsoft Dynamics 365 Dataverse API client connection
 using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
 created in Dynamics, and granting it an appropriate security role.
+
+*If you are experiencing auth errors, inspect the returned auth token's `aud`
+and see whether it resolves to `00000002-0000-0000-c000-000000000000` instead of your CRM url.*
+
+*If so, you may want to specify the resource URL using the optional
+`resource=` parameter.*
 
 ---
 
@@ -28,7 +39,19 @@ Create a Dynamics client from environment variables:
 2. DYNAMICS_TOKEN_URL
 3. DYNAMICS_CLIENT_ID
 4. DYNAMICS_CLIENT_SECRET
-5. DYNAMICS_SCOPE
+
+
+5. *DYNAMICS_SCOPE (Optional)*
+6. *DYNAMICS_RESOURCE (Optional)*
+
+*NOTE: at least one of `DYNAMICS_SCOPE` or `DYNAMICS_RESOURCE` must be provided.*
+
+*If you are experiencing auth errors, inspect the returned auth token's `aud`
+and see whether it resolves to `00000002-0000-0000-c000-000000000000` instead of your CRM url.*
+
+*If so, you may want to specify the resource URL using the optional
+`DYNAMICS_RESOURCE` environment variable.*
+
 
 ---
 
@@ -57,10 +80,10 @@ Make a GET request to the Dataverse API with currently added query options.
 **Error Simplification Available**:
 This and the other HTTP-methods are decorated with a decorator,
 that can take some extra options: `simplify_errors` (If set `True`, will simplify all errors occurring
-during the excecution of the function to just a single DynamicsException with a default
+during the execution of the function to just a single DynamicsException with a default
 error message) and `raise_separately` (A list exception types to exclude from the simplification,
 if `simplify_errors=True`, so that they can be handled separately). These are useful when you want to
-hide implementation details recieved in errors from frontend users.
+hide implementation details received in errors from frontend users.
 
 ---
 
@@ -104,7 +127,7 @@ Delete row in a table. Must have 'table' and 'row_id' query option set.
 
 Can be used to create [asyncio.Tasks](https://docs.python.org/3/library/asyncio-task.html#asyncio.Task),
 which will be run using the defined query options before the task was created.
-This way, you can queue up many tasks and run them asynchonously, either with
+This way, you can queue up many tasks and run them asynchronously, either with
 [asyncio.gather](https://docs.python.org/3/library/asyncio-task.html#asyncio.gather),
 or from python 3.11, [asyncio.TaskGroups](https://github.com/python/cpython/issues/90908).
 To use TaskGroups, just use the DynamicsClient as an async context manager.
@@ -196,7 +219,7 @@ since you can use the `.actions` and `.functions` attributes to make these queri
 
 Search only from the table row with this id.
 If the table has an alternate key defined, you can use
-`'foo=bar'` or `'foo=bar,fizz=buzz'` to retrive a single row.
+`'foo=bar'` or `'foo=bar,fizz=buzz'` to retrieve a single row.
 Alternate keys are not enabled by default in Dynamics, so those might not work at all.
 
 ---
@@ -242,7 +265,7 @@ Set `$select` statement. Limits the properties returned from the current table.
 #### *client.expand(...) → Dict[str, Optional[ExpandType]]*
 
 - items: Dict[str, Optional[ExpandType]] -
-    What linked tables (a.k.a. naviagation properties) to expand and
+    What linked tables (a.k.a. navigation properties) to expand and
     what queries to make inside the expanded tables.
     Refer to the `ExpandType` TypedDict below on what queries are available,
     and what values they expect. Queries can be an empty dict or None,
@@ -340,7 +363,7 @@ Set a query using the FetchXML query language.
 Must set table, but cannot set any other query options!
 Queries can be constructed with the included `FetchXMLBuilder`.
 
-XML Shema:
+XML Schema:
 [https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema](https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema)
 
 How to use:
@@ -674,7 +697,7 @@ and the builder docstrings for more details.
 from dynamics.normalizers import *
 ```
 
-Included normalizers can be used to process the returned values to quarantee wanted types.
+Included normalizers can be used to process the returned values to guarantee wanted types.
 The most common case is missing data in the Dynamics database, in which case None would be returned.
 Normalizer can be used to convert this to, e.g., an empty string, or any other default value.
 They can also be used to specify numeric data as float or int.
@@ -739,7 +762,7 @@ Convert a ISO datestring from Dynamics database to a datetime-object.
 #### *cache → SQLiteCache:*
 
 Instance of a SQLite based cache that the client uses to store the auth token so that it can be
-reused between client instances. Django's cache is prefered to this, if it is installed.
+reused between client instances. Django's cache is preferred to this, if it is installed.
 
 ---
 
@@ -750,7 +773,7 @@ The library comes with a testing client and some fixtures for pytest:
 
 ### MockClient
 
-Dynamics Client that can be used fror testing purposes. It allows mocking the responses from the real
+Dynamics Client that can be used for testing purposes. It allows mocking the responses from the real
 client's HTTP methods, and can even set multiple responses at once:
 
 ```python
@@ -770,7 +793,7 @@ assert result == expected[1]
 ```
 
 If you need to configure the DynamicsClient instance, you can create a new MockClient
-by inheriting from BaseMockClient and yout custom DynamicsClient.
+by inheriting from BaseMockClient and your custom DynamicsClient.
 
 ```python
 from  dynamics import DynamicsClient
@@ -810,5 +833,5 @@ def dynamics_client(request):
 
 #### dynamics_cache
 
-An intance of the cache used by the client. Can be either an instance of the SQLiteCache
+An instance of the cache used by the client. Can be either an instance of the SQLiteCache
 that comes with the library, or Django's cache if it's installed.

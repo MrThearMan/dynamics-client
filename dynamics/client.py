@@ -9,10 +9,11 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
+from typing import Union
 from urllib.parse import quote
 
 from oauthlib.oauth2 import BackendApplicationClient, OAuth2Token
-from requests import JSONDecodeError  # noqa
+from requests import HTTPError, JSONDecodeError  # noqa
 from requests_oauthlib import OAuth2Session
 
 from . import status
@@ -82,7 +83,15 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         status.HTTP_503_SERVICE_UNAVAILABLE: WebAPIUnavailable,
     }
 
-    def __init__(self, api_url: str, token_url: str, client_id: str, client_secret: str, scope: List[str]):
+    def __init__(
+        self,
+        api_url: str,
+        token_url: str,
+        client_id: str,
+        client_secret: str,
+        scope: Optional[Union[str, List[str]]] = None,
+        resource: Optional[str] = None,
+    ):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection
         using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
         created in Dynamics, and granting it an appropriate security role.
@@ -92,15 +101,25 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
                           Format: https://[Dynamics Token URI]/path/to/token
         :param client_id: Dynamics User ID.
         :param client_secret: Dynamics User Secret that proves its identity when password is required.
-        :param scope: List of urls that define the database records that the API connection has access to.
-                      Most likely in this format: https://[Organization URI]/.default
+        :param scope: Url, or list of urls, that define(s) the database records that the API connection has access to.
+                      Each most likely in this format: https://[Organization URI]/.default
+        :param resource: Url that defines the database records that the API connection has access to.
+                      Most likely in this format: https://[Organization URI]/
         """
+
+        if not scope and not resource:
+            raise ValueError(
+                "To instantiate a DynamicsClient, you must provide at least one of either the"
+                " scope or resource parameters."
+            )
 
         self._api_url = api_url.rstrip("/") + "/"
         self._session = OAuth2Session(client=BackendApplicationClient(client_id=client_id))
         token = self.get_token()
         if token is None:  # pragma: no cover
-            token = self._session.fetch_token(token_url=token_url, client_secret=client_secret, scope=scope)
+            token = self._session.fetch_token(
+                token_url=token_url, client_secret=client_secret, scope=scope, resource=resource
+            )
             self.set_token(token)
         else:
             self._session.token = token
@@ -172,7 +191,11 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         * DYNAMICS_TOKEN_URL: url string
         * DYNAMICS_CLIENT_ID: client id string
         * DYNAMICS_CLIENT_SECRET: client secret key string
+
         * DYNAMICS_SCOPE: comma separated list of urls
+        * DYNAMICS_RESOURCE: single target url
+
+        At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE must be provided.
 
         :raises KeyError: An environment variable was not configured properly
         """
@@ -181,9 +204,16 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         token_url = os.environ["DYNAMICS_TOKEN_URL"]
         client_id = os.environ["DYNAMICS_CLIENT_ID"]
         client_secret = os.environ["DYNAMICS_CLIENT_SECRET"]
-        scope = os.environ["DYNAMICS_SCOPE"].split(",")
 
-        return cls(api_url, token_url, client_id, client_secret, scope)
+        scope = os.environ.get("DYNAMICS_SCOPE")
+        resource = os.environ.get("DYNAMICS_RESOURCE")
+        if not scope and not resource:
+            raise KeyError("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set.")
+
+        if scope is not None and "," in scope:
+            scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
+
+        return cls(api_url, token_url, client_id, client_secret, scope, resource)
 
     @property
     def current_query(self) -> str:
@@ -205,9 +235,9 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         if self.add_ref_to_property:
             query += f"/{self.add_ref_to_property}/$ref"
 
-        query_optinos = self._compile_query_options()
-        if query_optinos:
-            query += query_optinos
+        query_options = self._compile_query_options()
+        if query_options:
+            query += query_options
 
         return query
 
@@ -343,6 +373,16 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         )
 
         try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise self.handled_error(
+                status_code=error.response.status_code,
+                error_message=f"{str(error)}. Response: {error.response.text}",
+                error_code="http_error",
+                method="get",
+            ) from error
+
+        try:
             data = response.json()
         except JSONDecodeError as error:
             raise self.handled_error(
@@ -433,6 +473,16 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             return {}
 
         try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise self.handled_error(
+                status_code=error.response.status_code,
+                error_message=f"{str(error)}. Response: {error.response.text}",
+                error_code="http_error",
+                method="post",
+            ) from error
+
+        try:
             data = response.json()
         except JSONDecodeError as error:
             raise self.handled_error(
@@ -479,6 +529,16 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             return {}
 
         try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise self.handled_error(
+                status_code=error.response.status_code,
+                error_message=f"{str(error)}. Response: {error.response.text}",
+                error_code="http_error",
+                method="patch",
+            ) from error
+
+        try:
             data = response.json()
         except JSONDecodeError as error:
             raise self.handled_error(
@@ -520,6 +580,16 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             return
+
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise self.handled_error(
+                status_code=error.response.status_code,
+                error_message=f"{str(error)}. Response: {error.response.text}",
+                error_code="http_error",
+                method="delete",
+            ) from error
 
         try:
             data = response.json()
@@ -624,7 +694,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
     @property
     def pre_expand(self) -> str:
         """Expand/navigate to some linked table in this table
-        before taking any queryoptions into account.
+        before taking any query options into account.
         This will save you having to use the expand statement itself,
         if all you are looking for is under this table anyway.
         """
@@ -696,7 +766,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         This applies to non-nested statements as well! There is no limit on the depth of nested
         expand statements, so long as the total is 10.
 
-        :param items: What linked tables (a.k.a. naviagation properties) to expand and
+        :param items: What linked tables (a.k.a. navigation properties) to expand and
                       what statements to apply inside the expanded tables.
                       If items-dict value is set to an empty dict, no query options are used.
                       Otherwise, valid keys for the items-dict are 'select', 'filter', 'top', 'orderby', and 'expand'.
@@ -912,7 +982,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         Queries can be constructed with the included FetchXMLBuilder.
 
-        XML Shema:
+        XML Schema:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema
 
         How to use:

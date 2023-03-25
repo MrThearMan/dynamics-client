@@ -3,7 +3,6 @@ from itertools import chain
 
 import pytest
 
-from dynamics.api_functions import Functions
 from dynamics.enums import EntityFilter, TargetFieldType
 from dynamics.test import MockClient
 

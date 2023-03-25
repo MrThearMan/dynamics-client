@@ -53,7 +53,7 @@ class FetchXMLBuilder:
     ):
         """A Builder class for building FetchXML queries.
 
-        XML Shema:
+        XML Schema:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema
 
         :param mapping: Should be "logical" for 3rd parties.
@@ -147,7 +147,7 @@ class FetchXMLBuilder:
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
-        :param descending: Decending order?
+        :param descending: Descending order?
         :return: The current instance of the FetchXMLBuilder.
         """
 
@@ -256,7 +256,7 @@ class _EntityBuilder:
         """Include all attributes from the main entity to the query.
         Mutually exclusive with adding individual attributes.
 
-        :return: The current intance of the EntityBuilder.
+        :return: The current instance of the EntityBuilder.
         """
 
         if self._attributes:
@@ -282,14 +282,14 @@ class _EntityBuilder:
 
         :param name: Name of the attribute to add.
         :param alias: Name to alias the attribute under.
-        :param aggregate: Aggregate function to apply to the attrubte.
+        :param aggregate: Aggregate function to apply to the attribute.
         :param groupby: Group by this attribute.
         :param distinct: If True, remove duplicate values from the resultset.
         :param date_grouping: How to group dates?
         :param user_timezone: Use user's timezone?
         :param added_by: Added by.
         :param build: Build number.
-        :return: The current intance of the EntityBuilder.
+        :return: The current instance of the EntityBuilder.
         """
 
         if self._all_attributes:
@@ -371,7 +371,7 @@ class _EntityBuilder:
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
-        :param descending: Decending order?
+        :param descending: Descending order?
         :return: The current instance of the EntityBuilder.
         """
 
@@ -484,7 +484,7 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
         """Include all attributes from this linked entity to the query.
         Mutually exclusive with adding individual attributes.
 
-        :return: The current intance of the EntityBuilder.
+        :return: The current instance of the EntityBuilder.
         """
 
         if self._attributes:
@@ -510,14 +510,14 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
 
         :param name: Name of the attribute to add.
         :param alias: Name to alias the attribute under.
-        :param aggregate: Aggregate function to apply to the attrubte.
+        :param aggregate: Aggregate function to apply to the attribute.
         :param groupby: Group by this attribute.
         :param distinct: If True, remove duplicate values from the resultset.
         :param date_grouping: How to group dates?
         :param user_timezone: Use user's timezone?
         :param added_by: Added by.
         :param build: Build number.
-        :return: The current intance of the LinkedEntityBuilder.
+        :return: The current instance of the LinkedEntityBuilder.
         """
 
         if self._all_attributes:
@@ -651,7 +651,7 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
-        :param descending: Decending order?
+        :param descending: Descending order?
         :return: The current instance of the LinkedEntityBuilder.
         """
 
