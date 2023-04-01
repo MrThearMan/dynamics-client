@@ -1,9 +1,11 @@
 import logging
 import pickle
 import sqlite3
+import tempfile
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from typing import Union
 from uuid import UUID
 
 from .exceptions import DynamicsException
@@ -25,7 +27,7 @@ __all__ = [
     "sentinel",
     "is_valid_uuid",
     "SQLiteCache",
-    "cache",
+    "Singletons",
     "error_simplification_available",
     "to_coroutine",
 ]
@@ -137,8 +139,11 @@ class SQLiteCache:
         """Create a cache using sqlite3.
 
         :param filename: Cache file name.
-        :param path: Path string to the wanted db location. If None, use current directory.
+        :param path: Path string to the wanted db location. If None, use system temp folder.
         """
+
+        if path is None:
+            path = tempfile.gettempdir()
 
         filepath = filename if path is None else str(Path(path) / filename)
         self.connection_string = f"{filepath}:?mode=memory&cache=shared"
@@ -188,10 +193,23 @@ class SQLiteCache:
         self.con.execute(self._clear_sql)
 
 
-try:
-    from django.core.cache import cache
-except ImportError:
-    cache = SQLiteCache()
+class Singletons:
+    """
+    A static Singleton interface; any future singleton objects should be included here.
+    """
+
+    _cache: Any = None
+
+    @staticmethod
+    def cache() -> Union[SQLiteCache, Any]:
+        if Singletons._cache is None:
+            try:
+                from django.core.cache import cache
+            except ImportError:
+                cache = SQLiteCache()
+            Singletons._cache = cache
+
+        return Singletons._cache
 
 
 def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:

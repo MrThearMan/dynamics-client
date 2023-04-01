@@ -48,7 +48,7 @@ from .typing import (
     Type,
     TypeVar,
 )
-from .utils import cache, error_simplification_available, sentinel, to_coroutine
+from .utils import Singletons, error_simplification_available, sentinel, to_coroutine
 
 __all__ = ["DynamicsClient"]
 
@@ -147,7 +147,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         """Get dynamics client token in a thread, so it can be done in an async context."""
 
         def task() -> OAuth2Token:
-            return cache.get(self.cache_key, None)
+            return Singletons.cache().get(self.cache_key, None)
 
         with ThreadPoolExecutor() as executor:
             future = executor.submit(task)
@@ -158,7 +158,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         def task():
             expires = int(token["expires_in"]) - 60
-            cache.set(self.cache_key, token, expires)
+            Singletons.cache().set(self.cache_key, token, expires)
 
         with ThreadPoolExecutor() as executor:
             future = executor.submit(task)
