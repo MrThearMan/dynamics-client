@@ -109,7 +109,7 @@ def sqlite_method(method: Callable[P, T]) -> Callable[P, T]:
 
 
 class SQLiteCache:
-    """Dymmy cache to use if Django's cache is not installed."""
+    """Dummy cache to use if Django's cache is not installed."""
 
     DEFAULT_TIMEOUT = 300
     DEFAULT_PRAGMA = {

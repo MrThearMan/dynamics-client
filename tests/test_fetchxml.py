@@ -7,7 +7,7 @@ from dynamics.enums import FetchXMLOperator
 from dynamics.fetchxml import FetchXMLBuilder
 
 
-def test_fech_xml__simple():
+def test_fetch_xml__simple():
     fetch_xml = (
         FetchXMLBuilder(mapping="logical")
         .add_entity(name="account")
@@ -35,7 +35,7 @@ def test_fech_xml__simple():
     assert fetch_xml == expected
 
 
-def test_fech_xml__all_top_level_options():
+def test_fetch_xml__all_top_level_options():
     fetch_xml = (
         FetchXMLBuilder(
             mapping="logical",
@@ -73,7 +73,7 @@ def test_fech_xml__all_top_level_options():
     assert fetch_xml == expected
 
 
-def test_fech_xml__all_entity_options():
+def test_fetch_xml__all_entity_options():
     fetch_xml = (
         FetchXMLBuilder()
         .add_entity(name="account", enable_prefiltering=True, prefilter_parameter_name="foo")
@@ -125,7 +125,7 @@ def test_fech_xml__all_entity_options():
     assert fetch_xml == expected
 
 
-def test_fech_xml__all_linked_entity_options():
+def test_fetch_xml__all_linked_entity_options():
     fetch_xml = (
         FetchXMLBuilder()
         .add_entity(name="account")
@@ -217,7 +217,7 @@ def test_fech_xml__all_linked_entity_options():
     assert fetch_xml == expected
 
 
-def test_fech_xml__all_filter_options():
+def test_fetch_xml__all_filter_options():
     fetch_xml = (
         FetchXMLBuilder()
         .add_entity(name="account")
@@ -266,7 +266,7 @@ def test_fech_xml__all_filter_options():
     assert fetch_xml == expected
 
 
-def test_fech_xml__adding_linked_entities_after_filter():
+def test_fetch_xml__adding_linked_entities_after_filter():
     fetch_xml = (
         FetchXMLBuilder()
         .add_entity(name="account")
@@ -305,7 +305,7 @@ def test_fech_xml__adding_linked_entities_after_filter():
     assert fetch_xml == expected
 
 
-def test_fech_xml__all_order_options():
+def test_fetch_xml__all_order_options():
     fetch_xml = (
         FetchXMLBuilder()
         .order(attribute="foo", alias="bar", descending=True)
@@ -331,7 +331,7 @@ def test_fech_xml__all_order_options():
     assert fetch_xml == expected
 
 
-def test_fech_xml__with_all_atributes():
+def test_fetch_xml__with_all_atributes():
     fetch_xml = (
         FetchXMLBuilder()
         .add_entity(name="foo")
@@ -351,7 +351,7 @@ def test_fech_xml__with_all_atributes():
     assert fetch_xml == expected
 
 
-def test_fech_xml__with_all_atributes_and_individual_attributes_mutually_exclusive():
+def test_fetch_xml__with_all_atributes_and_individual_attributes_mutually_exclusive():
 
     builder1 = FetchXMLBuilder().add_entity(name="foo").with_all_attributes()
     builder2 = FetchXMLBuilder().add_entity(name="foo").add_attribute(name="foo")
@@ -372,7 +372,7 @@ def test_fech_xml__with_all_atributes_and_individual_attributes_mutually_exclusi
         builder4.with_all_attributes()
 
 
-def test_fech_xml__too_many_linked_entities():
+def test_fetch_xml__too_many_linked_entities():
 
     builder = FetchXMLBuilder().add_entity(name="foo")
 
@@ -383,7 +383,7 @@ def test_fech_xml__too_many_linked_entities():
         builder.add_linked_entity(name="x", to="y")
 
 
-def test_fech_xml__too_many_linked_entities__nested():
+def test_fetch_xml__too_many_linked_entities__nested():
 
     builder = FetchXMLBuilder().add_entity(name="foo").add_linked_entity(name="x", to="y")
 
@@ -394,7 +394,7 @@ def test_fech_xml__too_many_linked_entities__nested():
         builder.add_nested_linked_entity(name="x", to="y")
 
 
-def test_fech_xml__too_many_filter_conditions():
+def test_fetch_xml__too_many_filter_conditions():
 
     builder = FetchXMLBuilder().add_entity(name="foo").filter()
 

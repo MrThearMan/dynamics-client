@@ -31,8 +31,8 @@ def test_apply_functions__filter(values: FilterType, raises: bool):
         assert error.args[0] == "Filter by must be either a set or a list."
         return
 
-    sepatator = "or" if isinstance(values, set) else "and"
+    separator = "or" if isinstance(values, set) else "and"
     try:
-        assert groupby == f"filter(foo {sepatator} bar)/groupby((fizzbuzz))"
+        assert groupby == f"filter(foo {separator} bar)/groupby((fizzbuzz))"
     except AssertionError:
-        assert groupby == f"filter(bar {sepatator} foo)/groupby((fizzbuzz))"
+        assert groupby == f"filter(bar {separator} foo)/groupby((fizzbuzz))"

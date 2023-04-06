@@ -45,7 +45,7 @@ class Actions:
         :param context_table: What table to use in the context of the email.
         :param context_row_id: What row to select from the context table. This row's data can be used in
                                dynamically in the body of the email template.
-        :param sender_id: Dynamics systemuser GUID that sends the email. Must have 'send-as' privilegde.
+        :param sender_id: Dynamics systemuser GUID that sends the email. Must have 'send-as' privilege.
         :param to_recipient_ids: List of Dynamics contact GUIDS to add as to recipients.
         :param cc_recipient_ids: List of Dynamics contact GUIDS to add as cc recipients.
         :param bcc_recipient_ids: List of Dynamics contact GUIDS to add as bcc recipients.
