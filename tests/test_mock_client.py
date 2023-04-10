@@ -2,13 +2,11 @@ import pytest
 
 
 def test_mock_client__next_exception_before_exceptions_set(dynamics_client):
-
     with pytest.raises(TypeError, match="Cannot call 'next_exception' without setting exceptions first"):
-        dynamics_client.next_exception  # noqa
+        dynamics_client.next_exception
 
 
 def test_mock_client__lengths_dont_match(dynamics_client):
-
     with pytest.raises(ValueError, match="Mismatching number of arguments given for MockResponse"):
         dynamics_client.with_responses(None).with_status_codes(100, 100)
 

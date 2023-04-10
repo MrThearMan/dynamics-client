@@ -10,7 +10,7 @@ from .enums import QuoteState
 from .typing import TYPE_CHECKING, Any, Dict, List, Literal
 
 if TYPE_CHECKING:
-    from .client import DynamicsClient  # pylint: disable=R0401
+    from .client import DynamicsClient
 
 
 __all__ = ["Actions"]
@@ -23,10 +23,10 @@ class Actions:
         if instance is None:
             raise RuntimeError("Actions can only be used on DynamicsClient instances.")
 
-        self.client: "DynamicsClient" = instance  # pylint: disable=W0201
+        self.client: "DynamicsClient" = instance
         return self
 
-    def send_email_from_template(  # pylint: disable=R0913
+    def send_email_from_template(
         self,
         template_id: str,
         context_table: str,
@@ -43,7 +43,7 @@ class Actions:
 
         :param template_id: Dynamics template GUID to use.
         :param context_table: What table to use in the context of the email.
-        :param context_row_id: What row to select from the context table. This row's data can be used in
+        :param context_row_id: Which row to select from the context table. This row's data can be used in
                                dynamically in the body of the email template.
         :param sender_id: Dynamics systemuser GUID that sends the email. Must have 'send-as' privilege.
         :param to_recipient_ids: List of Dynamics contact GUIDS to add as to recipients.
@@ -111,7 +111,7 @@ class Actions:
         )
 
     def activate_quote(self, quote_id: str, select: List[str] = None, **kwargs) -> Dict[str, Any]:
-        """Change the state of the quote to active so it can be converted to a salesorder.
+        """Change the state of the quote to active, so it can be converted to a salesorder.
 
         :param quote_id: Quote to activate.
         :param select: Attributes to retrieve from the quote.

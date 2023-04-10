@@ -1,91 +1,89 @@
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
+
+# New in version 3.10
+try:
+    from typing import ParamSpec, TypeGuard
+except ImportError:
+    from typing_extensions import ParamSpec, TypeGuard
+
+# New in version 3.11
+try:
+    from typing import NotRequired, Required
+except ImportError:
+    from typing_extensions import NotRequired, Required
+
+
 from .enums import FetchXMLOperator
 
-try:
-    from typing import (
-        TYPE_CHECKING,
-        Any,
-        Awaitable,
-        Callable,
-        Dict,
-        Iterator,
-        List,
-        Literal,
-        Optional,
-        ParamSpec,
-        Sequence,
-        Set,
-        Tuple,
-        Type,
-        TypedDict,
-        TypeVar,
-        Union,
-    )
-except ImportError:
-    from typing import (
-        TYPE_CHECKING,
-        Any,
-        Awaitable,
-        Callable,
-        Dict,
-        Iterator,
-        List,
-        Optional,
-        Sequence,
-        Set,
-        Tuple,
-        Type,
-        TypeVar,
-        Union,
-    )
-
-    from typing_extensions import Literal, ParamSpec, TypedDict
-
-
 __all__ = [
-    "List",
-    "Dict",
-    "Optional",
-    "Awaitable",
     "Any",
-    "Literal",
-    "Union",
-    "Set",
-    "Sequence",
-    "Type",
-    "Tuple",
-    "TypedDict",
-    "TypeVar",
-    "ParamSpec",
-    "Iterator",
-    "TYPE_CHECKING",
-    "ResponseType",
-    "MethodType",
-    "OrderbyType",
-    "FilterType",
-    "ExpandType",
-    "ExpandKeys",
-    "ExpandValues",
-    "ExpandValues",
-    "ExpandDict",
+    "Awaitable",
     "Callable",
     "CompType",
-    "FieldType",
-    "LiteralBool",
-    "FetchXMLCondition",
-    "FetchXMLAttributeType",
-    "FetchXMLOrderType",
-    "FetchXMLType",
-    "FetchXMLEntityType",
-    "FetchXMLLinkedEntity",
-    "FetchXMLFilterType",
+    "Coroutine",
+    "Dict",
+    "ExpandDict",
+    "ExpandKeys",
+    "ExpandType",
+    "ExpandValues",
+    "ExpandValues",
     "FetchXMLAggregateType",
-    "FetchXMLOutputFormat",
-    "FetchXMLDateGroupingType",
+    "FetchXMLAttributeType",
     "FetchXMLBuildType",
+    "FetchXMLCondition",
+    "FetchXMLDateGroupingType",
+    "FetchXMLEntityType",
     "FetchXMLFetchMappingType",
     "FetchXMLFilterOperatorType",
-    "T",
+    "FetchXMLFilterType",
+    "FetchXMLLinkedEntity",
+    "FetchXMLOrderType",
+    "FetchXMLOutputFormat",
+    "FetchXMLType",
+    "FieldType",
+    "FilterType",
+    "Iterator",
+    "List",
+    "Literal",
+    "LiteralBool",
+    "MethodType",
+    "NotRequired",
+    "Optional",
+    "OrderbyType",
     "P",
+    "ParamSpec",
+    "Required",
+    "ResponseType",
+    "Sequence",
+    "Set",
+    "T",
+    "Tuple",
+    "Type",
+    "TYPE_CHECKING",
+    "TypedDict",
+    "TypeGuard",
+    "TypeVar",
+    "Union",
 ]
 
 MethodType = Literal["get", "post", "patch", "delete"]
@@ -106,9 +104,44 @@ ExpandValues = Union[List[str], Set[str], int, OrderbyType, Dict[str, ExpandType
 ExpandDict = Dict[str, Optional[ExpandType]]
 FieldType = Union[str, int, float, bool, None]
 CompType = Union[str, int, float]
-T = TypeVar("T")  # pylint: disable=C0103
-P = ParamSpec("P")  # pylint: disable=C0103
+T = TypeVar("T")
+P = ParamSpec("P")
 ResponseType = Union[Union[Dict[str, Any], List[Dict[str, Any]]], Exception, None]
+
+
+DynamicsOKResponse = TypedDict(
+    "DynamicsOKResponse",
+    {
+        "value": List[Dict[str, Any]],
+        "@odata.context": str,
+        "@odata.nextLink": NotRequired[str],
+        "@odata.count": NotRequired[int],
+    },
+)
+
+
+# https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/compose-http-requests-handle-errors#include-more-details-with-errors
+DynamicsErrorResponseData = TypedDict(
+    "DynamicsErrorResponseData",
+    {
+        "code": Required[str],
+        "message": Required[str],
+        "@Microsoft.PowerApps.CDS.ErrorDetails.OperationStatus": str,
+        "@Microsoft.PowerApps.CDS.ErrorDetails.SubErrorCode": str,
+        "@Microsoft.PowerApps.CDS.HelpLink": str,
+        "@Microsoft.PowerApps.CDS.TraceText": str,
+        "@Microsoft.PowerApps.CDS.InnerError.Message": str,
+    },
+    total=False,
+)
+
+
+class DynamicsErrorResponse(TypedDict):
+    error: DynamicsErrorResponseData
+
+
+DynamicsResponse = Union[DynamicsOKResponse, DynamicsErrorResponse]
+
 
 LiteralBool = Literal["true", "false"]
 FetchXMLOutputFormat = Literal["xml-ado", "xml-auto", "xml-elements", "xml-raw", "xml-platform"]

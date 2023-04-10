@@ -352,7 +352,6 @@ def test_fetch_xml__with_all_atributes():
 
 
 def test_fetch_xml__with_all_atributes_and_individual_attributes_mutually_exclusive():
-
     builder1 = FetchXMLBuilder().add_entity(name="foo").with_all_attributes()
     builder2 = FetchXMLBuilder().add_entity(name="foo").add_attribute(name="foo")
 
@@ -373,7 +372,6 @@ def test_fetch_xml__with_all_atributes_and_individual_attributes_mutually_exclus
 
 
 def test_fetch_xml__too_many_linked_entities():
-
     builder = FetchXMLBuilder().add_entity(name="foo")
 
     for i in range(10):
@@ -384,7 +382,6 @@ def test_fetch_xml__too_many_linked_entities():
 
 
 def test_fetch_xml__too_many_linked_entities__nested():
-
     builder = FetchXMLBuilder().add_entity(name="foo").add_linked_entity(name="x", to="y")
 
     for i in range(9):
@@ -395,7 +392,6 @@ def test_fetch_xml__too_many_linked_entities__nested():
 
 
 def test_fetch_xml__too_many_filter_conditions():
-
     builder = FetchXMLBuilder().add_entity(name="foo").filter()
 
     for i in range(500):

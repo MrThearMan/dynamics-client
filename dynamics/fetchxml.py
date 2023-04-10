@@ -1,4 +1,3 @@
-# pylint: disable=W0212
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from .enums import FetchXMLOperator
@@ -30,7 +29,7 @@ __all__ = [
 
 
 def _serialize_bool(value: bool) -> LiteralBool:
-    return "true" if value else "false"  # type: ignore
+    return "true" if value else "false"
 
 
 class FetchXMLBuilder:
@@ -321,7 +320,7 @@ class _EntityBuilder:
         self,
         *,
         name: str,
-        to: str,  # pylint: disable=C0103
+        to: str,
         from_: Optional[str] = None,
         alias: Optional[str] = None,
         link_type: Optional[str] = None,
@@ -411,13 +410,13 @@ class _EntityBuilder:
         return self._parent_builder.build()
 
 
-class _LinkedEntityBuilder:  # pylint: disable=R0902
+class _LinkedEntityBuilder:
     def __init__(
         self,
         parent_builder: Union["_EntityBuilder", "_LinkedEntityBuilder"],
         *,
         name: str,
-        to: str,  # pylint: disable=C0103
+        to: str,
         from_: Optional[str] = None,
         alias: Optional[str] = None,
         link_type: Optional[str] = None,
@@ -549,7 +548,7 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
         self,
         *,
         name: str,
-        to: str,  # pylint: disable=C0103
+        to: str,
         from_: Optional[str] = None,
         alias: Optional[str] = None,
         link_type: Optional[str] = None,
@@ -592,7 +591,7 @@ class _LinkedEntityBuilder:  # pylint: disable=R0902
         self,
         *,
         name: str,
-        to: str,  # pylint: disable=C0103
+        to: str,
         from_: Optional[str] = None,
         alias: Optional[str] = None,
         link_type: Optional[str] = None,
@@ -731,7 +730,7 @@ class _FilterBuilder:
         column: Optional[str] = None,
         entity_name: Optional[str] = None,
         aggregate: Optional[FetchXMLAggregateType] = None,
-        row_aggregate: Optional[Literal["countchildren"]] = None,  # noqa: F821
+        row_aggregate: Optional[Literal["countchildren"]] = None,
         alias: Optional[str] = None,
         uiname: Optional[str] = None,
         uitype: Optional[str] = None,
@@ -759,7 +758,7 @@ class _FilterBuilder:
             raise RuntimeError("Too many conditions (>500)")
 
         # Convert string to operators, raises TypeError if not valid
-        if type(operator) == str:  # pylint: disable=C0123
+        if type(operator) == str:
             operator = FetchXMLOperator(operator)
 
         condition = FetchXMLCondition(attribute=attribute, operator=operator.value)
@@ -784,7 +783,7 @@ class _FilterBuilder:
         if uitype is not None:
             condition["uitype"] = uitype
         if uihidden is not None:
-            condition["uihidden"] = "1" if uihidden else "0"  # type: ignore
+            condition["uihidden"] = "1" if uihidden else "0"
 
         self._conditions.append(condition)
         return self
@@ -793,7 +792,7 @@ class _FilterBuilder:
         self,
         *,
         name: str,
-        to: str,  # pylint: disable=C0103
+        to: str,
         from_: Optional[str] = None,
         alias: Optional[str] = None,
         link_type: Optional[str] = None,

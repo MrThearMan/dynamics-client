@@ -5,7 +5,6 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from typing import Union
 from uuid import UUID
 
 from .exceptions import DynamicsException
@@ -15,7 +14,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import TYPE_CHECKING, Any, Awaitable, Callable, List, Optional, P, T, Type
+from .typing import TYPE_CHECKING, Any, Awaitable, Callable, Coroutine, List, Optional, P, T, Type, Union
 
 if TYPE_CHECKING:
     from . import DynamicsClient
@@ -36,7 +35,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class sentinel:  # pylint: disable=C0103
+class sentinel:
     """Sentinel value."""
 
 
@@ -44,7 +43,7 @@ def is_valid_uuid(value: str):
     try:
         uuid = UUID(value)
         return str(uuid) == value
-    except Exception:  # pylint: disable=W0703
+    except Exception:
         return False
 
 
@@ -91,17 +90,17 @@ def sqlite_method(method: Callable[P, T]) -> Callable[P, T]:
     def inner(*args: P.args, **kwargs: P.kwargs) -> T:
         self = args[0]
         self.con = sqlite3.connect(self.connection_string)
-        self._apply_pragma()  # pylint: disable=W0212
+        self._apply_pragma()
 
         try:
             value = method(*args, **kwargs)
             self.con.commit()
         except Exception as sqlerror:
-            self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
+            self.con.execute(self._set_pragma.format("optimize"))
             self.con.close()
             raise sqlerror
 
-        self.con.execute(self._set_pragma.format("optimize"))  # pylint: disable=W0212
+        self.con.execute(self._set_pragma.format("optimize"))
         self.con.close()
         return value
 
@@ -164,7 +163,7 @@ class SQLiteCache:
 
     @staticmethod
     def _unstream(value: bytes) -> Any:
-        return pickle.loads(value)
+        return pickle.loads(value)  # noqa: S301
 
     def _apply_pragma(self):
         for key, value in self.DEFAULT_PRAGMA.items():
@@ -230,7 +229,7 @@ def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
 
         try:
             return func(*args, **kwargs)
-        except Exception as error:  # pylint: disable=W0703
+        except Exception as error:
             logger.warning(error)
             if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
                 raise error
@@ -240,7 +239,7 @@ def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
     return inner
 
 
-def to_coroutine(func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+def to_coroutine(func: Callable[P, T]) -> Callable[P, Coroutine[Awaitable[T], Any, Any]]:
     """Convert passed callable into a coroutine."""
 
     @wraps(func)

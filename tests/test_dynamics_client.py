@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 from types import SimpleNamespace
@@ -7,7 +6,7 @@ from unittest import mock
 import httpx
 import pytest
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-from requests import JSONDecodeError  # noqa
+from requests import JSONDecodeError
 
 from dynamics.client import DynamicsClient
 from dynamics.exceptions import (
@@ -78,50 +77,105 @@ def test_client_delete_request(dynamics_client):
 @pytest.mark.parametrize(
     "dynamics_client",
     [
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a ParseError"}}, cycle=True)
-        .with_status_codes(400, cycle=True)
-        .with_exceptions(ParseError("This is a ParseError")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a AuthenticationFailed"}}, cycle=True)
-        .with_status_codes(401, cycle=True)
-        .with_exceptions(AuthenticationFailed("This is a AuthenticationFailed")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a PermissionDenied"}}, cycle=True)
-        .with_status_codes(403, cycle=True)
-        .with_exceptions(PermissionDenied("This is a PermissionDenied")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a NotFound"}}, cycle=True)
-        .with_status_codes(404, cycle=True)
-        .with_exceptions(NotFound("This is a NotFound")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a MethodNotAllowed"}}, cycle=True)
-        .with_status_codes(405, cycle=True)
-        .with_exceptions(MethodNotAllowed("This is a MethodNotAllowed")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a DuplicateRecordError"}}, cycle=True)
-        .with_status_codes(412, cycle=True)
-        .with_exceptions(DuplicateRecordError("This is a DuplicateRecordError")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a PayloadTooLarge"}}, cycle=True)
-        .with_status_codes(413, cycle=True)
-        .with_exceptions(PayloadTooLarge("This is a PayloadTooLarge")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a APILimitsExceeded"}}, cycle=True)
-        .with_status_codes(429, cycle=True)
-        .with_exceptions(APILimitsExceeded("This is a APILimitsExceeded")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a DynamicsException"}}, cycle=True)
-        .with_status_codes(500, cycle=True)
-        .with_exceptions(DynamicsException("This is a DynamicsException")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a OperationNotImplemented"}}, cycle=True)
-        .with_status_codes(501, cycle=True)
-        .with_exceptions(OperationNotImplemented("This is a OperationNotImplemented")),
-        MockClient()
-        .internal.with_responses({"error": {"message": "This is a WebAPIUnavailable"}}, cycle=True)
-        .with_status_codes(503, cycle=True)
-        .with_exceptions(WebAPIUnavailable("This is a WebAPIUnavailable")),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a ParseError", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(400, cycle=True)
+            .with_exceptions(ParseError("This is a ParseError"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a AuthenticationFailed", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(401, cycle=True)
+            .with_exceptions(AuthenticationFailed("This is a AuthenticationFailed"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a PermissionDenied", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(403, cycle=True)
+            .with_exceptions(PermissionDenied("This is a PermissionDenied"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a NotFound", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(404, cycle=True)
+            .with_exceptions(NotFound("This is a NotFound"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a MethodNotAllowed", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(405, cycle=True)
+            .with_exceptions(MethodNotAllowed("This is a MethodNotAllowed"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a DuplicateRecordError", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(412, cycle=True)
+            .with_exceptions(DuplicateRecordError("This is a DuplicateRecordError"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a PayloadTooLarge", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(413, cycle=True)
+            .with_exceptions(PayloadTooLarge("This is a PayloadTooLarge"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a APILimitsExceeded", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(429, cycle=True)
+            .with_exceptions(APILimitsExceeded("This is a APILimitsExceeded"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a DynamicsException", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(500, cycle=True)
+            .with_exceptions(DynamicsException("This is a DynamicsException"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a OperationNotImplemented", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(501, cycle=True)
+            .with_exceptions(OperationNotImplemented("This is a OperationNotImplemented"))
+        ),
+        (
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a WebAPIUnavailable", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(503, cycle=True)
+            .with_exceptions(WebAPIUnavailable("This is a WebAPIUnavailable"))
+        ),
     ],
     indirect=True,
 )
@@ -668,19 +722,20 @@ def test_client_simplify_errors(dynamics_client):
 
 
 def test_client_simplify_errors__raise_separately(dynamics_client):
-    dynamics_client.internal.with_responses(TypeError("Foo"), cycle=True)
+    data = {"error": {"message": "foo", "code": "1"}}
+    dynamics_client.internal.with_responses(data, cycle=True).with_status_codes(400, cycle=True)
 
-    with pytest.raises(TypeError, match="Foo"):
-        dynamics_client.get(simplify_errors=True, raise_separately=[TypeError])
+    with pytest.raises(ParseError, match=re.escape("[400] foo <dynamics_parse_error>")):
+        dynamics_client.get(simplify_errors=True, raise_separately=[ParseError])
 
-    with pytest.raises(TypeError, match="Foo"):
-        dynamics_client.post({}, simplify_errors=True, raise_separately=[TypeError])
+    with pytest.raises(ParseError, match=re.escape("[400] foo <dynamics_parse_error>")):
+        dynamics_client.post({}, simplify_errors=True, raise_separately=[ParseError])
 
-    with pytest.raises(TypeError, match="Foo"):
-        dynamics_client.patch({}, simplify_errors=True, raise_separately=[TypeError])
+    with pytest.raises(ParseError, match=re.escape("[400] foo <dynamics_parse_error>")):
+        dynamics_client.patch({}, simplify_errors=True, raise_separately=[ParseError])
 
-    with pytest.raises(TypeError, match="Foo"):
-        dynamics_client.delete(simplify_errors=True, raise_separately=[TypeError])
+    with pytest.raises(ParseError, match=re.escape("[400] foo <dynamics_parse_error>")):
+        dynamics_client.delete(simplify_errors=True, raise_separately=[ParseError])
 
 
 def test_client_request_counter(dynamics_client):
@@ -724,7 +779,6 @@ def test_client_reset_query(dynamics_client):
 
 
 def test_client_headers_are_set_on_call(dynamics_client):
-
     loc = "dynamics.client.DynamicsClient.default_headers"
     dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, cycle=True)
 
@@ -806,13 +860,7 @@ def test_utils__set_token(dynamics_cache, dynamics_client):
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="TaskGroups only available from python 3.11 onwards.")
-async def test_client_task_group():
-    os.environ["DYNAMICS_API_URL"] = "apiurl"
-    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
-    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
-    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
-    os.environ["DYNAMICS_SCOPE"] = "scope"
-
+async def test_client_task_group(environ):
     r1 = ResponseMock(response={"value": [{"x": 1}]})
     r2 = ResponseMock(response={"y": 2})
     r3 = ResponseMock(response={"value": []})
@@ -824,25 +872,32 @@ async def test_client_task_group():
     p4 = mock.patch("dynamics.client.OAuth2Client.delete", return_value=r3)
     p5 = mock.patch("dynamics.client.OAuth2Client.post", return_value=r4)
 
-    with p1, p2, p3, p4, p5:
-        async with DynamicsClient.from_environment() as client:
-            client.table = "foo"
-            client.select = ["bar"]
-            task_1 = client.create_task(client.get, not_found_ok=True)
-            client.reset_query()
+    with environ(
+        DYNAMICS_API_URL="apiurl",
+        DYNAMICS_TOKEN_URL="tokenurl",
+        DYNAMICS_CLIENT_ID="clientid",
+        DYNAMICS_CLIENT_SECRET="secret",
+        DYNAMICS_SCOPE="scope",
+    ):
+        with p1, p2, p3, p4, p5:
+            async with DynamicsClient.from_environment() as client:
+                client.table = "foo"
+                client.select = ["bar"]
+                task_1 = client.create_task(client.get, not_found_ok=True)
+                client.reset_query()
 
-            client.table = "fizz"
-            client.select = ["buzz"]
-            task_2 = client.create_task(client.patch, data={"1": "2"}, simplify_errors=True)
-            client.reset_query()
+                client.table = "fizz"
+                client.select = ["buzz"]
+                task_2 = client.create_task(client.patch, data={"1": "2"}, simplify_errors=True)
+                client.reset_query()
 
-            client.table = "xxx"
-            client.row_id = "yyy"
-            task_3 = client.create_task(client.delete)
-            client.reset_query()
+                client.table = "xxx"
+                client.row_id = "yyy"
+                task_3 = client.create_task(client.delete)
+                client.reset_query()
 
-            task4 = client.create_task(client.actions.win_quote, quote_id="abc")
-            client.reset_query()
+                task4 = client.create_task(client.actions.win_quote, quote_id="abc")
+                client.reset_query()
 
     assert task_1.result() == [{"x": 1}]
     assert task_2.result() == {"y": 2}
@@ -851,15 +906,16 @@ async def test_client_task_group():
 
 
 @pytest.mark.asyncio
-async def test_client_task_group__outside_context_manager():
-    os.environ["DYNAMICS_API_URL"] = "apiurl"
-    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
-    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
-    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
-    os.environ["DYNAMICS_SCOPE"] = "scope"
-
-    with mock.patch("dynamics.client.DynamicsClient.get_token"):
-        client = DynamicsClient.from_environment()
+async def test_client_task_group__outside_context_manager(environ):
+    with environ(
+        DYNAMICS_API_URL="apiurl",
+        DYNAMICS_TOKEN_URL="tokenurl",
+        DYNAMICS_CLIENT_ID="clientid",
+        DYNAMICS_CLIENT_SECRET="secret",
+        DYNAMICS_SCOPE="scope",
+    ):
+        with mock.patch("dynamics.client.DynamicsClient.get_token"):
+            client = DynamicsClient.from_environment()
 
     with mock.patch("dynamics.client.OAuth2Client.get", return_value=ResponseMock(response={"value": []})):
         task = client.create_task(client.get, not_found_ok=True)
@@ -870,23 +926,24 @@ async def test_client_task_group__outside_context_manager():
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(sys.version_info >= (3, 11), reason="TaskGroups available from python 3.11 onwards.")
-async def test_client_task_group__no_taskgroup():
-    os.environ["DYNAMICS_API_URL"] = "apiurl"
-    os.environ["DYNAMICS_TOKEN_URL"] = "tokenurl"
-    os.environ["DYNAMICS_CLIENT_ID"] = "clientid"
-    os.environ["DYNAMICS_CLIENT_SECRET"] = "secret"
-    os.environ["DYNAMICS_SCOPE"] = "scope"
-
+async def test_client_task_group__no_taskgroup(environ):
     r1 = ResponseMock(response={"value": [{"x": 1}]})
 
     p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
     p2 = mock.patch("dynamics.client.OAuth2Client.get", return_value=r1)
 
-    with p1, p2:
-        async with DynamicsClient.from_environment() as client:
-            client.table = "foo"
-            client.select = ["bar"]
-            task = client.create_task(client.get)
-            result = await task
+    with environ(
+        DYNAMICS_API_URL="apiurl",
+        DYNAMICS_TOKEN_URL="tokenurl",
+        DYNAMICS_CLIENT_ID="clientid",
+        DYNAMICS_CLIENT_SECRET="secret",
+        DYNAMICS_SCOPE="scope",
+    ):
+        with p1, p2:
+            async with DynamicsClient.from_environment() as client:
+                client.table = "foo"
+                client.select = ["bar"]
+                task = client.create_task(client.get)
+                result = await task
 
     assert result == [{"x": 1}]

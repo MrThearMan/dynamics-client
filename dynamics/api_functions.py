@@ -7,7 +7,7 @@ from .enums import EntityFilter, TargetFieldType
 from .typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
-    from .client import DynamicsClient  # pylint: disable=R0401
+    from .client import DynamicsClient
 
 
 __all__ = ["Functions"]
@@ -20,7 +20,7 @@ class Functions:
         if instance is None:
             raise RuntimeError("Functions can only be used on DynamicsClient instances.")
 
-        self.client: "DynamicsClient" = instance  # pylint: disable=W0201
+        self.client: "DynamicsClient" = instance
         return self
 
     def expand_calendar(self, start: str, end: str, **kwargs) -> List[Dict[str, Any]]:

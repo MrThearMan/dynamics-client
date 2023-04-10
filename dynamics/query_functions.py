@@ -1,4 +1,3 @@
-# pylint: disable=C0103
 """
 Creates a helper object `ftr`, which contains convenience functions of all possible filter operations.
 
@@ -9,14 +8,13 @@ Special Operators API reference:
 https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions?view=dynamics-ce-odata-9
 """
 
-
 from .typing import CompType, FieldType, List, Optional, Tuple
 from .utils import is_valid_uuid
 
 __all__ = ["ftr"]
 
 
-class ftr:  # pylint: disable=R0904
+class ftr:
     """Convenience functions for creating $filter parameters."""
 
     # Base operations
@@ -230,12 +228,12 @@ class ftr:  # pylint: disable=R0904
 
     @staticmethod
     def and_(*args: str, **kwargs) -> str:
-        """Evaluate whether all of the given operations are true.
+        """Evaluate whether all the given operations are true.
 
         :param args: Other filter operation strings to `and` together.
         :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return ftr._join_multiple(operator="and", group=kwargs.get("group", False), *args)  # noqa: B026
+        return ftr._join_multiple(*args, operator="and", group=kwargs.get("group", False))
 
     @staticmethod
     def or_(*args: str, **kwargs) -> str:
@@ -244,7 +242,7 @@ class ftr:  # pylint: disable=R0904
         :param args: Other filter operation strings to `or` together.
         :param kwargs: group=True -> Group the operation inside parentheses.
         """
-        return ftr._join_multiple(operator="or", group=kwargs.get("group", False), *args)  # noqa: B026
+        return ftr._join_multiple(*args, operator="or", group=kwargs.get("group", False))
 
     @staticmethod
     def not_(operation: str, group: bool = False) -> str:

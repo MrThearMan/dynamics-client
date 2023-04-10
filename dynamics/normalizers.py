@@ -47,12 +47,12 @@ def as_str(value: Any, default: str = "") -> str:
 def as_bool(value: Any, default: bool = False) -> bool:
     try:
         return bool(value)
-    except Exception:  # pylint: disable=W0703
+    except Exception:
         return default
 
 
 def str_as_datetime(value: str, default: Any = None) -> Optional[datetime]:
     try:
         return from_dynamics_date_format(value)
-    except Exception:  # pylint: disable=W0703
+    except Exception:
         return default

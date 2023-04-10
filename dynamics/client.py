@@ -1,21 +1,17 @@
-# pylint: disable=R0913
 """
 Dynamics Api Client. API Reference Docs:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
 """
+
 import asyncio
-import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
-from typing import Union
 from urllib.parse import quote
 
-import httpx
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-from requests import JSONDecodeError  # noqa
 
 from . import status
 from .api_actions import Actions
@@ -37,6 +33,7 @@ from .typing import (
     Any,
     Callable,
     Dict,
+    DynamicsResponse,
     ExpandDict,
     ExpandKeys,
     ExpandValues,
@@ -49,6 +46,7 @@ from .typing import (
     T,
     Type,
     TypeVar,
+    Union,
 )
 from .utils import Singletons, error_simplification_available, sentinel, to_coroutine
 
@@ -60,7 +58,7 @@ EXC = TypeVar("EXC", bound=BaseException)
 DClient = TypeVar("DClient", bound="DynamicsClient")
 
 
-class DynamicsClient:  # pylint: disable=R0904,R0902
+class DynamicsClient:
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
@@ -105,7 +103,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         :param scope: Url, or list of urls, that define(s) the database records that the API connection has access to.
                       Each most likely in this format: https://[Organization URI]/.default
         :param resource: Url that defines the database records that the API connection has access to.
-                      Most likely in this format: https://[Organization URI]/
+                         Most likely in this format: https://[Organization URI]/
         """
 
         if not scope and not resource:
@@ -116,14 +114,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._api_url = api_url.rstrip("/") + "/"
         self._oauth_client = OAuth2Client(client_id, client_secret, scope=scope)
-        token = self.get_token()
-        if token is None:  # pragma: no cover
-            token = self._oauth_client.fetch_token(
-                token_url, grant_type="client_credentials", scope=scope, resource=resource
-            )
-            self.set_token(token)
-        else:
-            self._oauth_client.token = token
+        self._init_client(token_url, scope, resource)
 
         self._select: List[str] = []
         self._expand: ExpandDict = {}
@@ -143,6 +134,19 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         self._headers: Dict[str, str] = {}
         self._pagesize: int = 5000
 
+    def _init_client(self, token_url: str, scope: Optional[Union[str, List[str]]], resource: Optional[str]) -> None:
+        token = self.get_token()
+        if token is None:  # pragma: no cover
+            token = self._oauth_client.fetch_token(
+                url=token_url,
+                grant_type="client_credentials",
+                scope=scope,
+                resource=resource,
+            )
+            self.set_token(token)
+        else:
+            self._oauth_client.token = token
+
     def __getitem__(self, key):
         return self.headers[key]
 
@@ -151,7 +155,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
     async def __aenter__(self: DClient) -> DClient:
         if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
-            self.__tg = asyncio.TaskGroup()  # pylint: disable=W0201
+            self.__tg = asyncio.TaskGroup()
             await self.__tg.__aenter__()
 
         return self
@@ -353,74 +357,11 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
         error = self.error_dict.get(status_code, DynamicsException)
         return error(error_message)
 
-    @error_simplification_available
-    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:  # noqa: C901
-        """Make a request to the Dataverse API with currently added query options.
-
-        Please also read the decorator's documentation!
-
-        :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
-        :param query: Use this url instead of building it from current query parameters.
-        """
-
-        self.request_counter += 1
-
-        if query is None:
-            query = self.current_query
-
-        response = self._oauth_client.get(
-            url=query,
-            headers={**self.default_headers("get"), **self.headers},
-        )
-
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as error:
-            raise self.handled_error(
-                status_code=error.response.status_code,
-                error_message=f"{str(error)}. Response: {error.response.text}",
-                error_code="http_error",
-                method="get",
-            ) from error
-
-        try:
-            data = response.json()
-        except JSONDecodeError as error:
-            raise self.handled_error(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                error_message=f"{str(error)}. Response: {response.text}",
-                error_code="invalid_json",
-                method="get",
-            ) from error
-
-        # Always returns a list, even if only one row is selected
-        entities = data.get("value", [data])
-        errors = data.get("error", {})
-
-        if errors:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=errors.get("message"),
-                error_code=errors.get("code"),
-                method="get",
-            )
-
-        if not entities:
-            if not_found_ok:
-                return []
-
-            raise self.handled_error(
-                status_code=status.HTTP_404_NOT_FOUND,
-                error_message="No records matching the given criteria.",
-                error_code="not_found",
-                method="get",
-            )
-
-        # Fetch more data if needed
+    def _handle_pagination(self, entities: List[Dict[str, Any]], not_found_ok: bool) -> None:
+        """Fetch more data with get requests when needed."""
         for i, row in enumerate(entities):
             for column_key in list(row.keys()):
                 if "@odata.nextLink" in column_key:
-
                     # Sometimes @odata.next links will appear even if all items were fetched.
                     # We know how many items should be fetched from odata.maxpagesize header,
                     # therefore, if the @odata.next link appears before that, we can ignore it.
@@ -442,9 +383,62 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
                     entities[i][key] += extra
 
-        count = data.get("@odata.count", "")
-        if count:
-            entities.insert(0, count)
+    @error_simplification_available
+    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Make a request to the Dataverse API with currently added query options.
+
+        Please also read the decorator's documentation!
+
+        :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
+        :param query: Use this url instead of building it from current query parameters.
+        """
+
+        self.request_counter += 1
+
+        if query is None:
+            query = self.current_query
+
+        response = self._oauth_client.get(
+            url=query,
+            headers={**self.default_headers("get"), **self.headers},
+        )
+
+        try:
+            data: DynamicsResponse = response.json()
+        except Exception as error:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=f"{str(error)}. Response: {response.text}",
+                error_code="invalid_json",
+                method="get",
+            ) from error
+
+        if "error" in data:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
+                method="get",
+            )
+
+        # Always returns a list, even if only one row is selected
+        entities: List[Dict[str, Any]] = data.get("value", [data])
+        if not entities:
+            if not_found_ok:
+                return []
+
+            raise self.handled_error(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_message="No records matching the given criteria.",
+                error_code="not_found",
+                method="get",
+            )
+
+        self._handle_pagination(entities, not_found_ok)
+
+        count: Optional[int] = data.get("@odata.count")
+        if count is not None:
+            entities.insert(0, count)  # type: ignore
 
         return entities
 
@@ -466,7 +460,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         response = self._oauth_client.post(
             url=query,
-            data=json.dumps(data).encode(),
+            data=data,
             headers={**self.default_headers("post"), **self.headers},
         )
 
@@ -474,31 +468,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             return {}
 
         try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as error:
+            data: DynamicsResponse = response.json()
+        except Exception as error:
             raise self.handled_error(
-                status_code=error.response.status_code,
-                error_message=f"{str(error)}. Response: {error.response.text}",
-                error_code="http_error",
-                method="post",
-            ) from error
-
-        try:
-            data = response.json()
-        except JSONDecodeError as error:
-            raise self.handled_error(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=response.status_code,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="post",
             ) from error
 
-        errors = data.get("error")
-        if errors:
+        if "error" in data:
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=errors.get("message"),
-                error_code=errors.get("code"),
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
                 method="post",
             )
 
@@ -522,7 +505,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         response = self._oauth_client.patch(
             url=query,
-            data=json.dumps(data).encode(),
+            data=data,
             headers={**self.default_headers("patch"), **self.headers},
         )
 
@@ -530,31 +513,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             return {}
 
         try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as error:
+            data: DynamicsResponse = response.json()
+        except Exception as error:
             raise self.handled_error(
-                status_code=error.response.status_code,
-                error_message=f"{str(error)}. Response: {error.response.text}",
-                error_code="http_error",
-                method="patch",
-            ) from error
-
-        try:
-            data = response.json()
-        except JSONDecodeError as error:
-            raise self.handled_error(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=response.status_code,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="patch",
             ) from error
 
-        errors = data.get("error")
-        if errors:
+        if "error" in data:
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=errors.get("message"),
-                error_code=errors.get("code"),
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
                 method="patch",
             )
 
@@ -583,31 +555,20 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
             return
 
         try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as error:
+            data: DynamicsResponse = response.json()
+        except Exception as error:
             raise self.handled_error(
-                status_code=error.response.status_code,
-                error_message=f"{str(error)}. Response: {error.response.text}",
-                error_code="http_error",
-                method="delete",
-            ) from error
-
-        try:
-            data = response.json()
-        except JSONDecodeError as error:
-            raise self.handled_error(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=response.status_code,
                 error_message=f"{str(error)}. Response: {response.text}",
                 error_code="invalid_json",
                 method="delete",
             ) from error
 
-        errors = data.get("error")
-        if errors:
+        if "error" in data:
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=errors.get("message"),
-                error_code=errors.get("code"),
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
                 method="delete",
             )
 
@@ -852,7 +813,7 @@ class DynamicsClient:  # pylint: disable=R0904,R0902
 
         self._filter = items
 
-    def _compile_filter(self, values: FilterType = sentinel) -> str:  # pylint: disable=R1710
+    def _compile_filter(self, values: FilterType = sentinel) -> str:
         if values is sentinel:
             values = self._filter
 

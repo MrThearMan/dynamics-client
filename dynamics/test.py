@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from itertools import cycle as _cycle
 from unittest.mock import patch
 
-import httpx
 import pytest
 
 from .client import DynamicsClient
@@ -13,7 +12,7 @@ __all__ = ["MockClient", "BaseMockClient", "dynamics_cache", "dynamics_client"]
 
 
 class BaseMockClient:
-    def __init__(self, *args, **kwargs):  # pylint: disable=W0613
+    def __init__(self, *args, **kwargs):
         with patch("dynamics.client.DynamicsClient.get_token"):
             super().__init__(
                 "http://dynamics.local/", "http://token.local", "client_id", "client_secret", ["http://scope.local/"]
@@ -104,8 +103,8 @@ class BaseMockClient:
         """Not needed if not using the 'dynamics_client.internal'.
 
         :return: The last expected response from the client.
-                 Tries to correct for some of the internal logic of the
-                 client methods, but might not be correct all of the time.
+                 Tries to correct for some internal logic of the
+                 client methods, but might not be correct all the time.
         """
         return self.__response
 
@@ -136,7 +135,6 @@ class BaseMockClient:
             with patch(f"authlib.integrations.httpx_client.OAuth2Client.{method}", side_effect=[response_mock]):
                 yield
         else:
-
             client_class = self.__class__.__bases__[-1]
             class_dot_path = f"{client_class.__module__}.{client_class.__qualname__}"
 
@@ -145,19 +143,19 @@ class BaseMockClient:
 
     def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
         with self._mock_method("get"):
-            return super().get(not_found_ok=not_found_ok, query=query, **kwargs)  # noqa pylint: disable=E1101
+            return super().get(not_found_ok=not_found_ok, query=query, **kwargs)
 
     def post(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         with self._mock_method("post"):
-            return super().post(data=data, query=query, **kwargs)  # noqa pylint: disable=E1101
+            return super().post(data=data, query=query, **kwargs)
 
     def patch(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         with self._mock_method("patch"):
-            return super().patch(data=data, query=query, **kwargs)  # noqa pylint: disable=E1101
+            return super().patch(data=data, query=query, **kwargs)
 
     def delete(self, *, query: Optional[str] = None, **kwargs) -> None:
         with self._mock_method("delete"):
-            return super().delete(query=query, **kwargs)  # noqa pylint: disable=E1101
+            return super().delete(query=query, **kwargs)
 
 
 class MockClient(BaseMockClient, DynamicsClient):
@@ -203,9 +201,9 @@ class MockClient(BaseMockClient, DynamicsClient):
 def _dynamics_cache_constructor():
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
-        from django.core.cache import cache  # pylint: disable=C0415,W0621
+        from django.core.cache import cache
     except ImportError:
-        from dynamics.utils import SQLiteCache  # pylint: disable=C0415,W0621
+        from dynamics.utils import SQLiteCache
 
         cache = SQLiteCache()
 
@@ -213,14 +211,14 @@ def _dynamics_cache_constructor():
 
 
 @pytest.fixture()
-def dynamics_cache(_dynamics_cache_constructor):  # pylint: disable=W0621
+def dynamics_cache(_dynamics_cache_constructor):
     """Get the session instance of either Django's cache or SQLiteCache."""
     _dynamics_cache_constructor.clear()
     yield _dynamics_cache_constructor
 
 
 @pytest.fixture
-def dynamics_client(request) -> MockClient:  # pylint: disable=W0621
+def dynamics_client(request) -> MockClient:
     """Get a mocked client instance, or forward one created in `pytest.mark.parametrize`."""
     if not hasattr(request, "param"):
         yield MockClient()
@@ -242,8 +240,4 @@ class ResponseMock:
     def text(self) -> str:
         if isinstance(self.response, Exception):
             return str(self.response)
-        return json.dumps(self.response)
-
-    def raise_for_status(self) -> None:
-        if isinstance(self.response, httpx.HTTPStatusError):
-            raise self.response
+        return json.dumps(self.response)  # pragma: no cover

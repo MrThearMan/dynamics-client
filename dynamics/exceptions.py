@@ -49,7 +49,7 @@ class DynamicsException(APIException):
     default_detail = "Dynamics Web API call failed."
     default_code = "dynamics_link_failed"
 
-    def __init__(self, detail=None, code=None, **kwargs):  # pylint: disable=W0613
+    def __init__(self, detail=None, code=None, **kwargs):
         detail = self.default_detail if detail is None else detail
         code = self.default_code if code is None else code
         self.args = (str(detail),)  # since APIException doesn't call super()

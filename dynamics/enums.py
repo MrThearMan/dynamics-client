@@ -38,7 +38,7 @@ class TargetFieldType(IntEnum):
 
 
 class EntityFilter(IntEnum):
-    """Describes the type of entity metadata to retrieve."""
+    """Describes the entity metadata to retrieve."""
 
     ENTITY = 1
     """Use this to retrieve only entity information."""
