@@ -46,26 +46,26 @@ httpx = ">=0.23.3"
 authlib = ">=1.2.0"
 tzdata = ">=2021.5"
 "backports.zoneinfo" = { version = ">=0.2.1", python = "<3.9" }
-typing-extensions = { version = ">=4.0", python = "<3.9" }
+typing-extensions = { version = ">=4.5", python = "<3.11" }
 Django = { version = ">=3.2", optional = true }
 djangorestframework = { version = ">=3.12", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "7.2.1"
+pytest = "7.3.0"
 coverage = "6.5.0"
-pytest-asyncio = "0.20.3"
-pre-commit = "3.0.1"
-tox = "4.4.2"
-tox-gh-actions = "3.0.0"
+pytest-asyncio = "0.21.0"
+pre-commit = "3.2.2"
+tox = "4.4.11"
+tox-gh-actions = "3.1.0"
 coveralls = "3.3.1"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.4.2"
-pymdown-extensions = "9.9.2"
+pymdown-extensions = "9.11"
 mkdocs-mermaid2-plugin = "0.6.0"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "0.991"
+mypy = "1.2.0"
 
 [tool.poetry.extras]
 django = ["Django", "djangorestframework"]
@@ -78,6 +78,9 @@ fix = true
 line-length = 120
 exclude = [
     "tests/*",
+]
+typing-modules = [
+    "dynamics.typing",
 ]
 select = [
     "F",  # pyflakes
