@@ -99,10 +99,19 @@ I'll usually make a [new release] after each new feature, but if not, you can al
 3. Run `poetry install` to create a virtual environment and install project dependencies.
 4. Run `make hook` to install the [pre-commit] hooks.
 
-You should now be able to run tests with `make tests`.
-Individual tests can be run with `make test <test_name>`.
-Linting can be done with `make pre-commit`.
-Docs can be run locally with `make docs`.
+Run `make help` to list all existing development commands and their descriptions.
+
+## Testing
+
+Tests can be run with `make tests`, and individual tests with `make test <test_name>`.
+This will run tests in you [local environment][setup].
+
+You can also test your code in multiple environments with [tox]. To do this, you must
+install python interpreters for all python version the library supports, then run
+`make tox`.
+
+Linting can be run on-demand with `make pre-commit`, or automatically before commits
+when installed with `make hook`
 
 ## Guidelines for writing code
 
@@ -121,6 +130,7 @@ Docs can be run locally with `make docs`.
     CI will yell at you if you don't.
   - Create all custom types in `dynamics/typing.py` and import them from there.
     This avoids circular imports.
+  - Use of `TypedDict` is encouraged where dicts would be used.
   - Also import common types like `List` from `dynamics/typing.py` instead of the built-in `typing` module.
     This is to make importing types more consistent across the codebase, and allows conditional import
     logic with the `typing_extensions` module for newer typing methods like `ParamSpec` to be contained
@@ -137,7 +147,8 @@ Docs can be run locally with `make docs`.
     Docstrings should not include code examples, they belong to [docs].
 
 - All code should be linted using the provided [pre-commit] hooks.
-  - Linting can be run on-demand with `make pre-commit` or before commits when installed with `make hook`.
+  - Easiest way to do this is to install the pre-commit hooks with `make hook`. This will make
+    sure the pre-commit hooks will run automatically when you make a commit.
   - Comments that ignore linting rules (`# type: ignore`, `# fmt: off`, `# noqa`) should be used
     _**very**_ sparingly. They are often not necessary and can lead to undocumented behavior
     if you are not careful.
@@ -169,6 +180,7 @@ By contributing, you agree that your contributions will be licensed under the [M
 [pull request]: https://github.com/MrThearMan/dynamics-client/compare
 [fork]: https://github.com/MrThearMan/dynamics-client/fork
 [setup]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#setting-up-the-environment
+[tox]: https://tox.wiki/en/latest/
 [code-guidelines]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#guidelines-for-writing-code
 [docs-guidelines]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#guidelines-for-writing-documentation
 [reviewed]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#code-review-process
