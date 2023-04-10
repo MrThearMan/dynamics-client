@@ -11,9 +11,9 @@ Please file a [bug report]. If you are not using the latest version of the libra
 please upgrade and see if that fixes the issue. If not, please create a minimal example
 that demonstrates the bug, and instructions on how to create that setup from a new virtual
 environment. Also include any error tracebacks (unabridged when possible). This will help
-a lot when dignosing the bug. Do not use pictures to include the traceback.
+a lot when diagnosing the bug. Do not use pictures to include the traceback.
 
-## I have a feature requests!
+## I have a feature request!
 
 You can suggest new features to be implemented via a [feature request].
 You can ask me to implement it, or work on it yourself, but all features should
@@ -55,12 +55,12 @@ In the automated phase, [GitHub Actions] will run testing pipelines for all supp
 operating systems and python versions, and [pre-commit CI] will check linting rules.
 If you encounter any errors, try to fix them based on what the pipelines tell you.
 If coverage is lowered, add tests, noting the guidelines [here][code-guidelines].
-Don't be afraid to ask for advice if you're usure what is wrong.
+Don't be afraid to ask for advice if you're unsure what is wrong.
 
 > Note for first-time contributors: Checks are not allowed to run automatically for
 > first-time contributors, so you'll need me to approve them each time you push new code.
 
-> Known issues: GitHub Actions might fail unexpectely when installing dependencies.
+> Known issues: GitHub Actions might fail unexpectedly when installing dependencies.
 > If this happens, the failed jobs need to be run again a few times to get past this.
 
 In the manual phase, I will review the pull request by adding comments with suggestions
@@ -111,7 +111,7 @@ Docs can be run locally with `make docs`.
     feature could be used (use cases), including ways that should not work, and then test for coverage.
     If you find uncovered code, see if you can remove it, or maybe you simply missed a use case.
     You should always need more tests to cover the all use cases than to achieve 100% coverage.
-  - Comments that ignore test coverge (`# pragma: no cover`) should be used _**very**_ sparingly.
+  - Comments that ignore test coverage (`# pragma: no cover`) should be used _**very**_ sparingly.
     They are often not necessary and can lead to undocumented behavior if you are not careful.
 
 - All code should be typed when possible.
@@ -151,7 +151,7 @@ Docs can be run locally with `make docs`.
 - Use markdown features, like [fenced code blocks][code block], [blockquotes], [horizontal rules],
   or [links], to emphasize and format text.
 - If diagrams are needed, use [mermaid.js] inside a [fenced code block][code block].
-- Break up lines around the 100 characters mark. This improves readibiliy on wider monitors
+- Break up lines around the 100 characters mark. This improves readability on wider monitors
   without adjusting the window size (and when not using text-wrapping).
 - Do not use emojis.
 - Double-check for spelling mistakes and grammar.
