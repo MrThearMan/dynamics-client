@@ -1,4 +1,14 @@
-.PHONY: help dev docs tests test tox hook pre-commit pre-commit-update mypy Makefile
+.PHONY: help
+.PHONY: dev
+.PHONY: docs
+.PHONY: tests
+.PHONY: test
+.PHONY: tox
+.PHONY: hook
+.PHONY: pre-commit
+.PHONY: pre-commit-update
+.PHONY: mypy
+.PHONY: Makefile
 
 # Trick to allow passing commands to make
 # Use quotes (" ") if command contains flags (-h / --help)
