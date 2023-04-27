@@ -134,3 +134,4 @@ dmypy.json
 
 # Dynamics Cache File
 dynamics.cache
+identifier.sqlite
