@@ -180,7 +180,7 @@ By contributing, you agree that your contributions will be licensed under the [M
 [pull request]: https://github.com/MrThearMan/dynamics-client/compare
 [fork]: https://github.com/MrThearMan/dynamics-client/fork
 [setup]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#setting-up-the-environment
-[tox]: https://tox.wiki/en/latest/
+[tox]: https://tox.wiki/
 [code-guidelines]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#guidelines-for-writing-code
 [docs-guidelines]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#guidelines-for-writing-documentation
 [reviewed]: https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md#code-review-process
