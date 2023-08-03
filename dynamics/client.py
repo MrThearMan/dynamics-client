@@ -460,7 +460,7 @@ class DynamicsClient:
 
         response = self._oauth_client.post(
             url=query,
-            data=data,
+            json=data,
             headers={**self.default_headers("post"), **self.headers},
         )
 
@@ -505,7 +505,7 @@ class DynamicsClient:
 
         response = self._oauth_client.patch(
             url=query,
-            data=data,
+            json=data,
             headers={**self.default_headers("patch"), **self.headers},
         )
 
