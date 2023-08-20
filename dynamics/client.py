@@ -383,7 +383,7 @@ class DynamicsClient:
 
                     entities[i][key] += extra
 
-    def _handle_pagination_v9(self,entities: List[Dict[str, Any]],next_link:str,not_found_ok:bool) -> None:
+    def _handle_pagination_v9(self, entities: List[Dict[str, Any]], next_link: str, not_found_ok: bool) -> None:
         """
         Fetch more data with get requests when needed with v9 api returned value.
         """
@@ -441,9 +441,9 @@ class DynamicsClient:
                 method="get",
             )
 
-        next_link:Optional[str] = data.get("@odata.nextLink")
-        if(next_link is not None):
-            self._handle_pagination_v8(entities,next_link,not_found_ok)
+        next_link: Optional[str] = data.get("@odata.nextLink")
+        if next_link is not None:
+            self._handle_pagination_v8(entities, next_link, not_found_ok)
         else:
             self._handle_pagination(entities, not_found_ok)
 
