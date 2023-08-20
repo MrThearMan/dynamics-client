@@ -443,7 +443,7 @@ class DynamicsClient:
 
         next_link: Optional[str] = data.get("@odata.nextLink")
         if next_link is not None:
-            self._handle_pagination_v8(entities, next_link, not_found_ok)
+            self._handle_pagination_v9(entities, next_link, not_found_ok)
         else:
             self._handle_pagination(entities, not_found_ok)
 
