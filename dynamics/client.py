@@ -383,6 +383,13 @@ class DynamicsClient:
 
                     entities[i][key] += extra
 
+    def _handle_pagination_v9(self,entities: List[Dict[str, Any]],next_link:str,not_found_ok:bool) -> None:
+        """
+        Fetch more data with get requests when needed with v9 api returned value.
+        """
+        extra = self.get(not_found_ok=not_found_ok, query=next_link)
+        entities += extra
+
     @error_simplification_available
     def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
         """Make a request to the Dataverse API with currently added query options.
@@ -434,7 +441,11 @@ class DynamicsClient:
                 method="get",
             )
 
-        self._handle_pagination(entities, not_found_ok)
+        next_link:Optional[str] = data.get("@odata.nextLink")
+        if(next_link is not None):
+            self._handle_pagination_v8(entities,next_link,not_found_ok)
+        else:
+            self._handle_pagination(entities, not_found_ok)
 
         count: Optional[int] = data.get("@odata.count")
         if count is not None:
