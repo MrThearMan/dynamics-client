@@ -6,9 +6,10 @@ import threading
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Coroutine, Optional, Union
 
 import aiosqlite
+
+from .typing import Any, Coroutine, Dict, Optional, Union
 
 __all__ = [
     "SQLiteCache",
@@ -61,10 +62,12 @@ class SQLiteCacheBase(ABC):
     def create_table_if_not_exist(self) -> None:
         with sqlite3.connect(self.connection_string) as connection:
             if connection.execute(self._check_table).fetchone()[0] == 1:
-                connection.execute(self._create_sql)
-                connection.execute(self._create_index_sql)
-                for key, value in self.DEFAULT_PRAGMA.items():
-                    connection.execute(self._set_pragma_equal.format(key, value))
+                return
+
+            connection.execute(self._create_sql)
+            connection.execute(self._create_index_sql)
+            for key, value in self.DEFAULT_PRAGMA.items():
+                connection.execute(self._set_pragma_equal.format(key, value))
 
     @staticmethod
     def _exp_timestamp(timeout: int = DEFAULT_TIMEOUT) -> float:
@@ -107,7 +110,7 @@ class SQLiteCacheBase(ABC):
 class SQLiteCache(SQLiteCacheBase):
     """Sync cache"""
 
-    connections: dict[int, sqlite3.Connection] = {}
+    connections: Dict[int, sqlite3.Connection] = {}
 
     @property
     def con(self) -> sqlite3.Connection:
@@ -173,7 +176,7 @@ class SQLiteCache(SQLiteCacheBase):
 class AsyncSQLiteCache(SQLiteCacheBase):
     """Async cache"""
 
-    connections: dict[int, aiosqlite.Connection] = {}
+    connections: Dict[int, aiosqlite.Connection] = {}
 
     @property
     async def con(self) -> aiosqlite.Connection:

@@ -2,14 +2,14 @@ import asyncio
 import json
 from contextlib import contextmanager
 from itertools import cycle as _cycle
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from authlib.oauth2.rfc6749 import OAuth2Token
 
 from .client import DynamicsClient, aio
 from .client.base import BaseDynamicsClient
-from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
+from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType, Union
 from .utils import Singletons
 
 __all__ = [
@@ -44,6 +44,8 @@ class ResponseMock:
 class BaseMockClient:
     """Base mock client"""
 
+    _mocking_object: Union[MagicMock, AsyncMock]
+
     def __init__(self, *args, **kwargs):
         super().__init__(
             "http://dynamics.local/",
@@ -56,7 +58,7 @@ class BaseMockClient:
         self.__len: int = -1
         self.__default_status: int = 200
         self.__internal: bool = False
-        self.__response: ResponseType = None
+        self._response: ResponseType = None
         self.__responses: Iterator[ResponseType] = _cycle([None])
         self.__status_codes: Iterator[int] = _cycle([self.__default_status])
         self.__exceptions: Optional[Iterator[Optional[Exception]]] = None
@@ -141,7 +143,7 @@ class BaseMockClient:
                  Tries to correct for some internal logic of the
                  client methods, but might not be correct all the time.
         """
-        return self.__response
+        return self._response
 
     def _check_length(self, length: int) -> "BaseMockClient":
         if self.__len not in (length, -1):
@@ -152,7 +154,7 @@ class BaseMockClient:
     @contextmanager
     def _mock_method(self, method: MethodType):
         try:
-            self.__response = next(self.__responses)
+            self._response = next(self.__responses)
         except StopIteration as error:
             raise ValueError("Ran out of responses on the MockClient") from error
 
@@ -167,9 +169,9 @@ class BaseMockClient:
             except StopIteration as error:
                 raise ValueError("Ran out of status codes on the MockClient") from error
 
-            response_mock = ResponseMock(response=self.__response, status_code=status_code)
-            if method == "get" and isinstance(self.__response, dict):
-                self.__response = self.__response.get("value", [self.__response])
+            response_mock = ResponseMock(response=self._response, status_code=status_code)
+            if method == "get" and isinstance(self._response, dict):
+                self._response = self._response.get("value", [self._response])
 
             oauth_dot_path = f"{client_class.oauth_class.__module__}.{client_class.oauth_class.__qualname__}"
             method_path = f"{oauth_dot_path}.{method}"
@@ -179,18 +181,20 @@ class BaseMockClient:
             yield from self._mock_external(method_path, get_token_path, token)
 
     def _mock_internal(self, method_path: str, get_token_path: str, token: OAuth2Token, side_effect: ResponseMock):
-        with patch(method_path, side_effect=[side_effect]):
+        with patch(method_path, new_callable=self._mocking_object, side_effect=[side_effect]):
             with patch(get_token_path, return_value=token):
                 yield
 
     def _mock_external(self, method_path: str, get_token_path: str, token: OAuth2Token):
-        with patch(method_path, side_effect=[self.__response]):
+        with patch(method_path, new_callable=self._mocking_object, side_effect=[self._response]):
             with patch(get_token_path, return_value=token):
                 yield
 
 
 class BaseSyncMockClient(BaseMockClient):
     """Base sync mock client"""
+
+    _mocking_object = MagicMock
 
     def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
         with self._mock_method("get"):
@@ -211,6 +215,8 @@ class BaseSyncMockClient(BaseMockClient):
 
 class BaseASyncMockClient(BaseMockClient):
     """Base async mock client"""
+
+    _mocking_object = AsyncMock
 
     async def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
         with self._mock_method("get"):
