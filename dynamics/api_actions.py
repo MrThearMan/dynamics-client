@@ -7,10 +7,10 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-we
 """
 
 from .enums import QuoteState
-from .typing import TYPE_CHECKING, Any, Dict, List, Literal
+from .typing import TYPE_CHECKING, Any, Dict, List, Literal, Type
 
 if TYPE_CHECKING:
-    from .client import DynamicsClient
+    from .client.base import BaseDynamicsClient
 
 
 __all__ = ["Actions"]
@@ -19,11 +19,11 @@ __all__ = ["Actions"]
 class Actions:
     """Predefined Dynamics API actions."""
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: "BaseDynamicsClient", owner: Type["BaseDynamicsClient"]):
         if instance is None:
             raise RuntimeError("Actions can only be used on DynamicsClient instances.")
 
-        self.client: "DynamicsClient" = instance
+        self.client = instance
         return self
 
     def send_email_from_template(

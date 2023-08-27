@@ -1,22 +1,57 @@
+import asyncio
 import json
 from contextlib import contextmanager
 from itertools import cycle as _cycle
 from unittest.mock import patch
 
 import pytest
+from authlib.oauth2.rfc6749 import OAuth2Token
 
-from .client import DynamicsClient
+from .client import DynamicsClient, aio
+from .client.base import BaseDynamicsClient
 from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType
+from .utils import Singletons
 
-__all__ = ["MockClient", "BaseMockClient", "dynamics_cache", "dynamics_client"]
+__all__ = [
+    "async_dynamics_cache",
+    "async_dynamics_client",
+    "AsyncMockClient",
+    "BaseMockClient",
+    "dynamics_cache",
+    "dynamics_client",
+    "MockClient",
+    "ResponseMock",
+]
+
+
+class ResponseMock:
+    def __init__(self, *, response: ResponseType, status_code: int = 200):
+        self.response = response
+        self.status_code = status_code
+
+    def json(self) -> ResponseType:
+        if isinstance(self.response, Exception):
+            raise self.response
+        return self.response
+
+    @property
+    def text(self) -> str:
+        if isinstance(self.response, Exception):
+            return str(self.response)
+        return json.dumps(self.response)  # pragma: no cover
 
 
 class BaseMockClient:
+    """Base mock client"""
+
     def __init__(self, *args, **kwargs):
-        with patch("dynamics.client.DynamicsClient.get_token"):
-            super().__init__(
-                "http://dynamics.local/", "http://token.local", "client_id", "client_secret", ["http://scope.local/"]
-            )
+        super().__init__(
+            "http://dynamics.local/",
+            "http://token.local",
+            "client_id",
+            "client_secret",
+            ["http://scope.local/"],
+        )
 
         self.__len: int = -1
         self.__default_status: int = 200
@@ -121,6 +156,11 @@ class BaseMockClient:
         except StopIteration as error:
             raise ValueError("Ran out of responses on the MockClient") from error
 
+        token = OAuth2Token({"expires_in": "60"})
+        client_class: BaseDynamicsClient = self.__class__.__bases__[-1]  # type: ignore
+        class_dot_path = f"{client_class.__module__}.{client_class.__qualname__}"
+        get_token_path = f"{class_dot_path}.get_token"
+
         if self.__internal:
             try:
                 status_code = next(self.__status_codes)
@@ -128,18 +168,29 @@ class BaseMockClient:
                 raise ValueError("Ran out of status codes on the MockClient") from error
 
             response_mock = ResponseMock(response=self.__response, status_code=status_code)
-
             if method == "get" and isinstance(self.__response, dict):
                 self.__response = self.__response.get("value", [self.__response])
 
-            with patch(f"authlib.integrations.httpx_client.OAuth2Client.{method}", side_effect=[response_mock]):
-                yield
+            oauth_dot_path = f"{client_class.oauth_class.__module__}.{client_class.oauth_class.__qualname__}"
+            method_path = f"{oauth_dot_path}.{method}"
+            yield from self._mock_internal(method_path, get_token_path, token, response_mock)
         else:
-            client_class = self.__class__.__bases__[-1]
-            class_dot_path = f"{client_class.__module__}.{client_class.__qualname__}"
+            method_path = f"{class_dot_path}.{method}"
+            yield from self._mock_external(method_path, get_token_path, token)
 
-            with patch(f"{class_dot_path}.{method}", side_effect=[self.__response]):
+    def _mock_internal(self, method_path: str, get_token_path: str, token: OAuth2Token, side_effect: ResponseMock):
+        with patch(method_path, side_effect=[side_effect]):
+            with patch(get_token_path, return_value=token):
                 yield
+
+    def _mock_external(self, method_path: str, get_token_path: str, token: OAuth2Token):
+        with patch(method_path, side_effect=[self.__response]):
+            with patch(get_token_path, return_value=token):
+                yield
+
+
+class BaseSyncMockClient(BaseMockClient):
+    """Base sync mock client"""
 
     def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
         with self._mock_method("get"):
@@ -158,43 +209,32 @@ class BaseMockClient:
             return super().delete(query=query, **kwargs)
 
 
-class MockClient(BaseMockClient, DynamicsClient):
-    r"""A testing client for the Dynamics client.
+class BaseASyncMockClient(BaseMockClient):
+    """Base async mock client"""
 
-    -----------------------------------------------------------
+    async def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+        with self._mock_method("get"):
+            return await super().get(not_found_ok=not_found_ok, query=query, **kwargs)
 
-    Can be used with `pytest.mark.parametrize`::
+    async def post(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        with self._mock_method("post"):
+            return await super().post(data=data, query=query, **kwargs)
 
-        @pytest.mark.parametrize(
-            "dynamics_client",
-            [
-                MockClient().with_responses({"foo": "bar"}),
-                MockClient().with_responses({"foo": "baz"}),
-            ],
-            indirect=True,  # important!
-        )
-        def test_foo(dynamics_client):
-            # Use as-is
-            x = dynamics_client.get()
+    async def patch(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        with self._mock_method("patch"):
+            return await super().patch(data=data, query=query, **kwargs)
 
-            # ...or patch usage
-            with mock.patch("path.to.client.DynamicsClient", return_value=dynamics_client):
-                ...
+    async def delete(self, *, query: Optional[str] = None, **kwargs) -> None:
+        with self._mock_method("delete"):
+            return await super().delete(query=query, **kwargs)
 
-            with mock.patch("path.to.client.DynamicsClient.from_environment", return_value=dynamics_client):
-                ...
 
-    -----------------------------------------------------------
+class MockClient(BaseSyncMockClient, DynamicsClient):
+    """A testing client for the Dynamics client."""
 
-    Can also be used without `pytest.mark.parametrize`::
 
-        def test_foo(dynamics_client):
-            dynamics_client.with_responses({"foo": "bar"})
-
-            x = dynamics_client.get()
-
-    -----------------------------------------------------------
-    """
+class AsyncMockClient(BaseASyncMockClient, aio.DynamicsClient):
+    """A testing client for the Dynamics client."""
 
 
 @pytest.fixture(scope="session")
@@ -202,42 +242,56 @@ def _dynamics_cache_constructor():
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
         from django.core.cache import cache
+
+        return cache  # pragma: no cover
     except ImportError:
-        from dynamics.utils import SQLiteCache
-
-        cache = SQLiteCache()
-
-    return cache
+        return Singletons.cache()
 
 
 @pytest.fixture()
 def dynamics_cache(_dynamics_cache_constructor):
     """Get the session instance of either Django's cache or SQLiteCache."""
     _dynamics_cache_constructor.clear()
-    yield _dynamics_cache_constructor
+    try:
+        yield _dynamics_cache_constructor
+    finally:
+        _dynamics_cache_constructor.close()
+
+
+@pytest.fixture(scope="session")
+def _dynamics_async_cache_constructor():
+    """Imports the django cache instance or creates a SQLiteCache instance."""
+    try:
+        from django.core.cache import cache
+
+        return cache  # pragma: no cover
+    except ImportError:
+        return Singletons.async_cache()
+
+
+@pytest.fixture()
+def async_dynamics_cache(_dynamics_async_cache_constructor):
+    """Get the session instance of either Django's cache or SQLiteCache."""
+    asyncio.run(_dynamics_async_cache_constructor.clear())
+    try:
+        yield _dynamics_async_cache_constructor
+    finally:
+        asyncio.run(_dynamics_async_cache_constructor.close())
 
 
 @pytest.fixture
 def dynamics_client(request) -> MockClient:
-    """Get a mocked client instance, or forward one created in `pytest.mark.parametrize`."""
+    """Get a sync mocked client instance, or forward one created in `pytest.mark.parametrize`."""
     if not hasattr(request, "param"):
         yield MockClient()
     else:
         yield request.param
 
 
-class ResponseMock:
-    def __init__(self, *, response: ResponseType, status_code: int = 200):
-        self.response = response
-        self.status_code = status_code
-
-    def json(self) -> ResponseType:
-        if isinstance(self.response, Exception):
-            raise self.response
-        return self.response
-
-    @property
-    def text(self) -> str:
-        if isinstance(self.response, Exception):
-            return str(self.response)
-        return json.dumps(self.response)  # pragma: no cover
+@pytest.fixture
+def async_dynamics_client(request) -> AsyncMockClient:
+    """Get an async mocked client instance, or forward one created in `pytest.mark.parametrize`."""
+    if not hasattr(request, "param"):
+        yield AsyncMockClient()
+    else:
+        yield request.param

@@ -758,7 +758,7 @@ class _FilterBuilder:
             raise RuntimeError("Too many conditions (>500)")
 
         # Convert string to operators, raises TypeError if not valid
-        if type(operator) == str:
+        if isinstance(operator, str):
             operator = FetchXMLOperator(operator)
 
         condition = FetchXMLCondition(attribute=attribute, operator=operator.value)

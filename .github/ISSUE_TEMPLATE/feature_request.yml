@@ -44,7 +44,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: contibutor
+    id: contributor
     attributes:
       label: Would you like to solve this issue yourself with a pull request?
       description: >-

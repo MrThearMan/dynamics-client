@@ -792,6 +792,29 @@ result = client.get()
 assert result == expected[1]
 ```
 
+Can be used with `pytest.mark.parametrize`:
+
+```python
+@pytest.mark.parametrize(
+    "dynamics_client",
+    [
+        MockClient().with_responses({"foo": "bar"}),
+        MockClient().with_responses({"foo": "baz"}),
+    ],
+    indirect=True,  # important!
+)
+def test_foo(dynamics_client):
+    # Use as-is
+    x = dynamics_client.get()
+
+    # ...or patch usage
+    with mock.patch("path.to.client.DynamicsClient", return_value=dynamics_client):
+        ...
+
+    with mock.patch("path.to.client.DynamicsClient.from_environment", return_value=dynamics_client):
+        ...
+```
+
 If you need to configure the DynamicsClient instance, you can create a new MockClient
 by inheriting from BaseMockClient and your custom DynamicsClient.
 

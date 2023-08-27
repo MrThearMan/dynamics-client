@@ -3,10 +3,20 @@ from contextlib import contextmanager
 
 import pytest
 
-from dynamics.test import _dynamics_cache_constructor, dynamics_cache, dynamics_client
+from dynamics.test import (
+    _dynamics_async_cache_constructor,
+    _dynamics_cache_constructor,
+    async_dynamics_cache,
+    async_dynamics_client,
+    dynamics_cache,
+    dynamics_client,
+)
 
 __all__ = [
+    "_dynamics_async_cache_constructor",
     "_dynamics_cache_constructor",
+    "async_dynamics_cache",
+    "async_dynamics_client",
     "dynamics_cache",
     "dynamics_client",
     "environ",

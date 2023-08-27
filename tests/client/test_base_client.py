@@ -1,14 +1,12 @@
 import re
-import sys
 from types import SimpleNamespace
 from unittest import mock
 
 import httpx
 import pytest
-from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 from requests import JSONDecodeError
 
-from dynamics.client import DynamicsClient
+from dynamics import DynamicsClient
 from dynamics.exceptions import (
     APILimitsExceeded,
     AuthenticationFailed,
@@ -22,56 +20,8 @@ from dynamics.exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from dynamics.test import MockClient, ResponseMock
+from dynamics.test import MockClient
 from dynamics.typing import MethodType
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
-        MockClient().internal.with_responses({"value": []}).with_status_codes(204),
-        MockClient().internal.with_responses({"value": [{"foo": "bar"}, {"one": 2}]}).with_status_codes(200),
-    ],
-    indirect=True,
-)
-def test_client_get_request(dynamics_client):
-    assert dynamics_client.get(not_found_ok=True) == dynamics_client.current_response
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
-        MockClient().internal.with_responses({}).with_status_codes(204),
-    ],
-    indirect=True,
-)
-def test_client_post_request(dynamics_client):
-    assert dynamics_client.post(data={}) == dynamics_client.current_response
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        MockClient().internal.with_responses({"foo": "bar", "one": 2}).with_status_codes(200),
-        MockClient().internal.with_responses({}).with_status_codes(204),
-    ],
-    indirect=True,
-)
-def test_client_patch_request(dynamics_client):
-    assert dynamics_client.patch(data={}) == dynamics_client.current_response
-
-
-@pytest.mark.parametrize(
-    "dynamics_client",
-    [
-        MockClient().internal.with_status_codes(204),
-    ],
-    indirect=True,
-)
-def test_client_delete_request(dynamics_client):
-    assert dynamics_client.delete() == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -179,7 +129,7 @@ def test_client_delete_request(dynamics_client):
     ],
     indirect=True,
 )
-def test_client_error_handling(dynamics_client):
+def test_client__error_handling(dynamics_client):
     error = dynamics_client.next_exception
 
     with pytest.raises(error.__class__, match=error.args[0]):
@@ -195,7 +145,7 @@ def test_client_error_handling(dynamics_client):
         dynamics_client.delete()
 
 
-def test_client_error_handling__get_return_no_items(dynamics_client):
+def test_client__error_handling__get_return_no_items(dynamics_client):
     dynamics_client.internal.with_responses({"value": []})
 
     with pytest.raises(NotFound, match="No records matching the given criteria."):
@@ -250,12 +200,12 @@ def test_client_error_handling__get_return_no_items(dynamics_client):
         ],
     ],
 )
-def test_client_set_default_headers(dynamics_client, method: MethodType, headers: dict):
+def test_client__set_default_headers(dynamics_client, method: MethodType, headers: dict):
     default_headers = dynamics_client.default_headers(method=method)
     assert default_headers == headers
 
 
-def test_client_headers(dynamics_client):
+def test_client__headers(dynamics_client):
     assert dynamics_client.headers == {}
     dynamics_client["Accept"] = "application/json"
     assert dynamics_client["Accept"] == "application/json"
@@ -270,7 +220,7 @@ def test_client_headers(dynamics_client):
         ("scope", "resource"),
     ],
 )
-def test_client_init_from_environment_successes(scope, resource, environ):
+def test_client__init_from_environment_successes(scope, resource, environ):
     env = {
         "DYNAMICS_API_URL": "apiurl",
         "DYNAMICS_TOKEN_URL": "tokenurl",
@@ -287,7 +237,7 @@ def test_client_init_from_environment_successes(scope, resource, environ):
             DynamicsClient.from_environment()
 
 
-def test_client_init_from_environment_scope_or_resource_required(environ):
+def test_client__init_from_environment_scope_or_resource_required(environ):
     env = {
         "DYNAMICS_API_URL": "apiurl",
         "DYNAMICS_TOKEN_URL": "tokenurl",
@@ -314,7 +264,7 @@ def test_client_init_from_environment_scope_or_resource_required(environ):
         "DYNAMICS_SCOPE",
     ],
 )
-def test_client_init_from_environment_fails_when_missing(missing_env, environ):
+def test_client__init_from_environment_fails_when_missing(missing_env, environ):
     env = {
         "DYNAMICS_API_URL": "apiurl",
         "DYNAMICS_TOKEN_URL": "tokenurl",
@@ -367,12 +317,12 @@ def test_client_init_from_environment_fails_when_missing(missing_env, environ):
         },
     ],
 )
-def test_client_init_success(arguments):
+def test_client__init_success(arguments):
     with mock.patch("dynamics.client.DynamicsClient.get_token"):
         DynamicsClient(**arguments)
 
 
-def test_client_init_scope_or_resource_required(environ):
+def test_client__init_scope_or_resource_required(environ):
     with mock.patch("dynamics.client.DynamicsClient.get_token"):
         with pytest.raises(
             ValueError,
@@ -384,29 +334,20 @@ def test_client_init_scope_or_resource_required(environ):
             DynamicsClient(api_url="apiurl", token_url="tokenurl", client_id="clientid", client_secret="secret")
 
 
-def test_client_init_from_cache():
-    with mock.patch("dynamics.client.DynamicsClient.get_token", mock.MagicMock(return_value="token")):
-        client = DynamicsClient(
-            "http://dynamics.local/", "http://token.local", "client_id", "client_secret", ["http://scope.local/"]
-        )
-
-    assert client._oauth_client.token == "token"
-
-
-def test_client_query__table(dynamics_client):
+def test_client__query__table(dynamics_client):
     dynamics_client.table = "table"
     assert dynamics_client.table == "table"
     assert dynamics_client.current_query == "http://dynamics.local/table"
 
 
-def test_client_query__row_id(dynamics_client):
+def test_client__query__row_id(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.row_id = "row_id"
     assert dynamics_client.row_id == "row_id"
     assert dynamics_client.current_query == "http://dynamics.local/table(row_id)"
 
 
-def test_client_query__add_ref_to_property(dynamics_client):
+def test_client__query__add_ref_to_property(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.row_id = "row_id"
     dynamics_client.add_ref_to_property = "property"
@@ -414,14 +355,14 @@ def test_client_query__add_ref_to_property(dynamics_client):
     assert dynamics_client.current_query == "http://dynamics.local/table(row_id)/property/$ref"
 
 
-def test_client_query__pre_expand(dynamics_client):
+def test_client__query__pre_expand(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.pre_expand = "foo"
     assert dynamics_client.pre_expand == "foo"
     assert dynamics_client.current_query == "http://dynamics.local/table/foo"
 
 
-def test_client_query__action(dynamics_client):
+def test_client__query__action(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.action = "foo"
     assert dynamics_client.action == "foo"
@@ -431,42 +372,42 @@ def test_client_query__action(dynamics_client):
     assert dynamics_client.current_query == "http://dynamics.local/foo"
 
 
-def test_client_query__select(dynamics_client):
+def test_client__query__select(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.select = ["foo"]
     assert dynamics_client.select == ["foo"]
     assert dynamics_client.current_query == "http://dynamics.local/table?$select=foo"
 
 
-def test_client_query__select__multiple(dynamics_client):
+def test_client__query__select__multiple(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.select = ["foo", "bar"]
     assert dynamics_client.select == ["foo", "bar"]
     assert dynamics_client.current_query == "http://dynamics.local/table?$select=foo,bar"
 
 
-def test_client_query__expand(dynamics_client):
+def test_client__query__expand(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {"foo": None}
     assert dynamics_client.expand == {"foo": None}
     assert dynamics_client.current_query == "http://dynamics.local/table?$expand=foo"
 
 
-def test_client_query__expand__with_select(dynamics_client):
+def test_client__query__expand__with_select(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {"foo": {"select": ["bar"]}}
     assert dynamics_client.expand == {"foo": {"select": ["bar"]}}
     assert dynamics_client.current_query == "http://dynamics.local/table?$expand=foo($select=bar)"
 
 
-def test_client_query__expand__with_select_and_filer(dynamics_client):
+def test_client__query__expand__with_select_and_filer(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {"foo": {"select": ["bar"], "filter": ["baz"]}}
     assert dynamics_client.expand == {"foo": {"select": ["bar"], "filter": ["baz"]}}
     assert dynamics_client.current_query == "http://dynamics.local/table?$expand=foo($select=bar;$filter=baz)"
 
 
-def test_client_query__expand__with_select_and_filer__multiple(dynamics_client):
+def test_client__query__expand__with_select_and_filer__multiple(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {"foo": {"select": ["bar", "baz"], "filter": ["fizz", "buzz"]}}
     assert dynamics_client.expand == {"foo": {"select": ["bar", "baz"], "filter": ["fizz", "buzz"]}}
@@ -476,7 +417,7 @@ def test_client_query__expand__with_select_and_filer__multiple(dynamics_client):
     )
 
 
-def test_client_query__expand__with_all_options(dynamics_client):
+def test_client__query__expand__with_all_options(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {
         "foo": {
@@ -516,7 +457,7 @@ def test_client_query__expand__with_all_options(dynamics_client):
     )
 
 
-def test_client_query__expand__invalid_option(dynamics_client):
+def test_client__query__expand__invalid_option(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.expand = {"foo": {"bar": "baz"}}
     assert dynamics_client.expand == {"foo": {"bar": "baz"}}
@@ -527,14 +468,14 @@ def test_client_query__expand__invalid_option(dynamics_client):
     assert exc_info.value.args[0] == "'bar' is not a valid query inside expand statement!"
 
 
-def test_client_query__filter(dynamics_client):
+def test_client__query__filter(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.filter = ["foo"]
     assert dynamics_client.filter == ["foo"]
     assert dynamics_client.current_query == "http://dynamics.local/table?$filter=foo"
 
 
-def test_client_query__filter__empty(dynamics_client):
+def test_client__query__filter__empty(dynamics_client):
     dynamics_client.table = "table"
     with pytest.raises(ValueError) as exc_info:
         dynamics_client.filter = []
@@ -542,7 +483,7 @@ def test_client_query__filter__empty(dynamics_client):
     assert exc_info.value.args[0] == "Filter list cannot be empty."
 
 
-def test_client_query__filter__not_valid_type(dynamics_client):
+def test_client__query__filter__not_valid_type(dynamics_client):
     dynamics_client.table = "table"
     with pytest.raises(TypeError) as exc_info:
         dynamics_client.filter = "foo"
@@ -550,14 +491,14 @@ def test_client_query__filter__not_valid_type(dynamics_client):
     assert exc_info.value.args[0] == "Filter items must be either a set or a list."
 
 
-def test_client_query__filter__multiple__and(dynamics_client):
+def test_client__query__filter__multiple__and(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.filter = ["foo", "bar"]
     assert dynamics_client.filter == ["foo", "bar"]
     assert dynamics_client.current_query == "http://dynamics.local/table?$filter=foo and bar"
 
 
-def test_client_query__filter__multiple__or(dynamics_client):
+def test_client__query__filter__multiple__or(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.filter = {"foo", "bar"}
     assert dynamics_client.filter == {"foo", "bar"}
@@ -568,35 +509,35 @@ def test_client_query__filter__multiple__or(dynamics_client):
         assert dynamics_client.current_query == "http://dynamics.local/table?$filter=bar or foo"
 
 
-def test_client_query__apply(dynamics_client):
+def test_client__query__apply(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.apply = "foo"
     assert dynamics_client.apply == "foo"
     assert dynamics_client.current_query == "http://dynamics.local/table?$apply=foo"
 
 
-def test_client_query__top(dynamics_client):
+def test_client__query__top(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.top = 1
     assert dynamics_client.top == 1
     assert dynamics_client.current_query == "http://dynamics.local/table?$top=1"
 
 
-def test_client_query__orderby(dynamics_client):
+def test_client__query__orderby(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.orderby = {"foo": "asc"}
     assert dynamics_client.orderby == {"foo": "asc"}
     assert dynamics_client.current_query == "http://dynamics.local/table?$orderby=foo asc"
 
 
-def test_client_query__orderby__multiple(dynamics_client):
+def test_client__query__orderby__multiple(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.orderby = {"foo": "asc", "bar": "desc"}
     assert dynamics_client.orderby == {"foo": "asc", "bar": "desc"}
     assert dynamics_client.current_query == "http://dynamics.local/table?$orderby=foo asc,bar desc"
 
 
-def test_client_query__orderby__empty(dynamics_client):
+def test_client__query__orderby__empty(dynamics_client):
     dynamics_client.table = "table"
     with pytest.raises(ValueError) as exc_info:
         dynamics_client.orderby = {}
@@ -604,7 +545,7 @@ def test_client_query__orderby__empty(dynamics_client):
     assert exc_info.value.args[0] == "Orderby dict must not be empty."
 
 
-def test_client_query__orderby__not_valid_type(dynamics_client):
+def test_client__query__orderby__not_valid_type(dynamics_client):
     dynamics_client.table = "table"
     with pytest.raises(TypeError) as exc_info:
         dynamics_client.orderby = "foo"
@@ -612,7 +553,7 @@ def test_client_query__orderby__not_valid_type(dynamics_client):
     assert exc_info.value.args[0] == "Orderby items must be a dict."
 
 
-def test_client_query__count(dynamics_client):
+def test_client__query__count(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.count = True
     assert dynamics_client.count is True
@@ -623,41 +564,7 @@ def test_client_query__count(dynamics_client):
     assert dynamics_client.get() == [1, {"foo": "bar"}]
 
 
-def test_client_pagesize(dynamics_client):
-    assert dynamics_client.pagesize == 5000
-    dynamics_client.pagesize = 2000
-    assert dynamics_client.pagesize == 2000
-
-    with pytest.raises(ValueError) as exc_info:
-        dynamics_client.pagesize = -10
-
-    assert exc_info.value.args[0] == "Value must be bigger than 0. Got -10."
-
-    with pytest.raises(ValueError) as exc_info:
-        dynamics_client.pagesize = 5001
-
-    assert exc_info.value.args[0] == "Max pagesize is 5000. Got 5001."
-
-
-def test_client_show_annotations(dynamics_client):
-    assert dynamics_client.show_annotations is False
-    dynamics_client.show_annotations = True
-    assert dynamics_client.show_annotations is True
-    assert dynamics_client.headers == {"Prefer": 'odata.include-annotations="*"'}
-    dynamics_client.show_annotations = False
-    assert dynamics_client.headers == {}
-
-
-def test_client_suppress_duplicate_detection(dynamics_client):
-    assert dynamics_client.suppress_duplicate_detection is False
-    dynamics_client.suppress_duplicate_detection = True
-    assert dynamics_client.suppress_duplicate_detection is True
-    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "true"}
-    dynamics_client.suppress_duplicate_detection = False
-    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "false"}
-
-
-def test_client_query__fetch_xml(dynamics_client):
+def test_client__query__fetch_xml(dynamics_client):
     fetch_xml = (
         '<fetch mapping="logical">'
         '<entity name="account">'
@@ -682,30 +589,41 @@ def test_client_query__fetch_xml(dynamics_client):
     assert dynamics_client.current_query == f"http://dynamics.local/table?fetchXml={expected}"
 
 
-def test_client_get_next_page__before_pagesize_reached(dynamics_client):
-    dynamics_client.internal.with_responses({"value": [{"foo": "bar", "foo@odata.nextLink": "link-to-next-page"}]})
-    assert dynamics_client.get() == [{"foo": "bar"}]
+def test_client__pagesize(dynamics_client):
+    assert dynamics_client.pagesize == 5000
+    dynamics_client.pagesize = 2000
+    assert dynamics_client.pagesize == 2000
+
+    with pytest.raises(ValueError) as exc_info:
+        dynamics_client.pagesize = -10
+
+    assert exc_info.value.args[0] == "Value must be bigger than 0. Got -10."
+
+    with pytest.raises(ValueError) as exc_info:
+        dynamics_client.pagesize = 5001
+
+    assert exc_info.value.args[0] == "Max pagesize is 5000. Got 5001."
 
 
-def test_client_get_next_page__over_pagesize(dynamics_client):
-    dynamics_client.pagesize = 1
-
-    dynamics_client.internal.with_responses(
-        {"value": [{"foo": [{"@odata.etag": "12345", "bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}]},
-        {"value": [{"@odata.etag": "23456", "fizz": "buzz"}]},
-    )
-
-    assert dynamics_client.get() == [
-        {
-            "foo": [
-                {"@odata.etag": "12345", "bar": "baz"},
-                {"@odata.etag": "23456", "fizz": "buzz"},
-            ],
-        },
-    ]
+def test_client__show_annotations(dynamics_client):
+    assert dynamics_client.show_annotations is False
+    dynamics_client.show_annotations = True
+    assert dynamics_client.show_annotations is True
+    assert dynamics_client.headers == {"Prefer": 'odata.include-annotations="*"'}
+    dynamics_client.show_annotations = False
+    assert dynamics_client.headers == {}
 
 
-def test_client_simplify_errors(dynamics_client):
+def test_client__suppress_duplicate_detection(dynamics_client):
+    assert dynamics_client.suppress_duplicate_detection is False
+    dynamics_client.suppress_duplicate_detection = True
+    assert dynamics_client.suppress_duplicate_detection is True
+    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "true"}
+    dynamics_client.suppress_duplicate_detection = False
+    assert dynamics_client.headers == {"MSCRM.SuppressDuplicateDetection": "false"}
+
+
+def test_client__simplify_errors(dynamics_client):
     dynamics_client.internal.with_responses(*[DynamicsException()] * 4)
 
     with pytest.raises(DynamicsException, match=dynamics_client.simplified_error_message):
@@ -721,7 +639,7 @@ def test_client_simplify_errors(dynamics_client):
         dynamics_client.delete(simplify_errors=True)
 
 
-def test_client_simplify_errors__raise_separately(dynamics_client):
+def test_client__simplify_errors__raise_separately(dynamics_client):
     data = {"error": {"message": "foo", "code": "1"}}
     dynamics_client.internal.with_responses(data, cycle=True).with_status_codes(400, cycle=True)
 
@@ -738,7 +656,7 @@ def test_client_simplify_errors__raise_separately(dynamics_client):
         dynamics_client.delete(simplify_errors=True, raise_separately=[ParseError])
 
 
-def test_client_request_counter(dynamics_client):
+def test_client__request_counter(dynamics_client):
     dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, {"value": [{"foo": "baz"}]})
 
     assert dynamics_client.request_counter == 0
@@ -748,7 +666,7 @@ def test_client_request_counter(dynamics_client):
     assert dynamics_client.request_counter == 2
 
 
-def test_client_reset_query(dynamics_client):
+def test_client__reset_query(dynamics_client):
     dynamics_client.table = "table"
     dynamics_client.row_id = "row"
     dynamics_client.action = "action"
@@ -778,7 +696,7 @@ def test_client_reset_query(dynamics_client):
     assert dynamics_client.pagesize == 2000
 
 
-def test_client_headers_are_set_on_call(dynamics_client):
+def test_client__headers_are_set_on_call(dynamics_client):
     loc = "dynamics.client.DynamicsClient.default_headers"
     dynamics_client.internal.with_responses({"value": [{"foo": "bar"}]}, cycle=True)
 
@@ -836,114 +754,3 @@ def test_client__json_decode_error(dynamics_client):
 
     with pytest.raises(DynamicsException):
         dynamics_client.delete()
-
-
-def test_utils__get_token(dynamics_cache, dynamics_client):
-    value = dynamics_client.get_token()
-    assert value is None
-    token = OAuth2Token(params={"foo": "bar"})
-    dynamics_cache.set(dynamics_client.cache_key, token)
-
-    value = dynamics_client.get_token()
-    assert value == token
-
-
-def test_utils__set_token(dynamics_cache, dynamics_client):
-    value = dynamics_cache.get(dynamics_client.cache_key, None)
-    assert value is None
-    token = OAuth2Token(params={"foo": "bar", "expires_in": 3600})
-    dynamics_client.set_token(token)
-
-    value = dynamics_cache.get(dynamics_client.cache_key, None)
-    assert value == token
-
-
-@pytest.mark.asyncio
-@pytest.mark.skipif(sys.version_info < (3, 11), reason="TaskGroups only available from python 3.11 onwards.")
-async def test_client_task_group(environ):
-    r1 = ResponseMock(response={"value": [{"x": 1}]})
-    r2 = ResponseMock(response={"y": 2})
-    r3 = ResponseMock(response={"value": []})
-    r4 = ResponseMock(response=None, status_code=204)
-
-    p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
-    p2 = mock.patch("dynamics.client.OAuth2Client.get", return_value=r1)
-    p3 = mock.patch("dynamics.client.OAuth2Client.patch", return_value=r2)
-    p4 = mock.patch("dynamics.client.OAuth2Client.delete", return_value=r3)
-    p5 = mock.patch("dynamics.client.OAuth2Client.post", return_value=r4)
-
-    with environ(
-        DYNAMICS_API_URL="apiurl",
-        DYNAMICS_TOKEN_URL="tokenurl",
-        DYNAMICS_CLIENT_ID="clientid",
-        DYNAMICS_CLIENT_SECRET="secret",
-        DYNAMICS_SCOPE="scope",
-    ):
-        with p1, p2, p3, p4, p5:
-            async with DynamicsClient.from_environment() as client:
-                client.table = "foo"
-                client.select = ["bar"]
-                task_1 = client.create_task(client.get, not_found_ok=True)
-                client.reset_query()
-
-                client.table = "fizz"
-                client.select = ["buzz"]
-                task_2 = client.create_task(client.patch, data={"1": "2"}, simplify_errors=True)
-                client.reset_query()
-
-                client.table = "xxx"
-                client.row_id = "yyy"
-                task_3 = client.create_task(client.delete)
-                client.reset_query()
-
-                task4 = client.create_task(client.actions.win_quote, quote_id="abc")
-                client.reset_query()
-
-    assert task_1.result() == [{"x": 1}]
-    assert task_2.result() == {"y": 2}
-    assert task_3.result() is None
-    assert task4.result() is None
-
-
-@pytest.mark.asyncio
-async def test_client_task_group__outside_context_manager(environ):
-    with environ(
-        DYNAMICS_API_URL="apiurl",
-        DYNAMICS_TOKEN_URL="tokenurl",
-        DYNAMICS_CLIENT_ID="clientid",
-        DYNAMICS_CLIENT_SECRET="secret",
-        DYNAMICS_SCOPE="scope",
-    ):
-        with mock.patch("dynamics.client.DynamicsClient.get_token"):
-            client = DynamicsClient.from_environment()
-
-    with mock.patch("dynamics.client.OAuth2Client.get", return_value=ResponseMock(response={"value": []})):
-        task = client.create_task(client.get, not_found_ok=True)
-        result = await task
-
-    assert result == []
-
-
-@pytest.mark.asyncio
-@pytest.mark.skipif(sys.version_info >= (3, 11), reason="TaskGroups available from python 3.11 onwards.")
-async def test_client_task_group__no_taskgroup(environ):
-    r1 = ResponseMock(response={"value": [{"x": 1}]})
-
-    p1 = mock.patch("dynamics.client.DynamicsClient.get_token")
-    p2 = mock.patch("dynamics.client.OAuth2Client.get", return_value=r1)
-
-    with environ(
-        DYNAMICS_API_URL="apiurl",
-        DYNAMICS_TOKEN_URL="tokenurl",
-        DYNAMICS_CLIENT_ID="clientid",
-        DYNAMICS_CLIENT_SECRET="secret",
-        DYNAMICS_SCOPE="scope",
-    ):
-        with p1, p2:
-            async with DynamicsClient.from_environment() as client:
-                client.table = "foo"
-                client.select = ["bar"]
-                task = client.create_task(client.get)
-                result = await task
-
-    assert result == [{"x": 1}]

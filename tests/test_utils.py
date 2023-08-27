@@ -1,6 +1,5 @@
 from asyncio import iscoroutinefunction
 from datetime import datetime
-from time import sleep
 
 import pytest
 
@@ -43,16 +42,6 @@ def test_utils__to_dynamics_date_format(value: datetime, from_timezone: str, res
 )
 def test_utils__from_dynamics_date_format(value: str, from_timezone: str, result: datetime):
     assert from_dynamics_date_format(value, from_timezone) == result
-
-
-def test_utils__cache(dynamics_cache):
-    dynamics_cache.set("foo", "bar", 0.5)
-    assert dynamics_cache.get("foo") == "bar"
-    sleep(0.5)
-    assert dynamics_cache.get("foo") is None
-
-    with pytest.raises(AttributeError):
-        dynamics_cache.set("foo", lambda x: 100, 0.5)
 
 
 @pytest.mark.asyncio

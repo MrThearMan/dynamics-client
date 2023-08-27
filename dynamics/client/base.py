@@ -3,20 +3,19 @@ Dynamics Api Client. API Reference Docs:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api
 """
 
-import asyncio
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
-from types import TracebackType
+from abc import ABC, abstractmethod
 from urllib.parse import quote
 
-from authlib.integrations.httpx_client import OAuth2Client
+from authlib.oauth2.client import OAuth2Client
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
+from httpx import Response
 
-from . import status
-from .api_actions import Actions
-from .api_functions import Functions
-from .exceptions import (
+from .. import status
+from ..api_actions import Actions
+from ..api_functions import Functions
+from ..exceptions import (
     APILimitsExceeded,
     AuthenticationFailed,
     DuplicateRecordError,
@@ -29,36 +28,35 @@ from .exceptions import (
     PermissionDenied,
     WebAPIUnavailable,
 )
-from .typing import (
+from ..typing import (
     Any,
-    Callable,
+    Coroutine,
     Dict,
-    DynamicsResponse,
+    DynamicsErrorResponse,
+    DynamicsOKResponse,
     ExpandDict,
     ExpandKeys,
     ExpandValues,
     FilterType,
+    Generator,
     List,
     MethodType,
     Optional,
     OrderbyType,
-    P,
-    T,
+    Set,
+    Tuple,
     Type,
-    TypeVar,
     Union,
 )
-from .utils import Singletons, error_simplification_available, sentinel, to_coroutine
+from ..utils import sentinel
 
-__all__ = ["DynamicsClient"]
+__all__ = ["BaseDynamicsClient"]
 
 
 logger = logging.getLogger(__name__)
-EXC = TypeVar("EXC", bound=BaseException)
-DClient = TypeVar("DClient", bound="DynamicsClient")
 
 
-class DynamicsClient:
+class BaseDynamicsClient(ABC):
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
@@ -113,8 +111,10 @@ class DynamicsClient:
             )
 
         self._api_url = api_url.rstrip("/") + "/"
-        self._oauth_client = OAuth2Client(client_id, client_secret, scope=scope)
-        self._init_client(token_url, scope, resource)
+        self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope)
+        self._token_url = token_url
+        self._scope = scope
+        self._resource = resource
 
         self._select: List[str] = []
         self._expand: ExpandDict = {}
@@ -133,60 +133,6 @@ class DynamicsClient:
 
         self._headers: Dict[str, str] = {}
         self._pagesize: int = 5000
-
-    def _init_client(self, token_url: str, scope: Optional[Union[str, List[str]]], resource: Optional[str]) -> None:
-        token = self.get_token()
-        if token is None:  # pragma: no cover
-            token = self._oauth_client.fetch_token(
-                url=token_url,
-                grant_type="client_credentials",
-                scope=scope,
-                resource=resource,
-            )
-            self.set_token(token)
-        else:
-            self._oauth_client.token = token
-
-    def __getitem__(self, key):
-        return self.headers[key]
-
-    def __setitem__(self, key, value):
-        self.headers[key] = value
-
-    async def __aenter__(self: DClient) -> DClient:
-        if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
-            self.__tg = asyncio.TaskGroup()
-            await self.__tg.__aenter__()
-
-        return self
-
-    async def __aexit__(self, exc_type: Optional[Type[EXC]], exc: EXC, traceback: TracebackType) -> None:
-        if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
-            try:
-                await self.__tg.__aexit__(exc_type, exc, traceback)
-            finally:
-                del self.__tg
-
-    def get_token(self) -> OAuth2Token:
-        """Get dynamics client token in a thread, so it can be done in an async context."""
-
-        def task() -> OAuth2Token:
-            return Singletons.cache().get(self.cache_key, None)
-
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(task)
-            return future.result()
-
-    def set_token(self, token: OAuth2Token):
-        """Set dynamics client token in a thread, so it can be done in an async context."""
-
-        def task():
-            expires = int(token["expires_in"]) - 60
-            Singletons.cache().set(self.cache_key, token, expires)
-
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(task)
-            return future.result()
 
     @classmethod
     def from_environment(cls):
@@ -219,6 +165,233 @@ class DynamicsClient:
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
 
         return cls(api_url, token_url, client_id, client_secret, scope, resource)
+
+    def __getitem__(self, key):
+        return self.headers[key]
+
+    def __setitem__(self, key, value):
+        self.headers[key] = value
+
+    @property
+    @abstractmethod
+    def oauth_class(self) -> Type[OAuth2Client]:
+        """OAuth class used."""
+
+    @abstractmethod
+    def get_token(self) -> Optional[OAuth2Token]:
+        """Get token from cache."""
+
+    @abstractmethod
+    def set_token(self, token: OAuth2Token) -> None:
+        """Set token to cache."""
+
+    @abstractmethod
+    def _ensure_token(self) -> None:
+        """Ensure that token exists in the oauth client before a request is made"""
+
+    def _iterate_pages(self, entities: List[Dict[str, Any]]) -> Generator[Tuple[int, str, str, Set[str]], Any, None]:
+        """Iterate response data for pagination links."""
+        for i, row in enumerate(entities):
+            if not isinstance(row, dict):
+                continue
+            for column_key in list(row.keys()):
+                if "@odata.nextLink" not in column_key:
+                    continue
+
+                # Sometimes @odata.next links will appear even if all items were fetched.
+                # We know how many items should be fetched from 'odata.maxpagesize' header,
+                # therefore, if the @odata.next link appears before that, we can ignore it.
+                key = column_key[: -len("@odata.nextLink")]
+                if len(row[key]) < self.pagesize:
+                    row.pop(column_key)
+                    continue
+
+                id_tags: Set[str] = {value["@odata.etag"] for value in row[key]}
+                yield i, key, row.pop(column_key), id_tags
+
+    @abstractmethod
+    def _handle_pagination(self, entities: List[Dict[str, Any]], not_found_ok: bool) -> None:
+        """Fetch more data with get requests when needed."""
+
+    @abstractmethod
+    def get(
+        self,
+        *,
+        not_found_ok: bool = False,
+        query: Optional[str] = None,
+    ) -> Union[List[Dict[str, Any]], Coroutine[Any, Any, List[Dict[str, Any]]]]:
+        """Make a request to the Dataverse API with currently added query options.
+
+        Please also read the decorator's documentation!
+
+        :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
+        :param query: Use this url instead of building it from current query parameters.
+        """
+
+    def process_get_response(self, response: Response, not_found_ok: bool) -> List[Dict[str, Any]]:
+        self.request_counter += 1
+
+        try:
+            data = response.json()
+        except Exception as error:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=f"{str(error)}. Response: {response.text}",
+                error_code="invalid_json",
+                method="get",
+            ) from error
+
+        if "error" in data:
+            data: DynamicsErrorResponse
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
+                method="get",
+            )
+
+        # Always returns a list, even if only one row is selected
+        data: DynamicsOKResponse | Dict[str, Any]
+        entities: List[Dict[str, Any]] = data.get("value", [data])
+
+        if not entities:
+            if not_found_ok:
+                return []
+
+            raise self.handled_error(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_message="No records matching the given criteria.",
+                error_code="not_found",
+                method="get",
+            )
+
+        count: Optional[int] = data.get("@odata.count")
+        if count is not None:
+            entities.insert(0, count)  # type: ignore
+
+        return entities
+
+    @abstractmethod
+    def post(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+    ) -> Union[Dict[str, Any], Coroutine[Any, Any, Dict[str, Any]]]:
+        """Create new row in a table. Must have 'table' attribute set.
+        Use expand and select to reduce returned data.
+
+        Please also read the decorator's documentation!
+
+        :param data: POST data.
+        :param query: Use this url instead of building it from current query parameters.
+        """
+
+    def process_post_response(self, response: Response) -> Dict[str, Any]:
+        self.request_counter += 1
+
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return {}
+
+        try:
+            data = response.json()
+        except Exception as error:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=f"{str(error)}. Response: {response.text}",
+                error_code="invalid_json",
+                method="post",
+            ) from error
+
+        if "error" in data:
+            data: DynamicsErrorResponse
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
+                method="post",
+            )
+
+        data: Dict[str, Any]
+        return data
+
+    @abstractmethod
+    def patch(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+    ) -> Union[Dict[str, Any], Coroutine[Any, Any, Dict[str, Any]]]:
+        """Update row in a table. Must have 'table' and 'row_id' attributes set.
+        Use expand and select to reduce returned data.
+
+        Please also read the decorator's documentation!
+
+        :param data: PATCH data.
+        :param query: Use this url instead of building it from current query parameters.
+        """
+
+    def process_patch_response(self, response: Response) -> Dict[str, Any]:
+        self.request_counter += 1
+
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return {}
+
+        try:
+            data = response.json()
+        except Exception as error:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=f"{str(error)}. Response: {response.text}",
+                error_code="invalid_json",
+                method="patch",
+            ) from error
+
+        if "error" in data:
+            data: DynamicsErrorResponse
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
+                method="patch",
+            )
+
+        data: Dict[str, Any]
+        return data
+
+    @abstractmethod
+    def delete(self, *, query: Optional[str] = None) -> None:
+        """Delete row in a table. Must have 'table' and 'row_id' attributes set.
+
+        Please also read the decorator's documentation!
+
+        :param query: Use this url instead of building it from current query parameters.
+        """
+
+    def process_delete_response(self, response: Response) -> None:
+        self.request_counter += 1
+
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            return
+
+        try:
+            data = response.json()
+        except Exception as error:
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=f"{str(error)}. Response: {response.text}",
+                error_code="invalid_json",
+                method="delete",
+            ) from error
+
+        if "error" in data:
+            data: DynamicsErrorResponse
+            raise self.handled_error(
+                status_code=response.status_code,
+                error_message=data["error"]["message"],
+                error_code=data["error"]["code"],
+                method="delete",
+            )
 
     @property
     def current_query(self) -> str:
@@ -357,237 +530,6 @@ class DynamicsClient:
         error = self.error_dict.get(status_code, DynamicsException)
         return error(error_message)
 
-    def _handle_pagination(self, entities: List[Dict[str, Any]], not_found_ok: bool) -> None:
-        """Fetch more data with get requests when needed."""
-        for i, row in enumerate(entities):
-            for column_key in list(row.keys()):
-                if "@odata.nextLink" in column_key:
-                    # Sometimes @odata.next links will appear even if all items were fetched.
-                    # We know how many items should be fetched from odata.maxpagesize header,
-                    # therefore, if the @odata.next link appears before that, we can ignore it.
-                    #
-                    key = column_key[:-15]
-                    if len(row[key]) < self.pagesize:
-                        row.pop(column_key)
-                        continue
-
-                    # When fetching the next page of results, it can include the last
-                    # page of data as well, so we filter those out. Although, This doesn't seem
-                    # to be the intended way this should work, based on this:
-                    #
-                    # https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#retrieve-related-tables-by-expanding-navigation-properties
-                    #
-                    extra = self.get(not_found_ok=not_found_ok, query=row.pop(column_key))
-                    id_tags = [value["@odata.etag"] for value in row[key]]
-                    extra = [value for value in extra if value["@odata.etag"] not in id_tags]
-
-                    entities[i][key] += extra
-
-    @error_simplification_available
-    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Make a request to the Dataverse API with currently added query options.
-
-        Please also read the decorator's documentation!
-
-        :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
-        :param query: Use this url instead of building it from current query parameters.
-        """
-
-        self.request_counter += 1
-
-        if query is None:
-            query = self.current_query
-
-        response = self._oauth_client.get(
-            url=query,
-            headers={**self.default_headers("get"), **self.headers},
-        )
-
-        try:
-            data: DynamicsResponse = response.json()
-        except Exception as error:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
-                error_code="invalid_json",
-                method="get",
-            ) from error
-
-        if "error" in data:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=data["error"]["message"],
-                error_code=data["error"]["code"],
-                method="get",
-            )
-
-        # Always returns a list, even if only one row is selected
-        entities: List[Dict[str, Any]] = data.get("value", [data])
-        if not entities:
-            if not_found_ok:
-                return []
-
-            raise self.handled_error(
-                status_code=status.HTTP_404_NOT_FOUND,
-                error_message="No records matching the given criteria.",
-                error_code="not_found",
-                method="get",
-            )
-
-        self._handle_pagination(entities, not_found_ok)
-
-        count: Optional[int] = data.get("@odata.count")
-        if count is not None:
-            entities.insert(0, count)  # type: ignore
-
-        return entities
-
-    @error_simplification_available
-    def post(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
-        """Create new row in a table. Must have 'table' attribute set.
-        Use expand and select to reduce returned data.
-
-        Please also read the decorator's documentation!
-
-        :param data: POST data.
-        :param query: Use this url instead of building it from current query parameters.
-        """
-
-        self.request_counter += 1
-
-        if query is None:
-            query = self.current_query
-
-        response = self._oauth_client.post(
-            url=query,
-            json=data,
-            headers={**self.default_headers("post"), **self.headers},
-        )
-
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            return {}
-
-        try:
-            data: DynamicsResponse = response.json()
-        except Exception as error:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
-                error_code="invalid_json",
-                method="post",
-            ) from error
-
-        if "error" in data:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=data["error"]["message"],
-                error_code=data["error"]["code"],
-                method="post",
-            )
-
-        return data
-
-    @error_simplification_available
-    def patch(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
-        """Update row in a table. Must have 'table' and 'row_id' attributes set.
-        Use expand and select to reduce returned data.
-
-        Please also read the decorator's documentation!
-
-        :param data: PATCH data.
-        :param query: Use this url instead of building it from current query parameters.
-        """
-
-        self.request_counter += 1
-
-        if query is None:
-            query = self.current_query
-
-        response = self._oauth_client.patch(
-            url=query,
-            json=data,
-            headers={**self.default_headers("patch"), **self.headers},
-        )
-
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            return {}
-
-        try:
-            data: DynamicsResponse = response.json()
-        except Exception as error:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
-                error_code="invalid_json",
-                method="patch",
-            ) from error
-
-        if "error" in data:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=data["error"]["message"],
-                error_code=data["error"]["code"],
-                method="patch",
-            )
-
-        return data
-
-    @error_simplification_available
-    def delete(self, *, query: Optional[str] = None) -> None:
-        """Delete row in a table. Must have 'table' and 'row_id' attributes set.
-
-        Please also read the decorator's documentation!
-
-        :param query: Use this url instead of building it from current query parameters.
-        """
-
-        self.request_counter += 1
-
-        if query is None:
-            query = self.current_query
-
-        response = self._oauth_client.delete(
-            url=query,
-            headers={**self.default_headers("delete"), **self.headers},
-        )
-
-        if response.status_code == status.HTTP_204_NO_CONTENT:
-            return
-
-        try:
-            data: DynamicsResponse = response.json()
-        except Exception as error:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
-                error_code="invalid_json",
-                method="delete",
-            ) from error
-
-        if "error" in data:
-            raise self.handled_error(
-                status_code=response.status_code,
-                error_message=data["error"]["message"],
-                error_code=data["error"]["code"],
-                method="delete",
-            )
-
-    def create_task(self, method: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> asyncio.Task:
-        """Create task when the client is used as an async context manager.
-
-        :param method: Client method to create task for.
-        :param args: Positional arguments passed to the method.
-        :param kwargs: Keyword arguments passed to the method.
-        """
-
-        if method in {self.get, self.post, self.patch, self.delete}:
-            kwargs["query"] = self.current_query
-
-        if hasattr(self, "_DynamicsClient__tg"):  # pragma: no cover; python 3.11 only
-            return self.__tg.create_task(to_coroutine(method)(*args, **kwargs))
-
-        return asyncio.create_task(to_coroutine(method)(*args, **kwargs))
-
     @property
     def table(self) -> str:
         """Table to search in."""
@@ -626,7 +568,7 @@ class DynamicsClient:
     def row_id(self) -> str:
         """Search only from the row with this id.
         If the table has an alternate key defined, you can use
-        'foo=bar' or 'foo=bar,fizz=buzz' to retrive a single row:
+        'foo=bar' or 'foo=bar,fizz=buzz' to retrieve a single row:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/retrieve-entity-using-web-api#retrieve-using-an-alternate-key
         Alternate keys are not enabled by default in Dynamics, so those might not work at all.
         """
@@ -733,7 +675,7 @@ class DynamicsClient:
                       If items-dict value is set to an empty dict, no query options are used.
                       Otherwise, valid keys for the items-dict are 'select', 'filter', 'top', 'orderby', and 'expand'.
                       Values under these keys should be constructed in the same manner as they are
-                      when outside the expand statement, e.g. 'select' takes a List[str], 'top' an int, etc.
+                      when outside the expand statement, e.g., 'select' takes a List[str], 'top' an int, etc.
         """
 
         self._expand = items
