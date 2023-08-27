@@ -55,33 +55,29 @@ class DynamicsClient(BaseDynamicsClient):
         *,
         not_found_ok: bool,
     ) -> None:
-        if (
-            pagination_rules["pages"] != 0
-            and response["next_link"] is not None
-            and len(response["data"]) == self.pagesize
-        ):
+        if pagination_rules["pages"] != 0 and response.next_link is not None and len(response.data) == self.pagesize:
             pagination_rules["pages"] -= 1
             rest: DynamicsClientGetResponse = self.get(
                 not_found_ok=not_found_ok,
                 pagination_rules=pagination_rules,
-                query=response["next_link"],
+                query=response.next_link,
             )
-            response["data"] += rest["data"]
-            response["next_link"] = rest["next_link"]
+            response.data += rest.data
+            response.next_link = rest.next_link
 
-        elif len(response["data"]) < self.pagesize:
-            response["next_link"] = None
+        elif len(response.data) < self.pagesize:
+            response.next_link = None
 
         if "children" not in pagination_rules:
             return
 
-        for page_data in self._paginate_children(response["data"], pagination_rules["children"]):
+        for page_data in self._paginate_children(response.data, pagination_rules["children"]):
             rest_nested: DynamicsClientGetResponse = self.get(
                 not_found_ok=not_found_ok,
                 pagination_rules=page_data.rules,
                 query=page_data.query,
             )
-            response["data"][page_data.index][page_data.key] += rest_nested["data"]
+            response.data[page_data.index][page_data.key] += rest_nested.data
 
     @error_simplification_available
     def get(

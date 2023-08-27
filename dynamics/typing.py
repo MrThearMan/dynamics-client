@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -154,17 +155,20 @@ class DynamicsErrorResponse(TypedDict):
 DynamicsResponse: TypeAlias = Union[DynamicsOKResponse, DynamicsErrorResponse]
 
 
-class DynamicsClientGetResponse(TypedDict):
+@dataclass
+class DynamicsClientGetResponse:
     data: List[Dict[str, Any]]
     count: Optional[int]
     next_link: Optional[str]
 
 
-class DynamicsClientPostResponse(TypedDict):
+@dataclass
+class DynamicsClientPostResponse:
     data: Dict[str, Any]
 
 
-class DynamicsClientPatchResponse(TypedDict):
+@dataclass
+class DynamicsClientPatchResponse:
     data: Dict[str, Any]
 
 

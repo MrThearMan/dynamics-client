@@ -21,7 +21,7 @@ from dynamics.exceptions import (
     WebAPIUnavailable,
 )
 from dynamics.test import MockClient
-from dynamics.typing import MethodType
+from dynamics.typing import DynamicsClientGetResponse, MethodType
 
 
 @pytest.mark.parametrize(
@@ -561,7 +561,7 @@ def test_client__query__count(dynamics_client):
 
     dynamics_client.internal.with_responses({"value": [{"foo": "bar"}], "@odata.count": 1})
 
-    assert dynamics_client.get() == {"count": 1, "data": [{"foo": "bar"}], "next_link": None}
+    assert dynamics_client.get() == DynamicsClientGetResponse(count=1, data=[{"foo": "bar"}], next_link=None)
 
 
 def test_client__query__fetch_xml(dynamics_client):

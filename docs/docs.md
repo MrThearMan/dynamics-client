@@ -12,8 +12,6 @@ from dynamics import DynamicsClient
 - token_url: str - Url in form: 'https://[Dynamics Token URI]/path/to/token'
 - client_id: str - Client id (e.g. UUID).
 - client_secret: str - Client secret (e.g. OAuth password).
-
-
 - *scope: Optional[str | List[str]] - Url or list of urls in form: 'https://[Organization URI]/scope'. Defines the database records that the API connection has access to.*
 - *resource: Optional[str] - Url in form: 'https://[Organization URI]'. Defines the database records that the API connection has access to.*
 
@@ -39,8 +37,6 @@ Create a Dynamics client from environment variables:
 2. DYNAMICS_TOKEN_URL
 3. DYNAMICS_CLIENT_ID
 4. DYNAMICS_CLIENT_SECRET
-
-
 5. *DYNAMICS_SCOPE (Optional)*
 6. *DYNAMICS_RESOURCE (Optional)*
 
@@ -69,7 +65,7 @@ client = DynamicsClient(...)
 
 ---
 
-#### *client.get(...) → List[Dict[str, Any]]*
+#### *client.get(...) → DynamicsClientGetResponse*
 
 - not_found_ok: bool = False - No entities found should not raise NotFound error,
   but return empty list instead.
@@ -87,7 +83,7 @@ hide implementation details received in errors from frontend users.
 
 ---
 
-#### *client.post(...) → Dict[str, Any]*
+#### *client.post(...) → DynamicsClientPostResponse*
 
 - data: Dict[str, Any] - POST data.
 - query: Optional[str] = None - Use this url instead of building it from current query parameters.
@@ -99,7 +95,7 @@ Must have 'table' query option set.
 
 ---
 
-#### *client.patch(...) → Dict[str, Any]*
+#### *client.patch(...) → DynamicsClientPatchResponse*
 
 - data: Dict[str, Any] - PATCH data.
 - query: Optional[str] = None - Use this url instead of building it from current query parameters.
@@ -144,13 +140,13 @@ async with DynamicsClient.from_environment() as client:
 
     task_2 = client.create_task(client.actions.win_quote, quote_id="...")
 
-data = task_1.result()
+response = task_1.result()
 
 # Can also be used without the context manager
 client.table = "foo"
 client.select = ["bar"]
 task3 = client.create_task(client.post, data={"foo": "bar"})
-result = await task3
+response = await task3
 ```
 
 ---
@@ -786,10 +782,10 @@ expected = [{"foo": "bar"}, {"fizz": "buzz"}]
 client = MockClient().with_responses(*expected)
 
 result = client.get()
-assert result == expected[0]
+assert result.data == expected[0]
 
 result = client.get()
-assert result == expected[1]
+assert result.data == expected[1]
 ```
 
 Can be used with `pytest.mark.parametrize`:

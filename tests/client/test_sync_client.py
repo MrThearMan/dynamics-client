@@ -2,6 +2,7 @@ import pytest
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 
 from dynamics.test import MockClient
+from dynamics.typing import DynamicsClientGetResponse
 
 
 @pytest.mark.parametrize(
@@ -14,7 +15,7 @@ from dynamics.test import MockClient
     indirect=True,
 )
 def test_client__get_request(dynamics_client):
-    assert dynamics_client.get(not_found_ok=True)["data"] == dynamics_client.current_response
+    assert dynamics_client.get(not_found_ok=True).data == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -26,7 +27,7 @@ def test_client__get_request(dynamics_client):
     indirect=True,
 )
 def test_client__post_request(dynamics_client):
-    assert dynamics_client.post(data={})["data"] == dynamics_client.current_response
+    assert dynamics_client.post(data={}).data == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -38,7 +39,7 @@ def test_client__post_request(dynamics_client):
     indirect=True,
 )
 def test_client__patch_request(dynamics_client):
-    assert dynamics_client.patch(data={})["data"] == dynamics_client.current_response
+    assert dynamics_client.patch(data={}).data == dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -76,7 +77,7 @@ def test_async_client__get_next_page(dynamics_client):
     )
 
     response = dynamics_client.get(pagination_rules={"pages": 1})
-    assert response["data"] == [{"foo": "bar"}, {"fizz": "buzz"}]
+    assert response.data == [{"foo": "bar"}, {"fizz": "buzz"}]
 
 
 def test_async_client__get_next_page__dont_paginate(dynamics_client):
@@ -90,11 +91,11 @@ def test_async_client__get_next_page__dont_paginate(dynamics_client):
     )
 
     response = dynamics_client.get()
-    assert response == {
-        "count": None,
-        "data": [{"foo": "bar"}],
-        "next_link": "link-to-next-page",
-    }
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": "bar"}],
+        next_link="link-to-next-page",
+    )
 
 
 def test_async_client__get_next_page__dont_fetch_if_under_pagesize(dynamics_client):
@@ -106,11 +107,11 @@ def test_async_client__get_next_page__dont_fetch_if_under_pagesize(dynamics_clie
     )
 
     response = dynamics_client.get(pagination_rules={"pages": 1})
-    assert response == {
-        "count": None,
-        "data": [{"foo": "bar"}],
-        "next_link": None,
-    }
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": "bar"}],
+        next_link=None,
+    )
 
 
 def test_async_client__get_next_page__nested(dynamics_client):
@@ -126,11 +127,11 @@ def test_async_client__get_next_page__nested(dynamics_client):
     )
 
     response = dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 1}}})
-    assert response == {
-        "count": None,
-        "data": [{"foo": [{"bar": "baz"}, {"fizz": "buzz"}]}],
-        "next_link": None,
-    }
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": [{"bar": "baz"}, {"fizz": "buzz"}]}],
+        next_link=None,
+    )
 
 
 def test_async_client__get_next_page__nested__dont_paginate(dynamics_client):
@@ -143,11 +144,11 @@ def test_async_client__get_next_page__nested__dont_paginate(dynamics_client):
     )
 
     response = dynamics_client.get()
-    assert response == {
-        "count": None,
-        "data": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
-        "next_link": None,
-    }
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
+        next_link=None,
+    )
 
 
 def test_async_client__get_next_page__nested__dont_fetch_if_under_pagesize(dynamics_client):
@@ -159,8 +160,8 @@ def test_async_client__get_next_page__nested__dont_fetch_if_under_pagesize(dynam
         },
     )
     response = dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 1}}})
-    assert response == {
-        "count": None,
-        "data": [{"foo": "bar"}],
-        "next_link": None,
-    }
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": "bar"}],
+        next_link=None,
+    )

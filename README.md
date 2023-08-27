@@ -70,6 +70,7 @@ client.expand = {
 
 result = client.get()
 
+print(result.data)
 # [
 #     {
 #         "accountid": ...,
@@ -113,6 +114,7 @@ data = {
 
 result = client.post(data=data)
 
+print(result.data)
 # {
 #     "contactid": ...,
 #     "firstname": ...,
@@ -135,6 +137,7 @@ data = {
 
 result = client.patch(data=data)
 
+print(result.data)
 # Return all rows on the updated contact,
 # since no select statement was given
 #

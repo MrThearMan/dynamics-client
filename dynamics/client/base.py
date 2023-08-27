@@ -281,7 +281,7 @@ class BaseDynamicsClient(ABC):
 
         if not entities:
             if not_found_ok:
-                return DynamicsClientGetResponse(data=[], count=None, next_link=None)
+                return DynamicsClientGetResponse(data=[], count=0, next_link=None)
 
             raise self.handled_error(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -666,7 +666,7 @@ class BaseDynamicsClient(ABC):
 
     @select.setter
     def select(self, items: List[str]) -> None:
-        """Set $select statement. Select which columns are returned from the table."""
+        """Set $select statement. Select columns that are returned from the table."""
         self._select = items
 
     def _compile_select(self, values: List[str] = sentinel) -> str:
