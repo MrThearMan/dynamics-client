@@ -222,6 +222,7 @@ class BaseDynamicsClient(ABC):
                 yield PaginationData(
                     index=i,
                     key=key,
+                    column_key=column_key,
                     query=query,
                     rules=rules,
                 )

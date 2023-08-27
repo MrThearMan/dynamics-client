@@ -69,15 +69,48 @@ def test_async_client__get_next_page(dynamics_client):
     dynamics_client.internal.with_responses(
         {
             "value": [{"foo": "bar"}],
-            "@odata.nextLink": "link-to-next-page",
+            "@odata.nextLink": "link-to-next-page-1",
         },
         {
             "value": [{"fizz": "buzz"}],
+            "@odata.nextLink": "link-to-next-page-2",
+        },
+        {
+            "value": [{"1": "2"}],
+        },
+    )
+
+    response = dynamics_client.get(pagination_rules={"pages": 2})
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": "bar"}, {"fizz": "buzz"}, {"1": "2"}],
+        next_link=None,
+    )
+
+
+def test_async_client__get_next_page__not_all_pages(dynamics_client):
+    dynamics_client.pagesize = 1
+
+    dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": "bar"}],
+            "@odata.nextLink": "link-to-next-page-1",
+        },
+        {
+            "value": [{"fizz": "buzz"}],
+            "@odata.nextLink": "link-to-next-page-2",
+        },
+        {
+            "value": [{"1": "2"}],
         },
     )
 
     response = dynamics_client.get(pagination_rules={"pages": 1})
-    assert response.data == [{"foo": "bar"}, {"fizz": "buzz"}]
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": "bar"}, {"fizz": "buzz"}],
+        next_link="link-to-next-page-2",
+    )
 
 
 def test_async_client__get_next_page__dont_paginate(dynamics_client):
@@ -119,17 +152,45 @@ def test_async_client__get_next_page__nested(dynamics_client):
 
     dynamics_client.internal.with_responses(
         {
-            "value": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
+            "value": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page-1"}],
         },
         {
             "value": [{"fizz": "buzz"}],
+            "@odata.nextLink": "link-to-next-page-2",
+        },
+        {
+            "value": [{"1": "2"}],
+        },
+    )
+
+    response = dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 2}}})
+    assert response == DynamicsClientGetResponse(
+        count=None,
+        data=[{"foo": [{"bar": "baz"}, {"fizz": "buzz"}, {"1": "2"}]}],
+        next_link=None,
+    )
+
+
+def test_async_client__get_next_page__nested__not_all_pages(dynamics_client):
+    dynamics_client.pagesize = 1
+
+    dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page-1"}],
+        },
+        {
+            "value": [{"fizz": "buzz"}],
+            "@odata.nextLink": "link-to-next-page-2",
+        },
+        {
+            "value": [{"1": "2"}],
         },
     )
 
     response = dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 1}}})
     assert response == DynamicsClientGetResponse(
         count=None,
-        data=[{"foo": [{"bar": "baz"}, {"fizz": "buzz"}]}],
+        data=[{"foo": [{"bar": "baz"}, {"fizz": "buzz"}], "foo@odata.nextLink": "link-to-next-page-2"}],
         next_link=None,
     )
 

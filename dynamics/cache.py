@@ -29,6 +29,7 @@ class SQLiteCacheBase(ABC):
         "synchronous": "off",  # https://www.sqlite.org/pragma.html#pragma_synchronous
         "journal_mode": "wal",  # https://www.sqlite.org/pragma.html#pragma_journal_mode
         "temp_store": "memory",  # https://www.sqlite.org/pragma.html#pragma_temp_store
+        "busy_timeout": 1000,  # https://www.sqlite.org/pragma.html#pragma_busy_timeout
     }
 
     _check_table = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='cache';"

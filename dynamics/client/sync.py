@@ -78,6 +78,8 @@ class DynamicsClient(BaseDynamicsClient):
                 query=page_data.query,
             )
             response.data[page_data.index][page_data.key] += rest_nested.data
+            if rest_nested.next_link is not None:
+                response.data[page_data.index][page_data.column_key] = rest_nested.next_link
 
     @error_simplification_available
     def get(

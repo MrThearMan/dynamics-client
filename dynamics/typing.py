@@ -180,6 +180,7 @@ class PaginationRules(TypedDict):
 class PaginationData(NamedTuple):
     index: int
     key: str
+    column_key: str
     query: str
     rules: PaginationRules
 
