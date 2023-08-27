@@ -9,7 +9,19 @@ from authlib.oauth2.rfc6749 import OAuth2Token
 
 from .client import DynamicsClient, aio
 from .client.base import BaseDynamicsClient
-from .typing import Any, Dict, Iterator, List, MethodType, Optional, ResponseType, Union
+from .typing import (
+    Any,
+    Dict,
+    DynamicsClientGetResponse,
+    DynamicsClientPatchResponse,
+    DynamicsClientPostResponse,
+    Iterator,
+    MethodType,
+    Optional,
+    PaginationRules,
+    ResponseType,
+    Union,
+)
 from .utils import Singletons
 
 __all__ = [
@@ -58,7 +70,7 @@ class BaseMockClient:
         self.__len: int = -1
         self.__default_status: int = 200
         self.__internal: bool = False
-        self._response: ResponseType = None
+        self.__response: ResponseType = None
         self.__responses: Iterator[ResponseType] = _cycle([None])
         self.__status_codes: Iterator[int] = _cycle([self.__default_status])
         self.__exceptions: Optional[Iterator[Optional[Exception]]] = None
@@ -143,7 +155,7 @@ class BaseMockClient:
                  Tries to correct for some internal logic of the
                  client methods, but might not be correct all the time.
         """
-        return self._response
+        return self.__response
 
     def _check_length(self, length: int) -> "BaseMockClient":
         if self.__len not in (length, -1):
@@ -154,7 +166,7 @@ class BaseMockClient:
     @contextmanager
     def _mock_method(self, method: MethodType):
         try:
-            self._response = next(self.__responses)
+            self.__response = next(self.__responses)
         except StopIteration as error:
             raise ValueError("Ran out of responses on the MockClient") from error
 
@@ -169,9 +181,9 @@ class BaseMockClient:
             except StopIteration as error:
                 raise ValueError("Ran out of status codes on the MockClient") from error
 
-            response_mock = ResponseMock(response=self._response, status_code=status_code)
-            if method == "get" and isinstance(self._response, dict):
-                self._response = self._response.get("value", [self._response])
+            response_mock = ResponseMock(response=self.__response, status_code=status_code)
+            if method == "get" and isinstance(self.__response, dict):
+                self.__response = self.__response.get("value", [self.__response])
 
             oauth_dot_path = f"{client_class.oauth_class.__module__}.{client_class.oauth_class.__qualname__}"
             method_path = f"{oauth_dot_path}.{method}"
@@ -186,7 +198,7 @@ class BaseMockClient:
                 yield
 
     def _mock_external(self, method_path: str, get_token_path: str, token: OAuth2Token):
-        with patch(method_path, new_callable=self._mocking_object, side_effect=[self._response]):
+        with patch(method_path, new_callable=self._mocking_object, side_effect=[self.__response]):
             with patch(get_token_path, return_value=token):
                 yield
 
@@ -196,15 +208,39 @@ class BaseSyncMockClient(BaseMockClient):
 
     _mocking_object = MagicMock
 
-    def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+    def get(
+        self,
+        *,
+        not_found_ok: bool = False,
+        pagination_rules: Optional[PaginationRules] = None,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientGetResponse:
         with self._mock_method("get"):
-            return super().get(not_found_ok=not_found_ok, query=query, **kwargs)
+            return super().get(
+                not_found_ok=not_found_ok,
+                pagination_rules=pagination_rules,
+                query=query,
+                **kwargs,
+            )
 
-    def post(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    def post(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientPostResponse:
         with self._mock_method("post"):
             return super().post(data=data, query=query, **kwargs)
 
-    def patch(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    def patch(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientPatchResponse:
         with self._mock_method("patch"):
             return super().patch(data=data, query=query, **kwargs)
 
@@ -218,15 +254,39 @@ class BaseASyncMockClient(BaseMockClient):
 
     _mocking_object = AsyncMock
 
-    async def get(self, *, not_found_ok: bool = False, query: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+    async def get(
+        self,
+        *,
+        not_found_ok: bool = False,
+        pagination_rules: Optional[PaginationRules] = None,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientGetResponse:
         with self._mock_method("get"):
-            return await super().get(not_found_ok=not_found_ok, query=query, **kwargs)
+            return await super().get(
+                not_found_ok=not_found_ok,
+                pagination_rules=pagination_rules,
+                query=query,
+                **kwargs,
+            )
 
-    async def post(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    async def post(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientPostResponse:
         with self._mock_method("post"):
             return await super().post(data=data, query=query, **kwargs)
 
-    async def patch(self, data: Dict[str, Any], *, query: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    async def patch(
+        self,
+        data: Dict[str, Any],
+        *,
+        query: Optional[str] = None,
+        **kwargs,
+    ) -> DynamicsClientPatchResponse:
         with self._mock_method("patch"):
             return await super().patch(data=data, query=query, **kwargs)
 

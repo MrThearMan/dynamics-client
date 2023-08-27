@@ -7,7 +7,21 @@ from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
 from httpx import Response
 
-from ..typing import Any, Callable, Coroutine, Dict, List, Optional, P, T, Type, Union
+from ..typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    DynamicsClientGetResponse,
+    DynamicsClientPatchResponse,
+    DynamicsClientPostResponse,
+    Optional,
+    P,
+    PaginationRules,
+    T,
+    Type,
+    Union,
+)
 from ..utils import Singletons, error_simplification_available, to_coroutine
 from .base import BaseDynamicsClient
 
@@ -44,15 +58,49 @@ class DynamicsClient(BaseDynamicsClient):
         expires = int(token["expires_in"]) - 60
         await Singletons.async_cache().aset(self.cache_key, token, expires)
 
-    async def _handle_pagination(self, entities: List[Dict[str, Any]], not_found_ok: bool) -> None:
-        for i, key, query, id_tags in self._iterate_pages(entities):
-            new_entities = await self.get(not_found_ok=not_found_ok, query=query)
-            # If next page includes duplicates based on id tags, filter them out
-            new_entities = [value for value in new_entities if value["@odata.etag"] not in id_tags]
-            entities[i][key] += new_entities
+    async def _handle_pagination(
+        self,
+        response: DynamicsClientGetResponse,
+        pagination_rules: PaginationRules,
+        *,
+        not_found_ok: bool,
+    ) -> None:
+        if (
+            pagination_rules["pages"] != 0
+            and response["next_link"] is not None
+            and len(response["data"]) == self.pagesize
+        ):
+            pagination_rules["pages"] -= 1
+            rest: DynamicsClientGetResponse = await self.get(
+                not_found_ok=not_found_ok,
+                pagination_rules=pagination_rules,
+                query=response["next_link"],
+            )
+            response["data"] += rest["data"]
+            response["next_link"] = rest["next_link"]
+
+        elif len(response["data"]) < self.pagesize:
+            response["next_link"] = None
+
+        if "children" not in pagination_rules:
+            return
+
+        for page_data in self._paginate_children(response["data"], pagination_rules["children"]):
+            rest_nested: DynamicsClientGetResponse = await self.get(
+                not_found_ok=not_found_ok,
+                pagination_rules=page_data.rules,
+                query=page_data.query,
+            )
+            response["data"][page_data.index][page_data.key] += rest_nested["data"]
 
     @error_simplification_available
-    async def get(self, *, not_found_ok: bool = False, query: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get(
+        self,
+        *,
+        not_found_ok: bool = False,
+        pagination_rules: Optional[PaginationRules] = None,
+        query: Optional[str] = None,
+    ) -> DynamicsClientGetResponse:
         if query is None:
             query = self.current_query
 
@@ -62,12 +110,13 @@ class DynamicsClient(BaseDynamicsClient):
             headers={**self.default_headers("get"), **self.headers},
             auth=self._oauth_client.token_auth,
         )
-        entities = self.process_get_response(response, not_found_ok)
-        await self._handle_pagination(entities, not_found_ok)
-        return entities
+        data = self.process_get_response(response, not_found_ok=not_found_ok)
+        if pagination_rules is not None:
+            await self._handle_pagination(data, pagination_rules, not_found_ok=not_found_ok)
+        return data
 
     @error_simplification_available
-    async def post(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
+    async def post(self, data: Dict[str, Any], *, query: Optional[str] = None) -> DynamicsClientPostResponse:
         if query is None:
             query = self.current_query
 
@@ -81,7 +130,7 @@ class DynamicsClient(BaseDynamicsClient):
         return self.process_post_response(response)
 
     @error_simplification_available
-    async def patch(self, data: Dict[str, Any], *, query: Optional[str] = None) -> Dict[str, Any]:
+    async def patch(self, data: Dict[str, Any], *, query: Optional[str] = None) -> DynamicsClientPatchResponse:
         if query is None:
             query = self.current_query
 

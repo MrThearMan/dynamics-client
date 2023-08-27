@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     List,
     Literal,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -24,9 +25,9 @@ from typing import (
 
 # New in version 3.10
 try:
-    from typing import ParamSpec, TypeGuard
+    from typing import ParamSpec, TypeAlias, TypeGuard
 except ImportError:
-    from typing_extensions import ParamSpec, TypeGuard
+    from typing_extensions import ParamSpec, TypeAlias, TypeGuard
 
 # New in version 3.11
 try:
@@ -46,6 +47,9 @@ __all__ = [
     "Coroutine",
     "Coroutine",
     "Dict",
+    "DynamicsClientGetResponse",
+    "DynamicsClientPatchResponse",
+    "DynamicsClientPostResponse",
     "ExpandDict",
     "ExpandKeys",
     "ExpandType",
@@ -76,6 +80,7 @@ __all__ = [
     "Optional",
     "OrderbyType",
     "P",
+    "PaginationRules",
     "ParamSpec",
     "Required",
     "ResponseType",
@@ -85,6 +90,7 @@ __all__ = [
     "Tuple",
     "Type",
     "TYPE_CHECKING",
+    "TypeAlias",
     "TypedDict",
     "TypeGuard",
     "TypeVar",
@@ -104,14 +110,14 @@ class ExpandType(TypedDict):
     expand: Dict[str, "ExpandType"]
 
 
-ExpandKeys = Literal["select", "filter", "top", "orderby", "expand"]
-ExpandValues = Union[List[str], Set[str], int, OrderbyType, Dict[str, ExpandType]]
-ExpandDict = Dict[str, Optional[ExpandType]]
-FieldType = Union[str, int, float, bool, None]
-CompType = Union[str, int, float]
+ExpandKeys: TypeAlias = Literal["select", "filter", "top", "orderby", "expand"]
+ExpandValues: TypeAlias = Union[List[str], Set[str], int, OrderbyType, Dict[str, ExpandType]]
+ExpandDict: TypeAlias = Dict[str, Optional[ExpandType]]
+FieldType: TypeAlias = Union[str, int, float, bool, None]
+CompType: TypeAlias = Union[str, int, float]
 T = TypeVar("T")
 P = ParamSpec("P")
-ResponseType = Union[Union[Dict[str, Any], List[Dict[str, Any]]], Exception, None]
+ResponseType: TypeAlias = Union[Union[Dict[str, Any], List[Dict[str, Any]]], Exception, None]
 
 
 DynamicsOKResponse = TypedDict(
@@ -145,16 +151,42 @@ class DynamicsErrorResponse(TypedDict):
     error: DynamicsErrorResponseData
 
 
-DynamicsResponse = Union[DynamicsOKResponse, DynamicsErrorResponse]
+DynamicsResponse: TypeAlias = Union[DynamicsOKResponse, DynamicsErrorResponse]
 
 
-LiteralBool = Literal["true", "false"]
-FetchXMLOutputFormat = Literal["xml-ado", "xml-auto", "xml-elements", "xml-raw", "xml-platform"]
-FetchXMLDateGroupingType = Literal["day", "week", "month", "quarter", "year", "fiscal-period", "fiscal-year"]
-FetchXMLAggregateType = Literal["count", "countcolumn", "sum", "avg", "min", "max"]
-FetchXMLBuildType = Literal["1.504021", "1.003017"]
-FetchXMLFilterOperatorType = Literal["and", "or"]
-FetchXMLFetchMappingType = Literal["internal", "logical"]
+class DynamicsClientGetResponse(TypedDict):
+    data: List[Dict[str, Any]]
+    count: Optional[int]
+    next_link: Optional[str]
+
+
+class DynamicsClientPostResponse(TypedDict):
+    data: Dict[str, Any]
+
+
+class DynamicsClientPatchResponse(TypedDict):
+    data: Dict[str, Any]
+
+
+class PaginationRules(TypedDict):
+    pages: int
+    children: NotRequired[Dict[str, PaginationRules]]
+
+
+class PaginationData(NamedTuple):
+    index: int
+    key: str
+    query: str
+    rules: PaginationRules
+
+
+LiteralBool: TypeAlias = Literal["true", "false"]
+FetchXMLOutputFormat: TypeAlias = Literal["xml-ado", "xml-auto", "xml-elements", "xml-raw", "xml-platform"]
+FetchXMLDateGroupingType: TypeAlias = Literal["day", "week", "month", "quarter", "year", "fiscal-period", "fiscal-year"]
+FetchXMLAggregateType: TypeAlias = Literal["count", "countcolumn", "sum", "avg", "min", "max"]
+FetchXMLBuildType: TypeAlias = Literal["1.504021", "1.003017"]
+FetchXMLFilterOperatorType: TypeAlias = Literal["and", "or"]
+FetchXMLFetchMappingType: TypeAlias = Literal["internal", "logical"]
 
 
 FetchXMLCondition = TypedDict(

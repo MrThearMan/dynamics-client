@@ -32,6 +32,9 @@ from ..typing import (
     Any,
     Coroutine,
     Dict,
+    DynamicsClientGetResponse,
+    DynamicsClientPatchResponse,
+    DynamicsClientPostResponse,
     DynamicsErrorResponse,
     DynamicsOKResponse,
     ExpandDict,
@@ -43,8 +46,8 @@ from ..typing import (
     MethodType,
     Optional,
     OrderbyType,
-    Set,
-    Tuple,
+    PaginationData,
+    PaginationRules,
     Type,
     Union,
 )
@@ -189,28 +192,48 @@ class BaseDynamicsClient(ABC):
     def _ensure_token(self) -> None:
         """Ensure that token exists in the oauth client before a request is made"""
 
-    def _iterate_pages(self, entities: List[Dict[str, Any]]) -> Generator[Tuple[int, str, str, Set[str]], Any, None]:
-        """Iterate response data for pagination links."""
-        for i, row in enumerate(entities):
-            if not isinstance(row, dict):
-                continue
+    def _paginate_children(
+        self,
+        data: List[Dict[str, Any]],
+        pagination_rules: Dict[str, PaginationRules],
+    ) -> Generator[PaginationData, None, None]:
+        """Paginate data according to the given pagination rules."""
+        i: int
+        row: Dict[str, Any]
+        for i, row in enumerate(data):
             for column_key in list(row.keys()):
                 if "@odata.nextLink" not in column_key:
                     continue
 
+                key = column_key[: -len("@odata.nextLink")]
+                query: str = row.pop(column_key)
+
                 # Sometimes @odata.next links will appear even if all items were fetched.
                 # We know how many items should be fetched from 'odata.maxpagesize' header,
                 # therefore, if the @odata.next link appears before that, we can ignore it.
-                key = column_key[: -len("@odata.nextLink")]
                 if len(row[key]) < self.pagesize:
-                    row.pop(column_key)
                     continue
 
-                id_tags: Set[str] = {value["@odata.etag"] for value in row[key]}
-                yield i, key, row.pop(column_key), id_tags
+                rules = pagination_rules.get(key)
+                if rules is None or rules["pages"] == 0:
+                    continue
+
+                rules["pages"] -= 1
+                yield PaginationData(
+                    index=i,
+                    key=key,
+                    query=query,
+                    rules=rules,
+                )
 
     @abstractmethod
-    def _handle_pagination(self, entities: List[Dict[str, Any]], not_found_ok: bool) -> None:
+    def _handle_pagination(
+        self,
+        response: DynamicsClientGetResponse,
+        pagination_rules: PaginationRules,
+        *,
+        not_found_ok: bool,
+    ) -> None:
         """Fetch more data with get requests when needed."""
 
     @abstractmethod
@@ -218,17 +241,19 @@ class BaseDynamicsClient(ABC):
         self,
         *,
         not_found_ok: bool = False,
+        pagination_rules: Optional[PaginationRules] = None,
         query: Optional[str] = None,
-    ) -> Union[List[Dict[str, Any]], Coroutine[Any, Any, List[Dict[str, Any]]]]:
+    ) -> Union[DynamicsClientGetResponse, Coroutine[Any, Any, DynamicsClientGetResponse]]:
         """Make a request to the Dataverse API with currently added query options.
 
         Please also read the decorator's documentation!
 
         :param not_found_ok: No entities returned should not raise NotFound error, but return empty list instead.
+        :param pagination_rules: Pagination rules for fetching more data.
         :param query: Use this url instead of building it from current query parameters.
         """
 
-    def process_get_response(self, response: Response, not_found_ok: bool) -> List[Dict[str, Any]]:
+    def process_get_response(self, response: Response, *, not_found_ok: bool) -> DynamicsClientGetResponse:
         self.request_counter += 1
 
         try:
@@ -256,7 +281,7 @@ class BaseDynamicsClient(ABC):
 
         if not entities:
             if not_found_ok:
-                return []
+                return DynamicsClientGetResponse(data=[], count=None, next_link=None)
 
             raise self.handled_error(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -265,11 +290,10 @@ class BaseDynamicsClient(ABC):
                 method="get",
             )
 
+        next_link: Optional[str] = data.get("@odata.nextLink")
         count: Optional[int] = data.get("@odata.count")
-        if count is not None:
-            entities.insert(0, count)  # type: ignore
 
-        return entities
+        return DynamicsClientGetResponse(data=entities, count=count, next_link=next_link)
 
     @abstractmethod
     def post(
@@ -277,7 +301,7 @@ class BaseDynamicsClient(ABC):
         data: Dict[str, Any],
         *,
         query: Optional[str] = None,
-    ) -> Union[Dict[str, Any], Coroutine[Any, Any, Dict[str, Any]]]:
+    ) -> Union[DynamicsClientPostResponse, Coroutine[Any, Any, DynamicsClientPostResponse]]:
         """Create new row in a table. Must have 'table' attribute set.
         Use expand and select to reduce returned data.
 
@@ -287,11 +311,11 @@ class BaseDynamicsClient(ABC):
         :param query: Use this url instead of building it from current query parameters.
         """
 
-    def process_post_response(self, response: Response) -> Dict[str, Any]:
+    def process_post_response(self, response: Response) -> DynamicsClientPostResponse:
         self.request_counter += 1
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            return {}
+            return DynamicsClientPostResponse(data={})
 
         try:
             data = response.json()
@@ -313,7 +337,7 @@ class BaseDynamicsClient(ABC):
             )
 
         data: Dict[str, Any]
-        return data
+        return DynamicsClientPostResponse(data=data)
 
     @abstractmethod
     def patch(
@@ -321,7 +345,7 @@ class BaseDynamicsClient(ABC):
         data: Dict[str, Any],
         *,
         query: Optional[str] = None,
-    ) -> Union[Dict[str, Any], Coroutine[Any, Any, Dict[str, Any]]]:
+    ) -> Union[DynamicsClientPatchResponse, Coroutine[Any, Any, DynamicsClientPatchResponse]]:
         """Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
 
@@ -331,11 +355,11 @@ class BaseDynamicsClient(ABC):
         :param query: Use this url instead of building it from current query parameters.
         """
 
-    def process_patch_response(self, response: Response) -> Dict[str, Any]:
+    def process_patch_response(self, response: Response) -> DynamicsClientPatchResponse:
         self.request_counter += 1
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            return {}
+            return DynamicsClientPatchResponse(data={})
 
         try:
             data = response.json()
@@ -357,7 +381,7 @@ class BaseDynamicsClient(ABC):
             )
 
         data: Dict[str, Any]
-        return data
+        return DynamicsClientPatchResponse(data=data)
 
     @abstractmethod
     def delete(self, *, query: Optional[str] = None) -> None:

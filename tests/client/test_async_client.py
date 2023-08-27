@@ -18,7 +18,8 @@ pytestmark = pytest.mark.asyncio
     indirect=True,
 )
 async def test_async_client__get_request(async_dynamics_client):
-    assert (await async_dynamics_client.get(not_found_ok=True)) == async_dynamics_client.current_response
+    response = await async_dynamics_client.get(not_found_ok=True)
+    assert response["data"] == async_dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -30,7 +31,8 @@ async def test_async_client__get_request(async_dynamics_client):
     indirect=True,
 )
 async def test_async_client__post_request(async_dynamics_client):
-    assert (await async_dynamics_client.post(data={})) == async_dynamics_client.current_response
+    response = await async_dynamics_client.post(data={})
+    assert response["data"] == async_dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -42,7 +44,8 @@ async def test_async_client__post_request(async_dynamics_client):
     indirect=True,
 )
 async def test_async_client__patch_request(async_dynamics_client):
-    assert (await async_dynamics_client.patch(data={})) == async_dynamics_client.current_response
+    response = await async_dynamics_client.patch(data={})
+    assert response["data"] == async_dynamics_client.current_response
 
 
 @pytest.mark.parametrize(
@@ -100,9 +103,9 @@ async def test_async_client__task_group(async_dynamics_client):
         task_5 = client.create_task(client.actions.win_quote, quote_id="abc")
         client.reset_query()
 
-    assert task_1.result() == [{"x": 1}]
-    assert task_2.result() == {"y": 2}
-    assert task_3.result() == {"y": 3}
+    assert task_1.result()["data"] == [{"x": 1}]
+    assert task_2.result()["data"] == {"y": 2}
+    assert task_3.result()["data"] == {"y": 3}
     assert task_4.result() is None
     assert task_5.result() is None
 
@@ -112,7 +115,7 @@ async def test_async_client__task_group__outside_context_manager(async_dynamics_
     task = async_dynamics_client.create_task(async_dynamics_client.get, not_found_ok=True)
     result = await task
 
-    assert result == []
+    assert result["data"] == []
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 11), reason="TaskGroups available from python 3.11 onwards.")
@@ -125,29 +128,113 @@ async def test_async_client__task_group__no_taskgroup(async_dynamics_client):
         task = client.create_task(client.get)
         result = await task
 
-    assert result == [{"x": 1}]
+    assert result["data"] == [{"x": 1}]
 
 
-async def test_async_client__get_next_page__before_pagesize_reached(async_dynamics_client):
-    async_dynamics_client.internal.with_responses(
-        {"value": [{"foo": "bar", "foo@odata.nextLink": "link-to-next-page"}]},
-    )
-    assert (await async_dynamics_client.get()) == [{"foo": "bar"}]
-
-
-async def test_async_client__get_next_page__over_pagesize(async_dynamics_client):
+async def test_async_client__get_next_page(async_dynamics_client):
     async_dynamics_client.pagesize = 1
 
     async_dynamics_client.internal.with_responses(
-        {"value": [{"foo": [{"@odata.etag": "12345", "bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}]},
-        {"value": [{"@odata.etag": "23456", "fizz": "buzz"}]},
+        {
+            "value": [{"foo": "bar"}],
+            "@odata.nextLink": "link-to-next-page",
+        },
+        {
+            "value": [{"fizz": "buzz"}],
+        },
     )
 
-    assert (await async_dynamics_client.get()) == [
+    response = await async_dynamics_client.get(pagination_rules={"pages": 1})
+    assert response == {
+        "count": None,
+        "data": [{"foo": "bar"}, {"fizz": "buzz"}],
+        "next_link": None,
+    }
+
+
+async def test_async_client__dont_paginate(async_dynamics_client):
+    async_dynamics_client.pagesize = 1
+
+    async_dynamics_client.internal.with_responses(
         {
-            "foo": [
-                {"@odata.etag": "12345", "bar": "baz"},
-                {"@odata.etag": "23456", "fizz": "buzz"},
-            ],
+            "value": [{"foo": "bar"}],
+            "@odata.nextLink": "link-to-next-page",
         },
-    ]
+        {
+            "value": [{"fizz": "buzz"}],
+        },
+    )
+
+    response = await async_dynamics_client.get()
+    assert response == {
+        "count": None,
+        "data": [{"foo": "bar"}],
+        "next_link": "link-to-next-page",
+    }
+
+
+async def test_async_client__get_next_page__dont_fetch_if_under_pagesize(async_dynamics_client):
+    async_dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": "bar"}],
+            "@odata.nextLink": "link-to-next-page",
+        },
+    )
+
+    response = await async_dynamics_client.get(pagination_rules={"pages": 1})
+    assert response == {
+        "count": None,
+        "data": [{"foo": "bar"}],
+        "next_link": None,
+    }
+
+
+async def test_async_client__get_next_page__nested(async_dynamics_client):
+    async_dynamics_client.pagesize = 1
+
+    async_dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
+        },
+        {
+            "value": [{"fizz": "buzz"}],
+        },
+    )
+
+    response = await async_dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 1}}})
+    assert response == {
+        "count": None,
+        "data": [{"foo": [{"bar": "baz"}, {"fizz": "buzz"}]}],
+        "next_link": None,
+    }
+
+
+async def test_async_client__get_next_page__nested__dont_paginate(async_dynamics_client):
+    async_dynamics_client.pagesize = 1
+
+    async_dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
+        },
+    )
+
+    response = await async_dynamics_client.get()
+    assert response == {
+        "count": None,
+        "data": [{"foo": [{"bar": "baz"}], "foo@odata.nextLink": "link-to-next-page"}],
+        "next_link": None,
+    }
+
+
+async def test_async_client__get_next_page__nested__dont_fetch_if_under_pagesize(async_dynamics_client):
+    async_dynamics_client.internal.with_responses(
+        {
+            "value": [{"foo": "bar", "foo@odata.nextLink": "link-to-next-page"}],
+        },
+    )
+    response = await async_dynamics_client.get(pagination_rules={"pages": 0, "children": {"foo": {"pages": 1}}})
+    assert response == {
+        "count": None,
+        "data": [{"foo": "bar"}],
+        "next_link": None,
+    }
