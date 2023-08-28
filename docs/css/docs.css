@@ -18,6 +18,16 @@ body {
     background: #424242!important;
 }
 
+.wy-nav-content {
+    max-width: 1024px;
+    margin: auto;
+}
+
+.wy-side-scroll {
+    overflow-y: auto;
+    height: auto;
+}
+
 div.wy-nav-content,
 .wy-nav-content-wrap,
 .wy-side-nav-search input[type=text] {
@@ -78,6 +88,36 @@ code {
     border-radius: 3px;
 }
 
+code > span.hll {
+    background: #1c1c1c;
+}
+
+/*First highlighted code line that is followed by another highlighted code line*/
+code > span.hll:not(span.hll + a + span.hll):has(+ a + span.hll) {
+    /*background: blue;*/
+    border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
+}
+
+/*Last highlighted code line that is preceded by another highlighted code line*/
+code > span.hll:not(span.hll:has(+ a + span.hll)) {
+    /*background: red;*/
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+/*Highlighted code line that is not followed or preceded by another highlighted code line*/
+code > span.hll:not(span.hll + a + span.hll):not(:has(+ a + span.hll)) {
+    /*background: yellow;*/
+    border-radius: 3px;
+}
+
+div.highlight > span.filename {
+    /*background: red;*/
+    padding: 8px;
+    line-height: 1.8rem;
+}
+
 .hljs-attribute,
 .hljs-name,
 .hljs-tag,
@@ -102,6 +142,10 @@ code {
     color: #cccccc;
 }
 
+.rst-content .section .docutils {
+    display: inline-table;
+}
+
 .rst-content div[class^=highlight],
 .rst-content pre.literal-block {
     border: 1px solid #626262;
@@ -113,6 +157,10 @@ code {
 .wy-table thead {
     color: #bbbbbb;
     background: #121212;
+}
+
+.rst-versions {
+    margin-top: 6px;
 }
 
 .rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td,
@@ -128,7 +176,15 @@ blockquote {
     border: 2px solid #363636;
     border-left: 4px solid #2980b9;
     margin-left: 0 !important;
-    padding: 16px 12px 0 24px;
+    padding: 16px 12px 16px 24px;
+}
+
+blockquote > p {
+    margin: 0;
+}
+
+.rst-content table.docutils td {
+    white-space: break-spaces;
 }
 
 blockquote code {
