@@ -90,20 +90,23 @@ class BaseDynamicsClient(ABC):
         client_secret: str,
         scope: Optional[Union[str, List[str]]] = None,
         resource: Optional[str] = None,
+        *,
+        cache_token: bool = True,
     ):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection
         using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
         created in Dynamics, and granting it an appropriate security role.
 
-        :param api_url: API root URL. Format: https://[Organization URI]/api/data/v{api_version}
+        :param api_url: API root URL. Format: https://{organization_uri}/api/data/v{api_version}
         :param token_url: URL to the Dynamics/Azure token endpoint.
-                          Format: https://[Dynamics Token URI]/path/to/token
+                          Format: https://{dynamics_token_uri}/path/to/token
         :param client_id: Dynamics User ID.
         :param client_secret: Dynamics User Secret that proves its identity when password is required.
         :param scope: Url, or list of urls, that define(s) the database records that the API connection has access to.
-                      Each most likely in this format: https://[Organization URI]/.default
+                      Each most likely in this format: `https://{organization_uri}/.default`
         :param resource: Url that defines the database records that the API connection has access to.
-                         Most likely in this format: https://[Organization URI]/
+                         Most likely in this format: https://{organization_uri}/
+        :param cache_token: If False, don't cache the OAuthToken received from dynamics.
         """
 
         if not scope and not resource:
@@ -118,6 +121,7 @@ class BaseDynamicsClient(ABC):
         self._client_id = client_id
         self._scope = scope
         self._resource = resource
+        self._cache_token = cache_token
 
         self._select: List[str] = []
         self._expand: ExpandDict = {}
@@ -141,15 +145,15 @@ class BaseDynamicsClient(ABC):
     def from_environment(cls):
         """Create a client from environment variables:
 
-        * DYNAMICS_API_URL: url string
-        * DYNAMICS_TOKEN_URL: url string
-        * DYNAMICS_CLIENT_ID: client id string
-        * DYNAMICS_CLIENT_SECRET: client secret key string
+        * `DYNAMICS_API_URL`: url string
+        * `DYNAMICS_TOKEN_URL`: url string
+        * `DYNAMICS_CLIENT_ID`: client id string
+        * `DYNAMICS_CLIENT_SECRET`: client secret key string
+        * `DYNAMICS_SCOPE`: comma separated list of urls
+        * `DYNAMICS_RESOURCE`: single target url
+        * `DYNAMICS_CACHE_TOKEN`: 0 = False, 1 = True (default)
 
-        * DYNAMICS_SCOPE: comma separated list of urls
-        * DYNAMICS_RESOURCE: single target url
-
-        At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE must be provided.
+        At least one of `DYNAMICS_SCOPE` or `DYNAMICS_RESOURCE` must be provided.
 
         :raises KeyError: An environment variable was not configured properly
         """
@@ -167,7 +171,9 @@ class BaseDynamicsClient(ABC):
         if scope is not None and "," in scope:
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
 
-        return cls(api_url, token_url, client_id, client_secret, scope, resource)
+        cache_token = bool(int(os.environ.get("DYNAMICS_CACHE_TOKEN", 1)))
+
+        return cls(api_url, token_url, client_id, client_secret, scope, resource, cache_token=cache_token)
 
     def __getitem__(self, key):
         return self.headers[key]

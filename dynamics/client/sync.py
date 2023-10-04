@@ -29,7 +29,10 @@ class DynamicsClient(BaseDynamicsClient):
         if self._oauth_client.token:
             return
 
-        token = self.get_token()
+        token: Optional[OAuth2Token] = None
+        if self._cache_token:
+            token = self.get_token()
+
         if token is None or token.is_expired():  # pragma: no cover
             token = self._oauth_client.fetch_token(
                 url=self._token_url,
@@ -37,7 +40,8 @@ class DynamicsClient(BaseDynamicsClient):
                 scope=self._scope,
                 resource=self._resource,
             )
-            self.set_token(token)
+            if self._cache_token:
+                self.set_token(token)
         else:
             self._oauth_client.token = token
 

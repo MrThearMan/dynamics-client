@@ -60,7 +60,7 @@ class SQLiteCacheBase(ABC):
         self.connection_string = f"{filepath}:?mode=memory&cache=shared"
         self.create_table_if_not_exist()
 
-    def create_table_if_not_exist(self) -> None:
+    def create_table_if_not_exist(self) -> None:  # pragma: no cover
         with sqlite3.connect(self.connection_string) as connection:
             if connection.execute(self._check_table).fetchone()[0] == 1:
                 return

@@ -288,6 +288,7 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
             "client_secret": "client_secret",
             "scope": "http://scope.local/",
             "resource": None,
+            "cache_token": True,
         },
         {
             "api_url": "http://dynamics.local/",
@@ -296,6 +297,7 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
             "client_secret": "client_secret",
             "scope": ["http://scope.local/"],
             "resource": None,
+            "cache_token": True,
         },
         {
             "api_url": "http://dynamics.local/",
@@ -304,6 +306,7 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
             "client_secret": "client_secret",
             "scope": ["http://scope.local/"],
             "resource": "http://resource.local/",
+            "cache_token": True,
         },
         {
             "api_url": "http://dynamics.local/",
@@ -312,6 +315,7 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
             "client_secret": "client_secret",
             "scope": None,
             "resource": "http://resource.local/",
+            "cache_token": True,
         },
     ],
 )
