@@ -14,15 +14,23 @@ from dynamics import DynamicsClient
 | `token_url`     | str                      |         | Url in form: `https://{organization_uri}/path/to/token`                                                                              |
 | `client_id`     | str                      |         | Client id (e.g. UUID).                                                                                                               |
 | `client_secret` | str                      |         | Client secret (e.g. OAuth password).                                                                                                 |
-| `scope`         | str<br>List[str]<br>None |         | Url or list of urls in form: `https://{organization_uri}/scope`. Defines the database records that the API connection has access to. |
-| `resource`      | str<br>None              |         | Url in form: `https://{organization_uri}`. Defines the database records that the API connection has access to.                       |
+| `scope`         | str<br>List[str]<br>None | None    | Url or list of urls in form: `https://{organization_uri}/scope`. Defines the database records that the API connection has access to. |
+| `resource`      | str<br>None              | None    | Url in form: `https://{organization_uri}`. Defines the database records that the API connection has access to.                       |
+| `cache_token`   | bool                     | True    | If `False`, don't cache the OAuthToken received from dynamics.                                                                       |
 
 Establish a Microsoft Dynamics 365 Dataverse API client connection
 using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
 created in Dynamics, and granting it an appropriate security role.
 
-> NOTE: at least one of `scope` or `resource` must be provided.
+> **Token caching**
+>
+> By default (`cache_token=True`), the client will try to cache the OAuthToken it receives from
+> `token_url`. This cache is an _in-memory shared cache_ SQLite database, or Django's default cache
+> if Django is installed. This allows sharing a single token between multiple processes, reducing
+> round-trips to the `token_url` for new tokens if an old one is still valid.
 
+> NOTE: at least one of `scope` or `resource` must be provided.
+>
 > If you are experiencing auth errors, inspect the returned auth token's `aud`
 > and see whether it resolves to `00000002-0000-0000-c000-000000000000` instead of your CRM url.*
 >
@@ -33,22 +41,18 @@ created in Dynamics, and granting it an appropriate security role.
 
 #### *DynamicsClient.from_environment()*
 
-Create a Dynamics client from environment variables:
+Create a Dynamics client from environment variables
+(see [DynamicsClient(...)](#dynamicsclient) for more info).
 
-1. `DYNAMICS_API_URL`
-2. `DYNAMICS_TOKEN_URL`
-3. `DYNAMICS_CLIENT_ID`
-4. `DYNAMICS_CLIENT_SECRET`
-5. `DYNAMICS_SCOPE (Optional)`
-6. `DYNAMICS_RESOURCE (Optional)`
-
-> NOTE: at least one of `DYNAMICS_SCOPE` or `DYNAMICS_RESOURCE` must be provided.
-
-> If you are experiencing auth errors, inspect the returned auth token's `aud`
-> and see whether it resolves to `00000002-0000-0000-c000-000000000000` instead of your CRM url.*
->
-> If so, you may want to specify the resource URL using the optional
-> `DYNAMICS_RESOURCE` environment variable.*
+| env                      | parameter       | values                        | default |
+|--------------------------|-----------------|-------------------------------|---------|
+| `DYNAMICS_API_URL`       | `api_url`       | str                           |         |
+| `DYNAMICS_TOKEN_URL`     | `token_url`     | str                           |         |
+| `DYNAMICS_CLIENT_ID`     | `client_id`     | str                           |         |
+| `DYNAMICS_CLIENT_SECRET` | `client_secret` | str                           |         |
+| `DYNAMICS_SCOPE`         | `scope`         | str (comma separated if many) | None    |
+| `DYNAMICS_RESOURCE`      | `resource`      | str                           | None    |
+| `DYNAMICS_CACHE_TOKEN`   | `cache_token`   | "0" or "1"                    | "1"     |
 
 ---
 
