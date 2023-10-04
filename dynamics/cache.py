@@ -46,7 +46,7 @@ class SQLiteCacheBase(ABC):
     _delete_sql = "DELETE FROM cache WHERE key = :key"
     _clear_sql = "DELETE FROM cache"
 
-    def __init__(self, *, filename: str = "dynamics.cache", path: str = None):
+    def __init__(self, *, filename: str, path: str = None):
         """Create a cache using sqlite.
 
         :param filename: Cache file name.

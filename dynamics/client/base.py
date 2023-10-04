@@ -63,7 +63,6 @@ class BaseDynamicsClient(ABC):
     """Dynamics client for making queries from a Microsoft Dynamics 365 database."""
 
     request_counter: int = 0
-    cache_key: str = "dynamics-client-token"
     simplified_error_message: str = "There was a problem communicating with the server."
 
     actions = Actions()
@@ -116,6 +115,7 @@ class BaseDynamicsClient(ABC):
         self._api_url = api_url.rstrip("/") + "/"
         self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope)
         self._token_url = token_url
+        self._client_id = client_id
         self._scope = scope
         self._resource = resource
 
@@ -417,6 +417,15 @@ class BaseDynamicsClient(ABC):
                 error_code=data["error"]["code"],
                 method="delete",
             )
+
+    @property
+    def cache_key(self) -> str:
+        data: dict[str, str] = {
+            "client_id": self._client_id,
+            "scope": ",".join(self._scope) if isinstance(self._scope, list) else self._scope,
+            "resource": self._resource,
+        }
+        return "|".join(f"{key}={value}" for key, value in data.items())
 
     @property
     def current_query(self) -> str:

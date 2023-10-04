@@ -58,14 +58,13 @@ class BaseMockClient:
 
     _mocking_object: Union[MagicMock, AsyncMock]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(
-            "http://dynamics.local/",
-            "http://token.local",
-            "client_id",
-            "client_secret",
-            ["http://scope.local/"],
-        )
+    def __init__(self, *args: Any, **kwargs: Any):
+        kwargs.setdefault("api_url", "http://dynamics.local/")
+        kwargs.setdefault("token_url", "http://token.local")
+        kwargs.setdefault("client_id", "client_id")
+        kwargs.setdefault("client_secret", "client_secret")
+        kwargs.setdefault("scope", ["http://scope.local/"])
+        super().__init__(**kwargs)
 
         self.__len: int = -1
         self.__default_status: int = 200
@@ -321,7 +320,10 @@ def dynamics_cache(_dynamics_cache_constructor):
     try:
         yield _dynamics_cache_constructor
     finally:
-        _dynamics_cache_constructor.close()
+        try:
+            _dynamics_cache_constructor.clear()
+        finally:
+            _dynamics_cache_constructor.close()
 
 
 @pytest.fixture(scope="session")
@@ -342,7 +344,10 @@ def async_dynamics_cache(_dynamics_async_cache_constructor):
     try:
         yield _dynamics_async_cache_constructor
     finally:
-        asyncio.run(_dynamics_async_cache_constructor.close())
+        try:
+            asyncio.run(_dynamics_async_cache_constructor.clear())
+        finally:
+            asyncio.run(_dynamics_async_cache_constructor.close())
 
 
 @pytest.fixture

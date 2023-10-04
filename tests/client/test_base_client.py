@@ -1,5 +1,6 @@
 import re
 from types import SimpleNamespace
+from typing import Any
 from unittest import mock
 
 import httpx
@@ -233,8 +234,7 @@ def test_client__init_from_environment_successes(scope, resource, environ):
         env["DYNAMICS_RESOURCE"] = resource
 
     with environ(**env):
-        with mock.patch("dynamics.client.DynamicsClient.get_token"):
-            DynamicsClient.from_environment()
+        DynamicsClient.from_environment()
 
 
 def test_client__init_from_environment_scope_or_resource_required(environ):
@@ -246,12 +246,11 @@ def test_client__init_from_environment_scope_or_resource_required(environ):
     }
 
     with environ(**env):
-        with mock.patch("dynamics.client.DynamicsClient.get_token"):
-            with pytest.raises(
-                KeyError,
-                match=re.escape("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set."),
-            ):
-                DynamicsClient.from_environment()
+        with pytest.raises(
+            KeyError,
+            match=re.escape("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set."),
+        ):
+            DynamicsClient.from_environment()
 
 
 @pytest.mark.parametrize(
@@ -275,9 +274,8 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
     env.pop(missing_env)
 
     with environ(**env):
-        with mock.patch("dynamics.client.DynamicsClient.get_token"):
-            with pytest.raises(KeyError):
-                DynamicsClient.from_environment()
+        with pytest.raises(KeyError):
+            DynamicsClient.from_environment()
 
 
 @pytest.mark.parametrize(
@@ -318,20 +316,74 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
     ],
 )
 def test_client__init_success(arguments):
-    with mock.patch("dynamics.client.DynamicsClient.get_token"):
-        DynamicsClient(**arguments)
+    DynamicsClient(**arguments)
 
 
 def test_client__init_scope_or_resource_required(environ):
-    with mock.patch("dynamics.client.DynamicsClient.get_token"):
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "To instantiate a DynamicsClient, you must provide at least one of either "
-                "the scope or resource parameters."
-            ),
-        ):
-            DynamicsClient(api_url="apiurl", token_url="tokenurl", client_id="clientid", client_secret="secret")
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "To instantiate a DynamicsClient, you must provide at least one of either "
+            "the scope or resource parameters."
+        ),
+    ):
+        DynamicsClient(api_url="apiurl", token_url="tokenurl", client_id="clientid", client_secret="secret")
+
+
+@pytest.mark.parametrize(
+    ["arguments", "result"],
+    [
+        [
+            {
+                "client_id": "id",
+                "scope": "http://scope.local/",
+                "resource": None,
+            },
+            "client_id=id|scope=http://scope.local/|resource=None",
+        ],
+        [
+            {
+                "client_id": "id",
+                "scope": ["http://scope.local/"],
+                "resource": None,
+            },
+            "client_id=id|scope=http://scope.local/|resource=None",
+        ],
+        [
+            {
+                "client_id": "id",
+                "scope": ["http://scope1.local/", "http://scope2.local/"],
+                "resource": None,
+            },
+            "client_id=id|scope=http://scope1.local/,http://scope2.local/|resource=None",
+        ],
+        [
+            {
+                "client_id": "id",
+                "scope": None,
+                "resource": "http://resource.local/",
+            },
+            "client_id=id|scope=None|resource=http://resource.local/",
+        ],
+        [
+            {
+                "client_id": "id",
+                "scope": ["http://scope.local/"],
+                "resource": "http://resource.local/",
+            },
+            "client_id=id|scope=http://scope.local/|resource=http://resource.local/",
+        ],
+    ],
+)
+def test_client__cache_key(arguments: dict[str, Any], result: str):
+    arguments |= {
+        "api_url": "http://dynamics.local/",
+        "token_url": "http://token.local",
+        "client_secret": "client_secret",
+    }
+    client = DynamicsClient(**arguments)
+
+    assert client.cache_key == result
 
 
 def test_client__query__table(dynamics_client):

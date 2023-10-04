@@ -1,9 +1,10 @@
 import sys
+from unittest.mock import patch
 
 import pytest
 from authlib.oauth2.rfc6749 import OAuth2Token
 
-from dynamics.test import AsyncMockClient
+from dynamics.test import AsyncMockClient, ResponseMock
 from dynamics.typing import DynamicsClientGetResponse
 
 pytestmark = pytest.mark.asyncio
@@ -296,3 +297,54 @@ async def test_async_client__get_next_page__nested__dont_fetch_if_under_pagesize
         data=[{"foo": "bar"}],
         next_link=None,
     )
+
+
+async def test_async_client__ensure_token__token_already_set(async_dynamics_client):
+    token = OAuth2Token({"expires_in": "60"})
+    response = ResponseMock(response=token)
+    async_dynamics_client._oauth_client.token = token
+
+    patch_1 = patch("dynamics.client.aio.DynamicsClient.get_token", return_value=token)
+    patch_2 = patch("authlib.integrations.httpx_client.oauth2_client.AsyncOAuth2Client.post", return_value=response)
+
+    with patch_1 as mock_1, patch_2 as mock_2:
+        await async_dynamics_client._ensure_token()
+
+    assert async_dynamics_client._oauth_client.token == token
+
+    assert mock_1.await_count == 0
+    assert mock_2.await_count == 0
+
+
+async def test_async_client__ensure_token__token_in_cache(async_dynamics_client):
+    token = OAuth2Token({"expires_in": "60"})
+    response = ResponseMock(response=token)
+    assert async_dynamics_client._oauth_client.token is None
+
+    patch_1 = patch("dynamics.client.aio.DynamicsClient.get_token", return_value=token)
+    patch_2 = patch("authlib.integrations.httpx_client.oauth2_client.AsyncOAuth2Client.post", return_value=response)
+
+    with patch_1 as mock_1, patch_2 as mock_2:
+        await async_dynamics_client._ensure_token()
+
+    assert async_dynamics_client._oauth_client.token == token
+
+    assert mock_1.await_count == 1
+    assert mock_2.await_count == 0
+
+
+async def test_async_client__ensure_token__token_fetched_from_endpoint(async_dynamics_client):
+    token = OAuth2Token({"expires_in": "60"})
+    response = ResponseMock(response=token)
+    assert async_dynamics_client._oauth_client.token is None
+
+    patch_1 = patch("dynamics.client.aio.DynamicsClient.get_token", return_value=None)
+    patch_2 = patch("authlib.integrations.httpx_client.oauth2_client.AsyncOAuth2Client.post", return_value=response)
+
+    with patch_1 as mock_1, patch_2 as mock_2:
+        await async_dynamics_client._ensure_token()
+
+    assert async_dynamics_client._oauth_client.token == token
+
+    assert mock_1.await_count == 1
+    assert mock_2.await_count == 1

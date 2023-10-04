@@ -81,6 +81,7 @@ class Singletons:
     A static Singleton interface; any future singleton objects should be included here.
     """
 
+    filename: str = "dynamics.cache"
     _cache: Union[SQLiteCache, Any] = None
     _async_cache: Optional[AsyncSQLiteCache] = None
 
@@ -90,7 +91,7 @@ class Singletons:
             try:
                 from django.core.cache import cache
             except ImportError:
-                cache = SQLiteCache()
+                cache = SQLiteCache(filename=Singletons.filename)
             Singletons._cache = cache
 
         return Singletons._cache
@@ -101,7 +102,7 @@ class Singletons:
             try:
                 from django.core.cache import cache
             except ImportError:
-                cache = AsyncSQLiteCache()
+                cache = AsyncSQLiteCache(filename=Singletons.filename)
             Singletons._async_cache = cache
 
         return Singletons._async_cache

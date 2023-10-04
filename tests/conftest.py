@@ -1,10 +1,10 @@
 import os
-import sqlite3
+import random
+import string
 from contextlib import contextmanager
 
 import pytest
 
-from dynamics.cache import SQLiteCache
 from dynamics.test import (
     _dynamics_async_cache_constructor,
     _dynamics_cache_constructor,
@@ -13,6 +13,7 @@ from dynamics.test import (
     dynamics_cache,
     dynamics_client,
 )
+from dynamics.utils import Singletons
 
 __all__ = [
     "_dynamics_async_cache_constructor",
@@ -26,11 +27,11 @@ __all__ = [
 
 
 @pytest.fixture(scope="session", autouse=True)
-def remove_cache_table():
-    cache = SQLiteCache()
-    remove_table_sql = "DROP TABLE IF EXISTS cache;"
-    with sqlite3.connect(cache.connection_string) as connection:
-        connection.execute(remove_table_sql)
+def create_cache_table():
+    # Set unique cache filename for each test session
+    # to prevent issues with database being locked when tests fail unexpectedly
+    Singletons.filename = "".join(random.choices(string.ascii_lowercase))
+    Singletons.cache()
 
 
 @pytest.fixture()
