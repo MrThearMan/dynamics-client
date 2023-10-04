@@ -426,7 +426,7 @@ class BaseDynamicsClient(ABC):
 
     @property
     def cache_key(self) -> str:
-        data: dict[str, str] = {
+        data: Dict[str, str] = {
             "client_id": self._client_id,
             "scope": ",".join(self._scope) if isinstance(self._scope, list) else self._scope,
             "resource": self._resource,

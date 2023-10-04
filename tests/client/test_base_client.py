@@ -1,6 +1,6 @@
 import re
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Dict
 from unittest import mock
 
 import httpx
@@ -379,7 +379,7 @@ def test_client__init_scope_or_resource_required(environ):
         ],
     ],
 )
-def test_client__cache_key(arguments: dict[str, Any], result: str):
+def test_client__cache_key(arguments: Dict[str, Any], result: str):
     arguments |= {
         "api_url": "http://dynamics.local/",
         "token_url": "http://token.local",
