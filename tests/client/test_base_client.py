@@ -380,7 +380,8 @@ def test_client__init_scope_or_resource_required(environ):
     ],
 )
 def test_client__cache_key(arguments: Dict[str, Any], result: str):
-    arguments |= {
+    arguments = {
+        **arguments,
         "api_url": "http://dynamics.local/",
         "token_url": "http://token.local",
         "client_secret": "client_secret",
