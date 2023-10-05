@@ -29,7 +29,11 @@ created in Dynamics, and granting it an appropriate security role.
 > if Django is installed. This allows sharing a single token between multiple processes, reducing
 > round-trips to the `token_url` for new tokens if an old one is still valid.
 
-> NOTE: at least one of `scope` or `resource` must be provided.
+<div></div>
+
+> **NOTE**:
+>
+> At least one of `scope` or `resource` must be provided.
 >
 > If you are experiencing auth errors, inspect the returned auth token's `aud`
 > and see whether it resolves to `00000002-0000-0000-c000-000000000000` instead of your CRM url.*
