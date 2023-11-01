@@ -92,6 +92,7 @@ class BaseDynamicsClient(ABC):
         resource: Optional[str] = None,
         *,
         cache_token: bool = True,
+        connection_timeout: int = 5,
     ):
         """Establish a Microsoft Dynamics 365 Dataverse API client connection
         using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
@@ -107,6 +108,7 @@ class BaseDynamicsClient(ABC):
         :param resource: Url that defines the database records that the API connection has access to.
                          Most likely in this format: https://{organization_uri}/
         :param cache_token: If False, don't cache the OAuthToken received from dynamics.
+        :param connection_timeout: The timeout for all requests, specify None to disable timeouts
         """
 
         if not scope and not resource:
@@ -116,7 +118,7 @@ class BaseDynamicsClient(ABC):
             )
 
         self._api_url = api_url.rstrip("/") + "/"
-        self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope)
+        self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope, timeout=connection_timeout)
         self._token_url = token_url
         self._client_id = client_id
         self._scope = scope
