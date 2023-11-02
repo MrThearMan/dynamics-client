@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from functools import wraps
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from .cache import AsyncSQLiteCache, SQLiteCache
@@ -11,7 +12,7 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from .typing import TYPE_CHECKING, Any, Awaitable, Callable, Coroutine, List, Optional, P, T, Type, Union
+from .typing import Any, Awaitable, Callable, Coroutine, List, Optional, P, T, Type, Union
 
 if TYPE_CHECKING:
     from django.core.cache import BaseCache
@@ -33,26 +34,26 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class sentinel:
+class sentinel:  # noqa: N801
     """Sentinel value."""
 
 
-def is_valid_uuid(value: str):
+def is_valid_uuid(value: str) -> bool:
     try:
         uuid = UUID(value)
         return str(uuid) == value
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
-def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
-    """Convert a datetime-object to a Dynamics compatible ISO formatted date string.
+def to_dynamics_date_format(date: datetime, from_timezone: Optional[str] = None) -> str:
+    """
+    Convert a datetime-object to a Dynamics compatible ISO formatted date string.
 
     :param date: Datetime object.
     :param from_timezone: Time zone name from the IANA Time Zone Database the date is in.
                           Dynamics dates are in UCT, so timezoned values need to be converted to it.
     """
-
     if from_timezone is not None and date.tzinfo is None:
         date: datetime = date.replace(tzinfo=ZoneInfo(from_timezone))
 
@@ -63,7 +64,8 @@ def to_dynamics_date_format(date: datetime, from_timezone: str = None) -> str:
 
 
 def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
-    """Convert a Dynamics compatible ISO formatted date string to a datetime-object.
+    """
+    Convert a Dynamics compatible ISO formatted date string to a datetime-object.
 
     :param date: Date string in form: YYYY-mm-ddTHH:MM:SSZ
     :param to_timezone: Time zone name from the IANA Time Zone Database to convert the date to.
@@ -72,14 +74,11 @@ def from_dynamics_date_format(date: str, to_timezone: str = "UCT") -> datetime:
     """
     local_time = datetime.fromisoformat(date.replace("Z", "")).replace(tzinfo=ZoneInfo(to_timezone))
     local_time += local_time.utcoffset()
-    local_time = local_time.replace(tzinfo=None)
-    return local_time
+    return local_time.replace(tzinfo=None)
 
 
 class Singletons:
-    """
-    A static Singleton interface; any future singleton objects should be included here.
-    """
+    """A static Singleton interface; any future singleton objects should be included here."""
 
     filename: str = "dynamics.cache"
     _cache: Union[SQLiteCache, Any] = None
@@ -109,7 +108,8 @@ class Singletons:
 
 
 def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
-    """Errors in the function decorated with this decorator can be simplified to just a
+    """
+    Errors in the function decorated with this decorator can be simplified to just a
     DynamicsException with default error message using the keyword: 'simplify_errors'.
     This is useful if you want to hide error details from frontend users.
 
@@ -126,10 +126,10 @@ def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
 
         try:
             return func(*args, **kwargs)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             logger.warning(error)
             if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
-                raise error
+                raise
             self: "DynamicsClient" = args[0]
             raise DynamicsException(self.simplified_error_message) from error
 

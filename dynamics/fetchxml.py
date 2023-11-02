@@ -1,6 +1,7 @@
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .enums import FetchXMLOperator
+from . import status
+from .enums import MAX_LINKED_TABLES, FetchXMLOperator
 from .typing import (
     Any,
     FetchXMLAggregateType,
@@ -33,7 +34,7 @@ def _serialize_bool(value: bool) -> LiteralBool:
 
 
 class FetchXMLBuilder:
-    def __init__(  # noqa: C901
+    def __init__(  # noqa: C901, PLR0912, PLR0913
         self,
         *,
         mapping: Optional[FetchXMLFetchMappingType] = None,
@@ -49,8 +50,9 @@ class FetchXMLBuilder:
         min_active_row_version: Optional[bool] = None,
         return_total_record_count: Optional[bool] = None,
         no_lock: Optional[bool] = None,
-    ):
-        """A Builder class for building FetchXML queries.
+    ) -> None:
+        """
+        A Builder class for building FetchXML queries.
 
         XML Schema:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/fetchxml-schema
@@ -69,7 +71,6 @@ class FetchXMLBuilder:
         :param return_total_record_count: Return total record count?
         :param no_lock: No lock?
         """
-
         self._attrs = FetchXMLType()
 
         if mapping is not None:
@@ -119,14 +120,14 @@ class FetchXMLBuilder:
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
     ) -> "_EntityBuilder":
-        """What entity the query concerns. Only one entity per query is allowed.
+        """
+        What entity the query concerns. Only one entity per query is allowed.
 
         :param name: Name of the entity table.
         :param enable_prefiltering: Enable pre-filtering.
         :param prefilter_parameter_name: Pre-filtering parameter name.
         :return: A new instance of EntityBuilder
         """
-
         self._entity = _EntityBuilder(
             self,
             name=name,
@@ -142,14 +143,14 @@ class FetchXMLBuilder:
         alias: Optional[str] = None,
         descending: Optional[bool] = None,
     ) -> "FetchXMLBuilder":
-        """Apply ordering for the view. This is for the Reports view only.
+        """
+        Apply ordering for the view. This is for the Reports view only.
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
         :param descending: Descending order?
         :return: The current instance of the FetchXMLBuilder.
         """
-
         self._order = FetchXMLOrderType(attribute=attribute)
         if alias is not None:
             self._order["alias"] = alias
@@ -159,7 +160,6 @@ class FetchXMLBuilder:
 
     def build(self) -> str:
         """Build the FetchXML query string."""
-
         fetch = Element("fetch", self._attrs)
 
         if self._entity is not None:
@@ -218,15 +218,15 @@ class _EntityBuilder:
         name: str,
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
-    ):
-        """Sub-builder for the entity level of the FetchXML query.
+    ) -> None:
+        """
+        Sub-builder for the entity level of the FetchXML query.
 
         :param parent_builder: The builder that constructed this builder.
         :param name: Name of the entity that this builder acts on.
         :param enable_prefiltering: Enable pre-filtering?
         :param prefilter_parameter_name: Pre-filtering parameter name?
         """
-
         self._parent_builder = parent_builder
         self._attrs = FetchXMLEntityType(name=name)
 
@@ -252,31 +252,33 @@ class _EntityBuilder:
         self._parent_builder._linked_table_count = value
 
     def with_all_attributes(self) -> "_EntityBuilder":
-        """Include all attributes from the main entity to the query.
+        """
+        Include all attributes from the main entity to the query.
         Mutually exclusive with adding individual attributes.
 
         :return: The current instance of the EntityBuilder.
         """
-
         if self._attributes:
-            raise ValueError("Individual attributes defined, cannot add all attributes.")
+            msg = "Individual attributes defined, cannot add all attributes."
+            raise ValueError(msg)
         self._all_attributes = True
         return self
 
-    def add_attribute(
+    def add_attribute(  # noqa: PLR0913
         self,
         *,
         name: str,
-        alias: str = None,
+        alias: Optional[str] = None,
         aggregate: FetchXMLAggregateType = None,
         groupby: Optional[bool] = None,
         distinct: Optional[bool] = None,
         date_grouping: Optional[FetchXMLDateGroupingType] = None,
         user_timezone: Optional[bool] = None,
-        added_by: str = None,
+        added_by: Optional[str] = None,
         build: FetchXMLBuildType = None,
     ) -> "_EntityBuilder":
-        """Add an attribute to the query for the main entity.
+        """
+        Add an attribute to the query for the main entity.
         Mutually exclusive with adding all attributes.
 
         :param name: Name of the attribute to add.
@@ -290,9 +292,9 @@ class _EntityBuilder:
         :param build: Build number.
         :return: The current instance of the EntityBuilder.
         """
-
         if self._all_attributes:
-            raise ValueError("All attributes defined, cannot add individual attributes.")
+            msg = "All attributes defined, cannot add individual attributes."
+            raise ValueError(msg)
 
         attribute = FetchXMLAttributeType(name=name)
 
@@ -316,7 +318,7 @@ class _EntityBuilder:
         self._attributes.append(attribute)
         return self
 
-    def add_linked_entity(
+    def add_linked_entity(  # noqa: PLR0913
         self,
         *,
         name: str,
@@ -329,7 +331,8 @@ class _EntityBuilder:
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
     ) -> "_LinkedEntityBuilder":
-        """Add a linked entity from the main entity to the query.
+        """
+        Add a linked entity from the main entity to the query.
         Note that the maximum number of linked entities is 10.
 
         :param name: Name of the table to link to.
@@ -343,7 +346,6 @@ class _EntityBuilder:
         :param prefilter_parameter_name: Pre-filtering parameter name.
         :return: A new instance of LinkedEntityBuilder.
         """
-
         linked_entity_builder = _LinkedEntityBuilder(
             self,
             name=name,
@@ -363,17 +365,17 @@ class _EntityBuilder:
         self,
         *,
         attribute: str,
-        alias: str = None,
+        alias: Optional[str] = None,
         descending: Optional[bool] = None,
     ) -> "_EntityBuilder":
-        """Apply ordering for the main entity's attributes.
+        """
+        Apply ordering for the main entity's attributes.
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
         :param descending: Descending order?
         :return: The current instance of the EntityBuilder.
         """
-
         self._order = FetchXMLOrderType(attribute=attribute)
         if alias is not None:
             self._order["alias"] = alias
@@ -381,21 +383,21 @@ class _EntityBuilder:
             self._order["descending"] = _serialize_bool(descending)
         return self
 
-    def filter(
+    def filter(  # noqa: A003
         self,
         *,
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
         override_quick_find_record_limit_enabled: Optional[bool] = None,
     ) -> "_FilterBuilder":
-        """Apply filtering to the main entity's attributes.
+        """
+        Apply filtering to the main entity's attributes.
 
         :param type_: Logical operator used when multiple conditions are present.
         :param is_quick_find_fields: If True, the filter is a quick find filter.
         :param override_quick_find_record_limit_enabled: If True, override the 10_000 record quick order limit.
         :return: A new instance of FilterBuilder.
         """
-
         filter_builder = _FilterBuilder(
             self,
             type_=type_,
@@ -411,7 +413,7 @@ class _EntityBuilder:
 
 
 class _LinkedEntityBuilder:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         parent_builder: Union["_EntityBuilder", "_LinkedEntityBuilder"],
         *,
@@ -424,8 +426,9 @@ class _LinkedEntityBuilder:
         intersect: Optional[bool] = None,
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
-    ):
-        """Sub-builder for the linked entity level of the FetchXML query.
+    ) -> None:
+        """
+        Sub-builder for the linked entity level of the FetchXML query.
 
         :param parent_builder: The builder that constructed this builder.
         :param name: Name of this linked entity's table.
@@ -438,13 +441,13 @@ class _LinkedEntityBuilder:
         :param enable_prefiltering: Enable pre-filtering?
         :param prefilter_parameter_name: Pre-filtering parameter name.
         """
-
         # needs to be set before incrementing '_linked_table_count'
         self._parent_builder = parent_builder
 
         self._linked_table_count += 1
-        if self._linked_table_count > 10:
-            raise RuntimeError("Too many linked tables (>10)")
+        if self._linked_table_count > MAX_LINKED_TABLES:
+            msg = f"Too many linked tables (>{MAX_LINKED_TABLES})"
+            raise RuntimeError(msg)
 
         self._attrs = FetchXMLLinkedEntity(name=name, to=to)
 
@@ -480,18 +483,19 @@ class _LinkedEntityBuilder:
         self._parent_builder._linked_table_count = value
 
     def with_all_attributes(self) -> "_LinkedEntityBuilder":
-        """Include all attributes from this linked entity to the query.
+        """
+        Include all attributes from this linked entity to the query.
         Mutually exclusive with adding individual attributes.
 
         :return: The current instance of the EntityBuilder.
         """
-
         if self._attributes:
-            raise ValueError("Individual attributes defined, cannot add all attributes.")
+            msg = "Individual attributes defined, cannot add all attributes."
+            raise ValueError(msg)
         self._all_attributes = True
         return self
 
-    def add_attribute(
+    def add_attribute(  # noqa: PLR0913
         self,
         *,
         name: str,
@@ -504,7 +508,8 @@ class _LinkedEntityBuilder:
         added_by: Optional[str] = None,
         build: Optional[FetchXMLBuildType] = None,
     ) -> "_LinkedEntityBuilder":
-        """Add an attribute to the query for this linked entity.
+        """
+        Add an attribute to the query for this linked entity.
         Mutually exclusive with adding all attributes.
 
         :param name: Name of the attribute to add.
@@ -518,9 +523,9 @@ class _LinkedEntityBuilder:
         :param build: Build number.
         :return: The current instance of the LinkedEntityBuilder.
         """
-
         if self._all_attributes:
-            raise ValueError("All attributes defined, cannot add individual attributes.")
+            msg = "All attributes defined, cannot add individual attributes."
+            raise ValueError(msg)
 
         attribute = FetchXMLAttributeType(name=name)
 
@@ -544,7 +549,7 @@ class _LinkedEntityBuilder:
         self._attributes.append(attribute)
         return self
 
-    def add_nested_linked_entity(
+    def add_nested_linked_entity(  # noqa: PLR0913
         self,
         *,
         name: str,
@@ -557,7 +562,8 @@ class _LinkedEntityBuilder:
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
     ) -> "_LinkedEntityBuilder":
-        """Add a nested linked entity to this linked entity.
+        """
+        Add a nested linked entity to this linked entity.
         Note that the maximum number of linked entities is 10.
 
         :param name: Name of the table to link to.
@@ -571,7 +577,6 @@ class _LinkedEntityBuilder:
         :param prefilter_parameter_name: Pre-filtering parameter name.
         :return: A new instance of LinkedEntityBuilder.
         """
-
         nested_linked_entity_builder = _LinkedEntityBuilder(
             self,
             name=name,
@@ -587,7 +592,7 @@ class _LinkedEntityBuilder:
         self._linked_entities.append(nested_linked_entity_builder)
         return nested_linked_entity_builder
 
-    def add_linked_entity(
+    def add_linked_entity(  # noqa: PLR0913
         self,
         *,
         name: str,
@@ -600,7 +605,8 @@ class _LinkedEntityBuilder:
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
     ) -> "_LinkedEntityBuilder":
-        """Add a linked entity from the parent entity of this linked entity.
+        """
+        Add a linked entity from the parent entity of this linked entity.
         Note that the maximum number of linked entities is 10.
 
         :param name: Name of the table to link to.
@@ -614,7 +620,6 @@ class _LinkedEntityBuilder:
         :param prefilter_parameter_name: Pre-filtering parameter name.
         :return: A new instance of LinkedEntityBuilder.
         """
-
         if isinstance(self._parent_builder, _EntityBuilder):
             return self._parent_builder.add_linked_entity(
                 name=name,
@@ -646,14 +651,14 @@ class _LinkedEntityBuilder:
         alias: Optional[str] = None,
         descending: Optional[bool] = None,
     ) -> "_LinkedEntityBuilder":
-        """Apply ordering for the linked entity's attributes.
+        """
+        Apply ordering for the linked entity's attributes.
 
         :param attribute: Attribute to order by.
         :param alias: Attribute alias.
         :param descending: Descending order?
         :return: The current instance of the LinkedEntityBuilder.
         """
-
         self._order = FetchXMLOrderType(attribute=attribute)
         if alias is not None:
             self._order["alias"] = alias
@@ -661,20 +666,20 @@ class _LinkedEntityBuilder:
             self._order["descending"] = _serialize_bool(descending)
         return self
 
-    def filter(
+    def filter(  # noqa: A003
         self,
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
         override_quick_find_record_limit_enabled: Optional[bool] = None,
     ) -> "_FilterBuilder":
-        """Apply filtering to the linked entity's attributes.
+        """
+        Apply filtering to the linked entity's attributes.
 
         :param type_: Logical operator used when multiple conditions are present.
         :param is_quick_find_fields: If True, the filter is a quick find filter.
         :param override_quick_find_record_limit_enabled: If True, override the 10_000 record quick order limit.
         :return: A new instance of FilterBuilder.
         """
-
         filter_builder = _FilterBuilder(
             self,
             type_=type_,
@@ -697,15 +702,15 @@ class _FilterBuilder:
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
         override_quick_find_record_limit_enabled: Optional[bool] = None,
-    ):
-        """Sub-builder for the filtering level of the FetchXML query.
+    ) -> None:
+        """
+        Sub-builder for the filtering level of the FetchXML query.
 
         :param parent_builder: The builder that constructed this builder.
         :param type_: Logical operator used when multiple conditions are present.
         :param is_quick_find_fields: If True, this filter is a quick find filter.
         :param override_quick_find_record_limit_enabled: If True, override the 10_000 record quick order limit.
         """
-
         self._parent_builder = parent_builder
         self._attrs = FetchXMLFilterType(type=type_)
 
@@ -719,7 +724,7 @@ class _FilterBuilder:
         self._conditions: List[FetchXMLCondition] = []
         self._filters: List[_FilterBuilder] = []
 
-    def add_condition(  # noqa: C901
+    def add_condition(  # noqa: C901, PLR0912, PLR0913
         self,
         *,
         attribute: str,
@@ -736,7 +741,8 @@ class _FilterBuilder:
         uitype: Optional[str] = None,
         uihidden: Optional[bool] = None,
     ) -> "_FilterBuilder":
-        """Add a filtering condition to the filter.
+        """
+        Add a filtering condition to the filter.
 
         :param attribute: Attribute to filter.
         :param operator: Operator to use in the filter.
@@ -753,9 +759,9 @@ class _FilterBuilder:
         :param uihidden: UI Hidden?
         :return: The current instance of FilterBuilder.
         """
-
-        if len(self._conditions) == 500:
-            raise RuntimeError("Too many conditions (>500)")
+        if len(self._conditions) == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            msg = "Too many conditions (>500)"
+            raise RuntimeError(msg)
 
         # Convert string to operators, raises TypeError if not valid
         if isinstance(operator, str):
@@ -788,7 +794,7 @@ class _FilterBuilder:
         self._conditions.append(condition)
         return self
 
-    def add_linked_entity(
+    def add_linked_entity(  # noqa: PLR0913
         self,
         *,
         name: str,
@@ -801,7 +807,8 @@ class _FilterBuilder:
         enable_prefiltering: Optional[bool] = None,
         prefilter_parameter_name: Optional[str] = None,
     ) -> Union["_EntityBuilder", "_LinkedEntityBuilder"]:
-        """Add a linked entity from the first entity builder parent.
+        """
+        Add a linked entity from the first entity builder parent.
         Recurses up to the first parent that is either an EntityBuilder or LinkedEntityBuilder.
         Note that the maximum number of linked entities is 10.
 
@@ -816,7 +823,6 @@ class _FilterBuilder:
         :param prefilter_parameter_name: Pre-filtering parameter name.
         :return: The parent instance of EntityBuilder or LinkedEntityBuilder.
         """
-
         return self._parent_builder.add_linked_entity(
             name=name,
             to=to,
@@ -835,7 +841,8 @@ class _FilterBuilder:
         is_quick_find_fields: Optional[bool] = None,
         override_quick_find_record_limit_enabled: Optional[bool] = None,
     ) -> "_FilterBuilder":
-        """Nest another filter inside this filter Useful if different logical
+        """
+        Nest another filter inside this filter Useful if different logical
         operator is needed to group certain conditions.
 
         :param type_: Logical operator used when multiple conditions are present.
@@ -843,7 +850,6 @@ class _FilterBuilder:
         :param override_quick_find_record_limit_enabled: If True, override the 10_000 record quick order limit.
         :return: A new instance of FilterBuilder.
         """
-
         filter_builder = _FilterBuilder(
             self,
             type_=type_,
@@ -853,20 +859,20 @@ class _FilterBuilder:
         self._filters.append(filter_builder)
         return filter_builder
 
-    def filter(
+    def filter(  # noqa: A003
         self,
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
         override_quick_find_record_limit_enabled: Optional[bool] = None,
     ) -> "_FilterBuilder":
-        """Apply filtering to the parent entity's attributes.
+        """
+        Apply filtering to the parent entity's attributes.
 
         :param type_: Logical operator used when multiple conditions are present.
         :param is_quick_find_fields: If True, the filter is a quick find filter.
         :param override_quick_find_record_limit_enabled: If True, override the 10_000 record quick order limit.
         :return: A new instance of FilterBuilder.
         """
-
         filter_builder = _FilterBuilder(
             self,
             type_=type_,

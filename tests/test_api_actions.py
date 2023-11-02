@@ -138,7 +138,7 @@ def test_api_actions__close_quote(dynamics_client):
     assert dynamics_client.action == "CloseQuote"
     assert result == {
         "QuoteClose": {
-            "quoteid@odata.bind": f"/quotes(quote_id)",
+            "quoteid@odata.bind": "/quotes(quote_id)",
             "@odata.type": "Microsoft.Dynamics.CRM.quoteclose",
         },
         "Status": -1,
@@ -209,7 +209,7 @@ def test_api_actions__cancel_order(dynamics_client, reason: int):
     assert dynamics_client.action == "CancelSalesOrder"
     assert result == {
         "OrderClose": {
-            "salesorderid@odata.bind": f"/salesorders(order_id)",
+            "salesorderid@odata.bind": "/salesorders(order_id)",
             "@odata.type": "Microsoft.Dynamics.CRM.orderclose",
         },
         "Status": reason,

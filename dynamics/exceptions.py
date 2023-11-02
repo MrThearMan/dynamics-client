@@ -1,18 +1,19 @@
 import logging
 
 from . import status
+from .typing import Any, Optional
 
 try:
     from rest_framework.exceptions import APIException
 
 except ImportError:
 
-    class APIException(Exception):
+    class APIException(Exception):  # noqa: N818
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         default_detail = "A server error occurred."
         default_code = "error"
 
-        def __init__(self, detail: str = None, code=None):
+        def __init__(self, detail: Optional[str] = None, code: Optional[str] = None) -> None:
             if detail is None:
                 detail = self.default_detail
 
@@ -22,7 +23,7 @@ except ImportError:
             self.detail = f"[{self.status_code}] {detail} <{code}>"
             super().__init__(detail)
 
-        def __str__(self):
+        def __str__(self) -> str:
             return str(self.detail)
 
 
@@ -49,7 +50,7 @@ class DynamicsException(APIException):
     default_detail = "Dynamics Web API call failed."
     default_code = "dynamics_link_failed"
 
-    def __init__(self, detail=None, code=None, **kwargs):
+    def __init__(self, detail: Optional[str] = None, code: Optional[str] = None, **kwargs: Any) -> None:  # noqa: ARG002
         detail = self.default_detail if detail is None else detail
         code = self.default_code if code is None else code
         self.args = (str(detail),)  # since APIException doesn't call super()
@@ -100,7 +101,8 @@ class PayloadTooLarge(DynamicsException):
 
 
 class APILimitsExceeded(DynamicsException):
-    """Error when API protection limits are exceeded.
+    """
+    Error when API protection limits are exceeded.
 
     Dynamics Web API service protection limits were exceeded.
     This can be due to any of the following reasons:

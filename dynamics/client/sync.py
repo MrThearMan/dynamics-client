@@ -1,8 +1,8 @@
 import logging
+from typing import TYPE_CHECKING
 
 from authlib.integrations.httpx_client import OAuth2Client
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-from httpx import Response
 
 from ..typing import (
     Any,
@@ -15,6 +15,9 @@ from ..typing import (
 )
 from ..utils import Singletons, error_simplification_available
 from .base import BaseDynamicsClient
+
+if TYPE_CHECKING:
+    from httpx import Response
 
 __all__ = ["DynamicsClient"]
 
@@ -97,7 +100,7 @@ class DynamicsClient(BaseDynamicsClient):
             query = self.current_query
 
         self._ensure_token()
-        response: Response = self._oauth_client.get(
+        response: "Response" = self._oauth_client.get(
             url=query,
             headers={**self.default_headers("get"), **self.headers},
             auth=self._oauth_client.token_auth,
