@@ -1,12 +1,17 @@
 from enum import Enum, IntEnum
 
 __all__ = [
-    "QuoteState",
-    "OrderState",
-    "TargetFieldType",
     "EntityFilter",
     "FetchXMLOperator",
+    "MAX_LINKED_TABLES",
+    "OrderState",
+    "QuoteState",
+    "TargetFieldType",
 ]
+
+
+MAX_LINKED_TABLES = 10
+MAX_PAGESIZE = 5000
 
 
 class QuoteState(IntEnum):

@@ -15,6 +15,7 @@ from httpx import Response
 from .. import status
 from ..api_actions import Actions
 from ..api_functions import Functions
+from ..enums import MAX_PAGESIZE
 from ..exceptions import (
     APILimitsExceeded,
     AuthenticationFailed,
@@ -30,6 +31,7 @@ from ..exceptions import (
 )
 from ..typing import (
     Any,
+    ClassVar,
     Coroutine,
     Dict,
     DynamicsClientGetResponse,
@@ -48,6 +50,7 @@ from ..typing import (
     OrderbyType,
     PaginationData,
     PaginationRules,
+    Self,
     Type,
     Union,
 )
@@ -68,7 +71,7 @@ class BaseDynamicsClient(ABC):
     actions = Actions()
     functions = Functions()
 
-    error_dict = {
+    error_dict: ClassVar[Dict[int, DynamicsException]] = {
         status.HTTP_400_BAD_REQUEST: ParseError,
         status.HTTP_401_UNAUTHORIZED: AuthenticationFailed,
         status.HTTP_403_FORBIDDEN: PermissionDenied,
@@ -82,7 +85,7 @@ class BaseDynamicsClient(ABC):
         status.HTTP_503_SERVICE_UNAVAILABLE: WebAPIUnavailable,
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         api_url: str,
         token_url: str,
@@ -92,8 +95,9 @@ class BaseDynamicsClient(ABC):
         resource: Optional[str] = None,
         *,
         cache_token: bool = True,
-    ):
-        """Establish a Microsoft Dynamics 365 Dataverse API client connection
+    ) -> None:
+        """
+        Establish a Microsoft Dynamics 365 Dataverse API client connection
         using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
         created in Dynamics, and granting it an appropriate security role.
 
@@ -108,12 +112,12 @@ class BaseDynamicsClient(ABC):
                          Most likely in this format: https://{organization_uri}/
         :param cache_token: If False, don't cache the OAuthToken received from dynamics.
         """
-
         if not scope and not resource:
-            raise ValueError(
-                "To instantiate a DynamicsClient, you must provide at least one of either the"
-                " scope or resource parameters."
+            msg = (
+                "To instantiate a DynamicsClient, you must provide at "
+                "least one of either the scope or resource parameters."
             )
+            raise ValueError(msg)
 
         self._api_url = api_url.rstrip("/") + "/"
         self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope)
@@ -142,8 +146,9 @@ class BaseDynamicsClient(ABC):
         self._pagesize: int = 5000
 
     @classmethod
-    def from_environment(cls):
-        """Create a client from environment variables:
+    def from_environment(cls) -> Self:
+        """
+        Create a client from environment variables:
 
         * `DYNAMICS_API_URL`: url string
         * `DYNAMICS_TOKEN_URL`: url string
@@ -157,7 +162,6 @@ class BaseDynamicsClient(ABC):
 
         :raises KeyError: An environment variable was not configured properly
         """
-
         api_url = os.environ["DYNAMICS_API_URL"]
         token_url = os.environ["DYNAMICS_TOKEN_URL"]
         client_id = os.environ["DYNAMICS_CLIENT_ID"]
@@ -166,7 +170,8 @@ class BaseDynamicsClient(ABC):
         scope = os.environ.get("DYNAMICS_SCOPE")
         resource = os.environ.get("DYNAMICS_RESOURCE")
         if not scope and not resource:
-            raise KeyError("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set.")
+            msg = "At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set."
+            raise KeyError(msg)
 
         if scope is not None and "," in scope:
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
@@ -175,10 +180,10 @@ class BaseDynamicsClient(ABC):
 
         return cls(api_url, token_url, client_id, client_secret, scope, resource, cache_token=cache_token)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> str:
         return self.headers[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: str) -> None:
         self.headers[key] = value
 
     @property
@@ -251,7 +256,8 @@ class BaseDynamicsClient(ABC):
         pagination_rules: Optional[PaginationRules] = None,
         query: Optional[str] = None,
     ) -> Union[DynamicsClientGetResponse, Coroutine[Any, Any, DynamicsClientGetResponse]]:
-        """Make a request to the Dataverse API with currently added query options.
+        """
+        Make a request to the Dataverse API with currently added query options.
 
         Please also read the decorator's documentation!
 
@@ -265,10 +271,10 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
+                error_message=f"{error!s}. Response: {response.text}",
                 error_code="invalid_json",
                 method="get",
             ) from error
@@ -309,7 +315,8 @@ class BaseDynamicsClient(ABC):
         *,
         query: Optional[str] = None,
     ) -> Union[DynamicsClientPostResponse, Coroutine[Any, Any, DynamicsClientPostResponse]]:
-        """Create new row in a table. Must have 'table' attribute set.
+        """
+        Create new row in a table. Must have 'table' attribute set.
         Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
@@ -326,10 +333,10 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
+                error_message=f"{error!s}. Response: {response.text}",
                 error_code="invalid_json",
                 method="post",
             ) from error
@@ -353,7 +360,8 @@ class BaseDynamicsClient(ABC):
         *,
         query: Optional[str] = None,
     ) -> Union[DynamicsClientPatchResponse, Coroutine[Any, Any, DynamicsClientPatchResponse]]:
-        """Update row in a table. Must have 'table' and 'row_id' attributes set.
+        """
+        Update row in a table. Must have 'table' and 'row_id' attributes set.
         Use expand and select to reduce returned data.
 
         Please also read the decorator's documentation!
@@ -370,10 +378,10 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
+                error_message=f"{error!s}. Response: {response.text}",
                 error_code="invalid_json",
                 method="patch",
             ) from error
@@ -392,7 +400,8 @@ class BaseDynamicsClient(ABC):
 
     @abstractmethod
     def delete(self, *, query: Optional[str] = None) -> None:
-        """Delete row in a table. Must have 'table' and 'row_id' attributes set.
+        """
+        Delete row in a table. Must have 'table' and 'row_id' attributes set.
 
         Please also read the decorator's documentation!
 
@@ -407,10 +416,10 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             raise self.handled_error(
                 status_code=response.status_code,
-                error_message=f"{str(error)}. Response: {response.text}",
+                error_message=f"{error!s}. Response: {response.text}",
                 error_code="invalid_json",
                 method="delete",
             ) from error
@@ -436,7 +445,6 @@ class BaseDynamicsClient(ABC):
     @property
     def current_query(self) -> str:
         """Constructs query from current options, leaving out empty ones."""
-
         query = self._api_url + self.table
 
         if self.row_id:
@@ -484,7 +492,7 @@ class BaseDynamicsClient(ABC):
         """HTTP request headers."""
         return self._headers
 
-    def reset_query(self):
+    def reset_query(self) -> None:
         """Resets all client options and headers."""
         self._select: List[str] = []
         self._expand: ExpandDict = {}
@@ -503,9 +511,8 @@ class BaseDynamicsClient(ABC):
 
         self._headers: Dict[str, str] = {}
 
-    def default_headers(self, method: MethodType):
+    def default_headers(self, method: MethodType) -> Dict[str, str]:
         """Get method default headers for given method."""
-
         headers = {
             "OData-MaxVersion": "4.0",
             "OData-Version": "4.0",
@@ -550,7 +557,8 @@ class BaseDynamicsClient(ABC):
         return headers
 
     def handled_error(self, status_code: int, error_message: str, error_code: str, method: MethodType) -> Exception:
-        """Error handling based on these expected error statuses:
+        """
+        Error handling based on these expected error statuses:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/compose-http-requests-handle-errors#identify-status-codes
 
         :param status_code: Error status from dynamics
@@ -558,7 +566,6 @@ class BaseDynamicsClient(ABC):
         :param error_code: Error code from dynamics.
         :param method: HTTP method in question.
         """
-
         logger.warning(
             "Dynamics client <[%s] %s> failed with status %d: %s (%s)",
             method.upper(),
@@ -581,7 +588,8 @@ class BaseDynamicsClient(ABC):
 
     @property
     def action(self) -> str:
-        """Set the Dynamics Web API action or function to use.
+        """
+        Set the Dynamics Web API action or function to use.
 
         It is recommended to read the API Function Reference:
         https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions
@@ -606,7 +614,8 @@ class BaseDynamicsClient(ABC):
 
     @property
     def row_id(self) -> str:
-        """Search only from the row with this id.
+        """
+        Search only from the row with this id.
         If the table has an alternate key defined, you can use
         'foo=bar' or 'foo=bar,fizz=buzz' to retrieve a single row:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/retrieve-entity-using-web-api#retrieve-using-an-alternate-key
@@ -620,7 +629,8 @@ class BaseDynamicsClient(ABC):
 
     @property
     def add_ref_to_property(self) -> str:
-        """Add reference for this navigation property. This indicates,
+        """
+        Add reference for this navigation property. This indicates,
         that POST data will contain the API url to a matching row id
         in the table this navigation property is meant to link to,
         like this: "@odata.id": "<API URI>/<table>(<id>)".
@@ -637,7 +647,8 @@ class BaseDynamicsClient(ABC):
 
     @property
     def pre_expand(self) -> str:
-        """Expand/navigate to some linked table in this table
+        """
+        Expand/navigate to some linked table in this table
         before taking any query options into account.
         This will save you having to use the expand statement itself,
         if all you are looking for is under this table anyway.
@@ -650,7 +661,8 @@ class BaseDynamicsClient(ABC):
 
     @property
     def show_annotations(self) -> bool:
-        """Show annotations for returned data, e.g. enum values, GUID names, etc.
+        """
+        Show annotations for returned data, e.g. enum values, GUID names, etc.
         Helpful for development and debugging.
         https://docs.microsoft.com/en-us/odata/webapi/include-annotations
         """
@@ -664,8 +676,9 @@ class BaseDynamicsClient(ABC):
             self.headers.pop("Prefer")
 
     @property
-    def suppress_duplicate_detection(self):
-        """If set to True, allow creating duplicate records if
+    def suppress_duplicate_detection(self) -> bool:
+        """
+        If set to True, allow creating duplicate records if
         Dynamics detects one during a POST or PATCH request.
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/manage-duplicate-detection-create-update
         """
@@ -698,7 +711,8 @@ class BaseDynamicsClient(ABC):
 
     @expand.setter
     def expand(self, items: ExpandDict) -> None:
-        """Set $expand statement, with possible nested statements.
+        """
+        Set $expand statement, with possible nested statements.
         Controls what data from related entities is returned.
 
         Nested expand statement limitations (WEB API v9.1):
@@ -717,7 +731,6 @@ class BaseDynamicsClient(ABC):
                       Values under these keys should be constructed in the same manner as they are
                       when outside the expand statement, e.g., 'select' takes a List[str], 'top' an int, etc.
         """
-
         self._expand = items
 
     def _compile_expand(self, items: ExpandDict = sentinel) -> str:
@@ -738,7 +751,6 @@ class BaseDynamicsClient(ABC):
 
     def _expand_commands(self, name: ExpandKeys, values: ExpandValues) -> str:
         """Compile commands inside an expand statement."""
-
         if name == "select":
             return self._compile_select(values)
         if name == "filter":
@@ -750,16 +762,18 @@ class BaseDynamicsClient(ABC):
         if name == "expand":
             return self._compile_expand(values)
 
-        raise KeyError(f"'{name}' is not a valid query inside expand statement!")
+        msg = f"'{name}' is not a valid query inside expand statement!"
+        raise KeyError(msg)
 
     @property
-    def filter(self) -> FilterType:
+    def filter(self) -> FilterType:  # noqa: A003
         """Get current $filter statement"""
         return self._filter
 
     @filter.setter
-    def filter(self, items: FilterType) -> None:
-        """Set $filter statement. Sets the criteria for which entities will be returned.
+    def filter(self, items: FilterType) -> None:  # noqa: A003
+        """
+        Set $filter statement. Sets the criteria for which entities will be returned.
 
         It is recommended to read the API Query Function Reference:
         https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions
@@ -787,11 +801,12 @@ class BaseDynamicsClient(ABC):
 
         :param items: If a list-object, 'and' the items. If a set-object, 'or' the items.
         """
-
         if not isinstance(items, (set, list)):
-            raise TypeError("Filter items must be either a set or a list.")
+            msg = "Filter items must be either a set or a list."
+            raise TypeError(msg)
         if not items:
-            raise ValueError("Filter list cannot be empty.")
+            msg = "Filter list cannot be empty."
+            raise ValueError(msg)
 
         self._filter = items
 
@@ -807,14 +822,19 @@ class BaseDynamicsClient(ABC):
         if isinstance(values, list):
             return "$filter=" + " and ".join([value.strip() for value in values])
 
+        # pragma: no cover
+        msg = f"Unknown filter: {values}"
+        raise TypeError(msg)
+
     @property
-    def apply(self):
+    def apply(self) -> str:
         """Current apply statement."""
         return self._apply
 
     @apply.setter
     def apply(self, statement: str) -> None:
-        """Set the $apply statement. Aggregates or groups results.
+        """
+        Set the $apply statement. Aggregates or groups results.
 
         It is recommended to read how to aggregate and grouping results:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-data-web-api#aggregate-and-grouping-results
@@ -826,10 +846,9 @@ class BaseDynamicsClient(ABC):
 
         :param statement: aggregate, groupby, or filter apply-string.
         """
-
         self._apply = statement
 
-    def _compile_apply(self, statement: str = sentinel):
+    def _compile_apply(self, statement: str = sentinel) -> str:
         if statement is sentinel:
             statement = self._apply
 
@@ -842,7 +861,8 @@ class BaseDynamicsClient(ABC):
 
     @top.setter
     def top(self, number: int) -> None:
-        """Set $top statement. Limits the number of results returned.
+        """
+        Set $top statement. Limits the number of results returned.
         Note: You should not use 'top' and 'count' in the same query.
         """
         self._top = number
@@ -861,11 +881,12 @@ class BaseDynamicsClient(ABC):
     @orderby.setter
     def orderby(self, items: OrderbyType) -> None:
         """Set $orderby statement. Specifies the order in which items are returned."""
-
         if not isinstance(items, dict):
-            raise TypeError("Orderby items must be a dict.")
+            msg = "Orderby items must be a dict."
+            raise TypeError(msg)
         if not items:
-            raise ValueError("Orderby dict must not be empty.")
+            msg = "Orderby dict must not be empty."
+            raise ValueError(msg)
 
         self._orderby = items
 
@@ -885,7 +906,8 @@ class BaseDynamicsClient(ABC):
 
     @count.setter
     def count(self, value: bool) -> None:
-        """Set $count statement. Include the count of entities that match the filter criteria in the results.
+        """
+        Set $count statement. Include the count of entities that match the filter criteria in the results.
         Count will be the first item in the list of results.
         Note: You should not use 'count' and 'top' in the same query.
         """
@@ -905,23 +927,24 @@ class BaseDynamicsClient(ABC):
     @pagesize.setter
     def pagesize(self, value: int) -> None:
         """Specify the number of tables to return in a page."""
-
         if value < 1:
-            raise ValueError(f"Value must be bigger than 0. Got {value}.")
-        if value > 5000:
-            raise ValueError(f"Max pagesize is 5000. Got {value}.")
+            msg = f"Value must be bigger than 0. Got {value}."
+            raise ValueError(msg)
+        if value > MAX_PAGESIZE:
+            msg = f"Max pagesize is {MAX_PAGESIZE}. Got {value}."
+            raise ValueError(msg)
 
         self._pagesize = value
 
     @property
     def fetch_xml(self) -> str:
         """Get current FetchXML query string."""
-
         return self._fetch_xml
 
     @fetch_xml.setter
     def fetch_xml(self, value: str) -> None:
-        """Set a query using the FetchXML query language.
+        """
+        Set a query using the FetchXML query language.
         Must set table, but cannot set any other query options!
 
         Queries can be constructed with the included FetchXMLBuilder.
@@ -932,7 +955,6 @@ class BaseDynamicsClient(ABC):
         How to use:
         https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-construct-query
         """
-
         self._fetch_xml = value
 
     def _compile_fetch_xml(self, value: str = sentinel) -> str:

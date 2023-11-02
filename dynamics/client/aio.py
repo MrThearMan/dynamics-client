@@ -2,10 +2,10 @@ import asyncio
 import logging
 from asyncio import iscoroutine
 from types import TracebackType
+from typing import TYPE_CHECKING
 
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oauth2.rfc6749.wrappers import OAuth2Token
-from httpx import Response
 
 from ..typing import (
     Any,
@@ -24,6 +24,9 @@ from ..typing import (
 )
 from ..utils import Singletons, error_simplification_available, to_coroutine
 from .base import BaseDynamicsClient
+
+if TYPE_CHECKING:
+    from httpx import Response
 
 __all__ = ["DynamicsClient"]
 
@@ -107,7 +110,7 @@ class DynamicsClient(BaseDynamicsClient):
             query = self.current_query
 
         await self._ensure_token()
-        response: Response = await self._oauth_client.get(
+        response: "Response" = await self._oauth_client.get(
             url=query,
             headers={**self.default_headers("get"), **self.headers},
             auth=self._oauth_client.token_auth,
@@ -123,7 +126,7 @@ class DynamicsClient(BaseDynamicsClient):
             query = self.current_query
 
         await self._ensure_token()
-        response: Response = await self._oauth_client.post(
+        response: "Response" = await self._oauth_client.post(
             url=query,
             json=data,
             headers={**self.default_headers("post"), **self.headers},
@@ -137,7 +140,7 @@ class DynamicsClient(BaseDynamicsClient):
             query = self.current_query
 
         await self._ensure_token()
-        response: Response = await self._oauth_client.patch(
+        response: "Response" = await self._oauth_client.patch(
             url=query,
             json=data,
             headers={**self.default_headers("patch"), **self.headers},
@@ -151,7 +154,7 @@ class DynamicsClient(BaseDynamicsClient):
             query = self.current_query
 
         await self._ensure_token()
-        response: Response = await self._oauth_client.delete(
+        response: "Response" = await self._oauth_client.delete(
             url=query,
             headers={**self.default_headers("delete"), **self.headers},
             auth=self._oauth_client.token_auth,
@@ -165,7 +168,12 @@ class DynamicsClient(BaseDynamicsClient):
 
         return self
 
-    async def __aexit__(self, exc_type: Optional[Type[Exception]], exc: Exception, traceback: TracebackType) -> None:
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
             try:
                 await self.__tg.__aexit__(exc_type, exc, traceback)
@@ -178,13 +186,13 @@ class DynamicsClient(BaseDynamicsClient):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> asyncio.Task:
-        """Create task when the client is used as an async context manager.
+        """
+        Create task when the client is used as an async context manager.
 
         :param method: Client method to create task for.
         :param args: Positional arguments passed to the method.
         :param kwargs: Keyword arguments passed to the method.
         """
-
         if method in {self.get, self.post, self.patch, self.delete}:
             kwargs["query"] = self.current_query
         elif not iscoroutine(method):

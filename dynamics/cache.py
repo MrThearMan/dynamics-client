@@ -6,6 +6,7 @@ import threading
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import ClassVar
 
 import aiosqlite
 
@@ -21,7 +22,7 @@ class SQLiteCacheBase(ABC):
     """Dummy cache to use if Django's cache is not installed."""
 
     DEFAULT_TIMEOUT = 300
-    DEFAULT_PRAGMA = {
+    DEFAULT_PRAGMA: ClassVar[Dict[str, Union[int, str]]] = {
         "mmap_size": 2**26,  # https://www.sqlite.org/pragma.html#pragma_mmap_size
         "cache_size": 8192,  # https://www.sqlite.org/pragma.html#pragma_cache_size
         "wal_autocheckpoint": 1000,  # https://www.sqlite.org/pragma.html#pragma_wal_autocheckpoint
@@ -46,13 +47,13 @@ class SQLiteCacheBase(ABC):
     _delete_sql = "DELETE FROM cache WHERE key = :key"
     _clear_sql = "DELETE FROM cache"
 
-    def __init__(self, *, filename: str, path: str = None):
-        """Create a cache using sqlite.
+    def __init__(self, *, filename: str, path: Optional[str] = None) -> None:
+        """
+        Create a cache using sqlite.
 
         :param filename: Cache file name.
         :param path: Path string to the wanted db location. If None, use system temp folder.
         """
-
         if path is None:
             path = tempfile.gettempdir()
 
@@ -96,7 +97,12 @@ class SQLiteCacheBase(ABC):
         """Get item from cache."""
 
     @abstractmethod
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> Union[None, Coroutine[Any, Any, None]]:
+    def set(  # noqa: A003
+        self,
+        key: str,
+        value: Any,
+        timeout: Optional[int] = None,
+    ) -> Union[None, Coroutine[Any, Any, None]]:
         """Get item from cache."""
 
     @abstractmethod
@@ -111,7 +117,7 @@ class SQLiteCacheBase(ABC):
 class SQLiteCache(SQLiteCacheBase):
     """Sync cache"""
 
-    connections: Dict[int, sqlite3.Connection] = {}
+    connections: ClassVar[Dict[int, sqlite3.Connection]] = {}
 
     @property
     def con(self) -> sqlite3.Connection:
@@ -150,13 +156,13 @@ class SQLiteCache(SQLiteCacheBase):
         if result is None:
             return default
 
-        if datetime.utcnow() >= datetime.utcfromtimestamp(result[1]):
+        if datetime.now(tz=timezone.utc) >= datetime.fromtimestamp(result[1], tz=timezone.utc):
             self.con.execute(self._delete_sql, {"key": key})
             return default
 
         return self._unstream(result[0])
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:  # noqa: A003
         timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         self.con.execute(self._set_sql, data)
@@ -177,7 +183,7 @@ class SQLiteCache(SQLiteCacheBase):
 class AsyncSQLiteCache(SQLiteCacheBase):
     """Async cache"""
 
-    connections: Dict[int, aiosqlite.Connection] = {}
+    connections: ClassVar[Dict[int, aiosqlite.Connection]] = {}
 
     @property
     async def con(self) -> aiosqlite.Connection:
@@ -203,13 +209,13 @@ class AsyncSQLiteCache(SQLiteCacheBase):
         if result is None:
             return default
 
-        if datetime.utcnow() >= datetime.utcfromtimestamp(result[1]):
+        if datetime.now(tz=timezone.utc) >= datetime.fromtimestamp(result[1], tz=timezone.utc):
             await con.execute(self._delete_sql, {"key": key})
             return default
 
         return self._unstream(result[0])
 
-    async def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:  # noqa: A003
         timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         con = await self.con

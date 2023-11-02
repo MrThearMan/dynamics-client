@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -32,12 +31,12 @@ except ImportError:
 
 # New in version 3.11
 try:
-    from typing import NotRequired, Required
+    from typing import NotRequired, Required, Self
 except ImportError:
-    from typing_extensions import NotRequired, Required
+    from typing_extensions import NotRequired, Required, Self
 
 
-from .enums import FetchXMLOperator
+from .enums import FetchXMLOperator  # noqa: TCH001
 
 __all__ = [
     "Any",
@@ -85,12 +84,12 @@ __all__ = [
     "ParamSpec",
     "Required",
     "ResponseType",
+    "Self",
     "Sequence",
     "Set",
     "T",
     "Tuple",
     "Type",
-    "TYPE_CHECKING",
     "TypeAlias",
     "TypedDict",
     "TypeGuard",
@@ -108,7 +107,7 @@ class ExpandType(TypedDict):
     filter: FilterType
     top: int
     orderby: OrderbyType
-    expand: Dict[str, "ExpandType"]
+    expand: Dict[str, ExpandType]
 
 
 ExpandKeys: TypeAlias = Literal["select", "filter", "top", "orderby", "expand"]
@@ -194,53 +193,38 @@ FetchXMLFilterOperatorType: TypeAlias = Literal["and", "or"]
 FetchXMLFetchMappingType: TypeAlias = Literal["internal", "logical"]
 
 
-FetchXMLCondition = TypedDict(
-    "FetchXMLCondition",
-    {
-        "column": str,
-        "attribute": str,
-        "operator": FetchXMLOperator,
-        "value": str,
-        "values": List[str],
-        "valueof": str,
-        "entityname": str,
-        "aggregate": FetchXMLAggregateType,
-        "rowaggregate": Literal["countchildren"],
-        "alias": str,
-        "uiname": str,
-        "uitype": str,
-        "uihidden": Literal["0", "1"],
-    },
-    total=False,
-)
+class FetchXMLCondition(TypedDict, total=False):
+    column: str
+    attribute: str
+    operator: FetchXMLOperator
+    value: str
+    values: List[str]
+    valueof: str
+    entityname: str
+    aggregate: FetchXMLAggregateType
+    rowaggregate: Literal["countchildren"]
+    alias: str
+    uiname: str
+    uitype: str
+    uihidden: Literal["0", "1"]
 
 
-FetchXMLAttributeType = TypedDict(
-    "FetchXMLAttributeType",
-    {
-        "name": str,
-        "alias": str,
-        "aggregate": FetchXMLAggregateType,
-        "groupby": LiteralBool,
-        "distinct": LiteralBool,
-        "dategrouping": FetchXMLDateGroupingType,
-        "usertimezone": LiteralBool,
-        "addedby": str,
-        "build": FetchXMLBuildType,
-    },
-    total=False,
-)
+class FetchXMLAttributeType(TypedDict, total=False):
+    name: str
+    alias: str
+    aggregate: FetchXMLAggregateType
+    groupby: LiteralBool
+    distinct: LiteralBool
+    dategrouping: FetchXMLDateGroupingType
+    usertimezone: LiteralBool
+    addedby: str
+    build: FetchXMLBuildType
 
 
-FetchXMLOrderType = TypedDict(
-    "FetchXMLOrderType",
-    {
-        "attribute": str,
-        "alias": str,
-        "descending": LiteralBool,
-    },
-    total=False,
-)
+class FetchXMLOrderType(TypedDict, total=False):
+    attribute: str
+    alias: str
+    descending: LiteralBool
 
 
 FetchXMLType = TypedDict(
@@ -264,15 +248,10 @@ FetchXMLType = TypedDict(
 )
 
 
-FetchXMLEntityType = TypedDict(
-    "FetchXMLEntityType",
-    {
-        "name": str,
-        "enableprefiltering": LiteralBool,
-        "prefilterparametername": str,
-    },
-    total=False,
-)
+class FetchXMLEntityType(TypedDict, total=False):
+    name: str
+    enableprefiltering: LiteralBool
+    prefilterparametername: str
 
 
 FetchXMLLinkedEntity = TypedDict(
@@ -292,12 +271,7 @@ FetchXMLLinkedEntity = TypedDict(
 )
 
 
-FetchXMLFilterType = TypedDict(
-    "FetchXMLFilterType",
-    {
-        "type": FetchXMLFilterOperatorType,
-        "isquickfindfields": LiteralBool,
-        "overridequickfindrecordlimitenabled": LiteralBool,
-    },
-    total=False,
-)
+class FetchXMLFilterType(TypedDict, total=False):
+    type: FetchXMLFilterOperatorType
+    isquickfindfields: LiteralBool
+    overridequickfindrecordlimitenabled: LiteralBool
