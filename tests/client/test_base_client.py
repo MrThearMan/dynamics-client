@@ -317,6 +317,26 @@ def test_client__init_from_environment_fails_when_missing(missing_env, environ):
             "resource": "http://resource.local/",
             "cache_token": True,
         },
+        {
+            "api_url": "http://dynamics.local/",
+            "token_url": "http://token.local",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+            "scope": "http://scope.local/",
+            "resource": None,
+            "cache_token": True,
+            "connection_timeout": 20,
+        },
+        {
+            "api_url": "http://dynamics.local/",
+            "token_url": "http://token.local",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+            "scope": "http://scope.local/",
+            "resource": None,
+            "cache_token": True,
+            "connection_timeout": None,
+        },
     ],
 )
 def test_client__init_success(arguments):
@@ -811,3 +831,20 @@ def test_client__json_decode_error(dynamics_client):
 
     with pytest.raises(DynamicsException):
         dynamics_client.delete()
+
+
+def test_client__connection_timeout(dynamics_client):
+    client = DynamicsClient(
+        **{
+            "api_url": "http://dynamics.local/",
+            "token_url": "http://token.local",
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+            "scope": "http://scope.local/",
+            "resource": None,
+            "cache_token": True,
+            "connection_timeout": 12,
+        }
+    )
+
+    assert client._oauth_client.timeout == 12

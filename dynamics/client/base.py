@@ -159,6 +159,7 @@ class BaseDynamicsClient(ABC):
         * `DYNAMICS_SCOPE`: comma separated list of urls
         * `DYNAMICS_RESOURCE`: single target url
         * `DYNAMICS_CACHE_TOKEN`: 0 = False, 1 = True (default)
+        * `DYNAMICS_CONNECTION_TIMEOUT`: Integer of connection timeout
 
         At least one of `DYNAMICS_SCOPE` or `DYNAMICS_RESOURCE` must be provided.
 
@@ -179,8 +180,18 @@ class BaseDynamicsClient(ABC):
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
 
         cache_token = bool(int(os.environ.get("DYNAMICS_CACHE_TOKEN", 1)))
+        connection_timeout = int(os.environ.get("DYNAMICS_CACHE_TOKEN", 5))
 
-        return cls(api_url, token_url, client_id, client_secret, scope, resource, cache_token=cache_token)
+        return cls(
+            api_url,
+            token_url,
+            client_id,
+            client_secret,
+            scope,
+            resource,
+            cache_token=cache_token,
+            connection_timeout=connection_timeout,
+        )
 
     def __getitem__(self, key: str) -> str:
         return self.headers[key]
