@@ -17,7 +17,7 @@ from dynamics import DynamicsClient
 | `scope`                | str<br>List[str]<br>None | None    | Url or list of urls in form: `https://{organization_uri}/scope`. Defines the database records that the API connection has access to. |
 | `resource`             | str<br>None              | None    | Url in form: `https://{organization_uri}`. Defines the database records that the API connection has access to.                       |
 | `cache_token`          | bool                     | True    | If `False`, don't cache the OAuthToken received from dynamics.                                                                       |
-| `connection_timeout`   | int                      | 5       |  The timeout for all requests, specify None to disable timeouts                                                                      |
+| `connection_timeout`   | int<br/>None             | 5       |  The timeout for all requests, specify None to disable timeouts                                                                      |
 
 Establish a Microsoft Dynamics 365 Dataverse API client connection
 using OAuth 2.0 Client Credentials Flow. Client Credentials require an application user to be
