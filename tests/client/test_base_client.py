@@ -29,103 +29,103 @@ from dynamics.typing import DynamicsClientGetResponse, MethodType
     "dynamics_client",
     [
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a ParseError", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(400, cycle=True)
-                    .with_exceptions(ParseError("This is a ParseError"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a ParseError", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(400, cycle=True)
+            .with_exceptions(ParseError("This is a ParseError"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a AuthenticationFailed", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(401, cycle=True)
-                    .with_exceptions(AuthenticationFailed("This is a AuthenticationFailed"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a AuthenticationFailed", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(401, cycle=True)
+            .with_exceptions(AuthenticationFailed("This is a AuthenticationFailed"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a PermissionDenied", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(403, cycle=True)
-                    .with_exceptions(PermissionDenied("This is a PermissionDenied"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a PermissionDenied", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(403, cycle=True)
+            .with_exceptions(PermissionDenied("This is a PermissionDenied"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a NotFound", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(404, cycle=True)
-                    .with_exceptions(NotFound("This is a NotFound"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a NotFound", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(404, cycle=True)
+            .with_exceptions(NotFound("This is a NotFound"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a MethodNotAllowed", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(405, cycle=True)
-                    .with_exceptions(MethodNotAllowed("This is a MethodNotAllowed"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a MethodNotAllowed", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(405, cycle=True)
+            .with_exceptions(MethodNotAllowed("This is a MethodNotAllowed"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a DuplicateRecordError", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(412, cycle=True)
-                    .with_exceptions(DuplicateRecordError("This is a DuplicateRecordError"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a DuplicateRecordError", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(412, cycle=True)
+            .with_exceptions(DuplicateRecordError("This is a DuplicateRecordError"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a PayloadTooLarge", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(413, cycle=True)
-                    .with_exceptions(PayloadTooLarge("This is a PayloadTooLarge"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a PayloadTooLarge", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(413, cycle=True)
+            .with_exceptions(PayloadTooLarge("This is a PayloadTooLarge"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a APILimitsExceeded", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(429, cycle=True)
-                    .with_exceptions(APILimitsExceeded("This is a APILimitsExceeded"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a APILimitsExceeded", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(429, cycle=True)
+            .with_exceptions(APILimitsExceeded("This is a APILimitsExceeded"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a DynamicsException", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(500, cycle=True)
-                    .with_exceptions(DynamicsException("This is a DynamicsException"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a DynamicsException", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(500, cycle=True)
+            .with_exceptions(DynamicsException("This is a DynamicsException"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a OperationNotImplemented", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(501, cycle=True)
-                    .with_exceptions(OperationNotImplemented("This is a OperationNotImplemented"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a OperationNotImplemented", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(501, cycle=True)
+            .with_exceptions(OperationNotImplemented("This is a OperationNotImplemented"))
         ),
         (
-                MockClient()
-                    .internal.with_responses(
-                    {"error": {"message": "This is a WebAPIUnavailable", "code": "0"}},
-                    cycle=True,
-                )
-                    .with_status_codes(503, cycle=True)
-                    .with_exceptions(WebAPIUnavailable("This is a WebAPIUnavailable"))
+            MockClient()
+            .internal.with_responses(
+                {"error": {"message": "This is a WebAPIUnavailable", "code": "0"}},
+                cycle=True,
+            )
+            .with_status_codes(503, cycle=True)
+            .with_exceptions(WebAPIUnavailable("This is a WebAPIUnavailable"))
         ),
     ],
     indirect=True,
@@ -247,8 +247,8 @@ def test_client__init_from_environment_scope_or_resource_required(environ):
 
     with environ(**env):
         with pytest.raises(
-                KeyError,
-                match=re.escape("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set."),
+            KeyError,
+            match=re.escape("At least one of DYNAMICS_SCOPE or DYNAMICS_RESOURCE env var must be set."),
         ):
             DynamicsClient.from_environment()
 
@@ -345,11 +345,11 @@ def test_client__init_success(arguments):
 
 def test_client__init_scope_or_resource_required(environ):
     with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "To instantiate a DynamicsClient, you must provide at least one of either "
-                "the scope or resource parameters."
-            ),
+        ValueError,
+        match=re.escape(
+            "To instantiate a DynamicsClient, you must provide at least one of either "
+            "the scope or resource parameters."
+        ),
     ):
         DynamicsClient(api_url="apiurl", token_url="tokenurl", client_id="clientid", client_secret="secret")
 
@@ -489,8 +489,8 @@ def test_client__query__expand__with_select_and_filer__multiple(dynamics_client)
     dynamics_client.expand = {"foo": {"select": ["bar", "baz"], "filter": ["fizz", "buzz"]}}
     assert dynamics_client.expand == {"foo": {"select": ["bar", "baz"], "filter": ["fizz", "buzz"]}}
     assert (
-            dynamics_client.current_query
-            == "http://dynamics.local/table?$expand=foo($select=bar,baz;$filter=fizz and buzz)"
+        dynamics_client.current_query
+        == "http://dynamics.local/table?$expand=foo($select=bar,baz;$filter=fizz and buzz)"
     )
 
 
