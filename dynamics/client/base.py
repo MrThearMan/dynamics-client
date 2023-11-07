@@ -122,6 +122,8 @@ class BaseDynamicsClient(ABC):
             raise ValueError(msg)
 
         self._api_url = api_url.rstrip("/") + "/"
+        if connection_timeout == 0:
+            connection_timeout = None
         self._oauth_client = self.oauth_class(client_id, client_secret, scope=scope, timeout=connection_timeout)
         self._token_url = token_url
         self._client_id = client_id
@@ -180,7 +182,7 @@ class BaseDynamicsClient(ABC):
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
 
         cache_token = bool(int(os.environ.get("DYNAMICS_CACHE_TOKEN", 1)))
-        connection_timeout = int(os.environ.get("DYNAMICS_CACHE_TOKEN", 5))
+        connection_timeout = int(os.environ.get("DYNAMICS_CONNECTION_TIMEOUT", 5))
 
         return cls(
             api_url,
