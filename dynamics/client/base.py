@@ -781,12 +781,12 @@ class BaseDynamicsClient(ABC):
         raise KeyError(msg)
 
     @property
-    def filter(self) -> FilterType:  # noqa: A003
+    def filter(self) -> FilterType:
         """Get current $filter statement"""
         return self._filter
 
     @filter.setter
-    def filter(self, items: FilterType) -> None:  # noqa: A003
+    def filter(self, items: FilterType) -> None:
         """
         Set $filter statement. Sets the criteria for which entities will be returned.
 

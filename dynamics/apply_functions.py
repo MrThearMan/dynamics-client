@@ -38,7 +38,7 @@ class apl:  # noqa: N801
         return f"aggregate({col_} with {with_} as {as_})"
 
     @staticmethod
-    def filter(by: FilterType, group_by_columns: List[str]) -> str:  # noqa: A003
+    def filter(by: FilterType, group_by_columns: List[str]) -> str:
         """
         Group filtered values by columns.
 

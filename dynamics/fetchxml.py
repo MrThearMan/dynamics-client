@@ -383,7 +383,7 @@ class _EntityBuilder:
             self._order["descending"] = _serialize_bool(descending)
         return self
 
-    def filter(  # noqa: A003
+    def filter(
         self,
         *,
         type_: FetchXMLFilterOperatorType = "and",
@@ -666,7 +666,7 @@ class _LinkedEntityBuilder:
             self._order["descending"] = _serialize_bool(descending)
         return self
 
-    def filter(  # noqa: A003
+    def filter(
         self,
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
@@ -859,7 +859,7 @@ class _FilterBuilder:
         self._filters.append(filter_builder)
         return filter_builder
 
-    def filter(  # noqa: A003
+    def filter(
         self,
         type_: FetchXMLFilterOperatorType = "and",
         is_quick_find_fields: Optional[bool] = None,
