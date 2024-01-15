@@ -97,7 +97,7 @@ class SQLiteCacheBase(ABC):
         """Get item from cache."""
 
     @abstractmethod
-    def set(  # noqa: A003
+    def set(
         self,
         key: str,
         value: Any,
@@ -162,7 +162,7 @@ class SQLiteCache(SQLiteCacheBase):
 
         return self._unstream(result[0])
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:  # noqa: A003
+    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         self.con.execute(self._set_sql, data)
@@ -215,7 +215,7 @@ class AsyncSQLiteCache(SQLiteCacheBase):
 
         return self._unstream(result[0])
 
-    async def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:  # noqa: A003
+    async def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         data = {"key": key, "value": self._stream(value), "exp": self._exp_timestamp(timeout)}
         con = await self.con
