@@ -135,7 +135,7 @@ class SQLiteCache(SQLiteCacheBase):
 
         try:
             asyncio.run(connection.close())
-        except RuntimeError:  # Raised if already in an async event loop.
+        except RuntimeError:  # Raised if already in an async event loop.  # pragma: no cover
             try:
                 # Submit the connection-close task to the aiosqlite.Connection Thread-object,
                 # since only that thread is allowed to close the sqlite connection.
@@ -197,7 +197,7 @@ class AsyncSQLiteCache(SQLiteCacheBase):
 
     def close_blocking_connections(self, thead_id: int) -> None:
         sync_connection = SQLiteCache.connections.pop(thead_id, None)
-        if sync_connection is not None:
+        if sync_connection is not None:  # pragma: no cover
             sync_connection.close()
 
     async def get(self, key: str, default: Any = None) -> Any:

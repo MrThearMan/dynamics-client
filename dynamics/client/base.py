@@ -837,9 +837,8 @@ class BaseDynamicsClient(ABC):
         if isinstance(values, list):
             return "$filter=" + " and ".join([value.strip() for value in values])
 
-        # pragma: no cover
-        msg = f"Unknown filter: {values}"
-        raise TypeError(msg)
+        msg = f"Unknown filter: {values}"  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
     @property
     def apply(self) -> str:
