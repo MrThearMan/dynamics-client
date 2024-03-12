@@ -2,6 +2,7 @@
 Functions available in the web API. Reference:
 https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/functions
 """
+
 from typing import TYPE_CHECKING
 
 from .enums import EntityFilter, TargetFieldType

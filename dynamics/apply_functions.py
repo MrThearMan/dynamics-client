@@ -5,6 +5,7 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-
 FetchXML aggregation documentation:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/use-fetchxml-aggregation
 """
+
 from typing import Optional
 
 from .typing import FilterType, List, Literal

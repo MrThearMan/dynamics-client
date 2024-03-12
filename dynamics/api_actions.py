@@ -5,6 +5,7 @@ https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/actions
 Documentation:
 https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/use-web-api-actions
 """
+
 from typing import TYPE_CHECKING
 
 from .enums import QuoteState

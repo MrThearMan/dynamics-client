@@ -7,6 +7,7 @@ https://docs.microsoft.com/en-us/powerapps/developer/data-platform/webapi/query-
 Special Operators API reference:
 https://docs.microsoft.com/en-us/dynamics365/customer-engagement/web-api/queryfunctions?view=dynamics-ce-odata-9
 """
+
 from typing import Any
 
 from .typing import CompType, FieldType, List, Optional, Tuple
