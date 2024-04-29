@@ -126,7 +126,7 @@ def error_simplification_available(func: Callable[P, T]) -> Callable[P, T]:
 
         try:
             return func(*args, **kwargs)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             logger.warning(error)
             if not simplify_errors or any(isinstance(error, exception) for exception in raise_separately):
                 raise

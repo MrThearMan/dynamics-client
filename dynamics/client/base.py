@@ -286,7 +286,7 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             raise self.handled_error(
                 status_code=response.status_code,
                 error_message=f"{error!s}. Response: {response.text}",
@@ -348,7 +348,7 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             raise self.handled_error(
                 status_code=response.status_code,
                 error_message=f"{error!s}. Response: {response.text}",
@@ -393,7 +393,7 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             raise self.handled_error(
                 status_code=response.status_code,
                 error_message=f"{error!s}. Response: {response.text}",
@@ -431,7 +431,7 @@ class BaseDynamicsClient(ABC):
 
         try:
             data = response.json()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             raise self.handled_error(
                 status_code=response.status_code,
                 error_message=f"{error!s}. Response: {response.text}",
