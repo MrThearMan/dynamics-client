@@ -52,11 +52,11 @@ Django = { version = ">=4.2", optional = true }
 djangorestframework = { version = ">=3.12.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.1"
+pytest = "8.2.2"
 coverage = "7.5.3"
 pytest-asyncio = "0.23.7"
 pre-commit = "3.7.1"
-tox = "4.15.0"
+tox = "4.15.1"
 tox-gh-actions = "3.2.0"
 
 [tool.poetry.group.docs.dependencies]
