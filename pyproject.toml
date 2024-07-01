@@ -65,7 +65,7 @@ pymdown-extensions = "10.8.1"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.10.0"
+mypy = "1.10.1"
 
 [tool.poetry.extras]
 django = ["Django", "djangorestframework"]
