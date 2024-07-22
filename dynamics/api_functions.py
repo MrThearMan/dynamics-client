@@ -36,7 +36,7 @@ class Functions:
             raise_separately=kwargs.pop("raise_separately", []),
         )
 
-    def format_address(  # noqa: PLR0913
+    def format_address(
         self,
         line_1: str,
         city: str,
