@@ -475,13 +475,13 @@ files = [
 
 [[package]]
 name = "django"
-version = "4.2.14"
+version = "4.2.15"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.14-py3-none-any.whl", hash = "sha256:3ec32bc2c616ab02834b9cac93143a7dc1cdcd5b822d78ac95fc20a38c534240"},
-    {file = "Django-4.2.14.tar.gz", hash = "sha256:fc6919875a6226c7ffcae1a7d51e0f2ceaf6f160393180818f6c95f51b1e7b96"},
+    {file = "Django-4.2.15-py3-none-any.whl", hash = "sha256:61ee4a130efb8c451ef3467c67ca99fdce400fedd768634efc86a68c18d80d30"},
+    {file = "Django-4.2.15.tar.gz", hash = "sha256:c77f926b81129493961e19c0e02188f8d07c112a1162df69bfab178ae447f94a"},
 ]
 
 [package.dependencies]
@@ -1292,13 +1292,13 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.17.0"
+version = "4.17.1"
 description = "tox is a generic virtualenv management and test command line tool"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tox-4.17.0-py3-none-any.whl", hash = "sha256:82ef41e7e54182e2143daf0b2920d9030c2e1c4291e12091ebad66860c7be7a4"},
-    {file = "tox-4.17.0.tar.gz", hash = "sha256:b1e2e1dfbfdc174d9be95ae78ec2c4d2cf4800d4c15571deddb197a2c90d2de6"},
+    {file = "tox-4.17.1-py3-none-any.whl", hash = "sha256:2974597c0353577126ab014f52d1a399fb761049e165ff34427f84e8cfe6c990"},
+    {file = "tox-4.17.1.tar.gz", hash = "sha256:2c41565a571e34480bd401d668a4899806169a4633e972ac296c54406d2ded8a"},
 ]
 
 [package.dependencies]
@@ -1455,4 +1455,4 @@ django = ["Django", "djangorestframework"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "79887827a3fa7a0224b20fe5af9d827d992a2742a9db3a922c62c44029808b6e"
+content-hash = "7b64c890b2c3b78295d92f2760b46561f8d9f74e559fd5793dc3facf7eb3a485"
