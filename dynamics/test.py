@@ -339,7 +339,7 @@ def _dynamics_cache_constructor() -> SQLiteCache:  # noqa: PT005
         return cache
 
 
-@pytest.fixture()
+@pytest.fixture
 def dynamics_cache(_dynamics_cache_constructor: SQLiteCache) -> Generator[SQLiteCache, Any, None]:
     """Get the session instance of either Django's cache or SQLiteCache."""
     _dynamics_cache_constructor.clear()
@@ -363,7 +363,7 @@ def _dynamics_async_cache_constructor() -> AsyncSQLiteCache:  # noqa: PT005
         return cache
 
 
-@pytest.fixture()
+@pytest.fixture
 def async_dynamics_cache(_dynamics_async_cache_constructor: AsyncSQLiteCache) -> Generator[AsyncSQLiteCache, Any, None]:
     """Get the session instance of either Django's cache or SQLiteCache."""
     asyncio.run(_dynamics_async_cache_constructor.clear())
@@ -376,7 +376,7 @@ def async_dynamics_cache(_dynamics_async_cache_constructor: AsyncSQLiteCache) ->
             asyncio.run(_dynamics_async_cache_constructor.close())
 
 
-@pytest.fixture()
+@pytest.fixture
 def dynamics_client(request) -> MockClient:  # noqa: ANN001
     """Get a sync mocked client instance, or forward one created in `pytest.mark.parametrize`."""
     if not hasattr(request, "param"):
@@ -385,7 +385,7 @@ def dynamics_client(request) -> MockClient:  # noqa: ANN001
         yield request.param
 
 
-@pytest.fixture()
+@pytest.fixture
 def async_dynamics_client(request) -> AsyncMockClient:  # noqa: ANN001
     """Get an async mocked client instance, or forward one created in `pytest.mark.parametrize`."""
     if not hasattr(request, "param"):
