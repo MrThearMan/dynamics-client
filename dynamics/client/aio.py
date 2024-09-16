@@ -46,7 +46,7 @@ class DynamicsClient(BaseDynamicsClient):
             token = await self.get_token()
 
         async with self._oauth_client._token_refresh_lock:
-            if token is None or token.is_expired():  # pragma: no cover
+            if token is None or token.is_expired(leeway=5):  # pragma: no cover
                 token = await self._oauth_client.fetch_token(
                     url=self._token_url,
                     grant_type="client_credentials",
