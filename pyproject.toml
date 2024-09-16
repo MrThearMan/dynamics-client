@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamics-client"
-version = "0.8.3"
+version = "0.8.4"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
