@@ -29,7 +29,7 @@ class DynamicsClient(BaseDynamicsClient):
     oauth_class = OAuth2Client
 
     def _ensure_token(self) -> None:
-        if self._oauth_client.token:
+        if self._oauth_client.token and not self._oauth_client.token.is_expired(leeway=5):
             return
 
         token: Optional[OAuth2Token] = None
