@@ -30,14 +30,14 @@ if TYPE_CHECKING:
     from .client.base import BaseDynamicsClient
 
 __all__ = [
-    "async_dynamics_cache",
-    "async_dynamics_client",
     "AsyncMockClient",
     "BaseMockClient",
-    "dynamics_cache",
-    "dynamics_client",
     "MockClient",
     "ResponseMock",
+    "async_dynamics_cache",
+    "async_dynamics_client",
+    "dynamics_cache",
+    "dynamics_client",
 ]
 
 
@@ -329,7 +329,7 @@ class AsyncMockClient(BaseASyncMockClient, aio.DynamicsClient):
 
 
 @pytest.fixture(scope="session")
-def _dynamics_cache_constructor() -> SQLiteCache:  # noqa: PT005
+def _dynamics_cache_constructor() -> SQLiteCache:
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
         from django.core.cache import cache
@@ -353,7 +353,7 @@ def dynamics_cache(_dynamics_cache_constructor: SQLiteCache) -> Generator[SQLite
 
 
 @pytest.fixture(scope="session")
-def _dynamics_async_cache_constructor() -> AsyncSQLiteCache:  # noqa: PT005
+def _dynamics_async_cache_constructor() -> AsyncSQLiteCache:
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
         from django.core.cache import cache

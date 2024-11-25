@@ -28,16 +28,16 @@ except ImportError:
 
 
 __all__ = [
-    "DynamicsException",
-    "ParseError",
-    "AuthenticationFailed",
-    "PermissionDenied",
-    "NotFound",
-    "MethodNotAllowed",
-    "DuplicateRecordError",
-    "PayloadTooLarge",
     "APILimitsExceeded",
+    "AuthenticationFailed",
+    "DuplicateRecordError",
+    "DynamicsException",
+    "MethodNotAllowed",
+    "NotFound",
     "OperationNotImplemented",
+    "ParseError",
+    "PayloadTooLarge",
+    "PermissionDenied",
     "WebAPIUnavailable",
 ]
 
