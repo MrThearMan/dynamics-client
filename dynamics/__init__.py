@@ -6,6 +6,6 @@ from .query_functions import ftr
 
 __all__ = [
     "DynamicsClient",
-    "ftr",
     "apl",
+    "ftr",
 ]

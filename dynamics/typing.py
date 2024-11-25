@@ -36,7 +36,7 @@ except ImportError:
     from typing_extensions import NotRequired, Required, Self
 
 
-from .enums import FetchXMLOperator  # noqa: TCH001
+from .enums import FetchXMLOperator  # noqa: TC001
 
 __all__ = [
     "Any",
@@ -91,9 +91,9 @@ __all__ = [
     "Tuple",
     "Type",
     "TypeAlias",
-    "TypedDict",
     "TypeGuard",
     "TypeVar",
+    "TypedDict",
     "Union",
 ]
 

@@ -1,9 +1,9 @@
 from enum import Enum, IntEnum
 
 __all__ = [
+    "MAX_LINKED_TABLES",
     "EntityFilter",
     "FetchXMLOperator",
-    "MAX_LINKED_TABLES",
     "OrderState",
     "QuoteState",
     "TargetFieldType",

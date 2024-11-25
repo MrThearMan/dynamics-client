@@ -13,8 +13,8 @@ import aiosqlite
 from .typing import Any, Coroutine, Dict, Optional, Union
 
 __all__ = [
-    "SQLiteCache",
     "AsyncSQLiteCache",
+    "SQLiteCache",
 ]
 
 
