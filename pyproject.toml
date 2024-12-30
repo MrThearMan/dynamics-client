@@ -52,7 +52,7 @@ djangorestframework = { version = ">=3.14.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.4"
-coverage = "7.6.9"
+coverage = "7.6.10"
 pytest-asyncio = "0.25.0"
 tox = "4.23.2"
 tox-gh-actions = "3.2.0"
@@ -63,7 +63,7 @@ pymdown-extensions = "10.13"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.14.0"
+mypy = "1.14.1"
 pre-commit = "4.0.1"
 
 [tool.poetry.extras]
