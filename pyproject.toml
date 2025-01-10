@@ -1,17 +1,12 @@
-[tool.poetry]
+[project]
 name = "dynamics-client"
 version = "0.8.4"
 description = "Client for making Web API request from a Microsoft Dynamics 365 Database."
 authors = [
-    "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
-]
-packages = [
-    { include = "dynamics" },
+    { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
 ]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/MrThearMan/dynamics-client/"
-repository = "https://github.com/MrThearMan/dynamics-client/"
 keywords = [
     "Microsoft",
     "Dynamics",
@@ -29,19 +24,24 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
 ]
-include = [
-    "README.md",
-    "LICENSE",
-]
-exclude = [
-    "tests",
+requires-python = ">=3.10,<4"
+dynamic = [
+    "dependencies",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+"Homepage" = "https://mrthearman.github.io/dynamics-client"
+"Repository" = "https://github.com/MrThearMan/dynamics-client"
 "Bug Tracker" = "https://github.com/MrThearMan/dynamics-client/issues"
+"Documentation" = "https://mrthearman.github.io/dynamics-client"
+
+[tool.poetry]
+requires-poetry = ">=2.0.0"
+packages = [
+    { include = "dynamics" },
+]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4"
 httpx = ">=0.27.0"
 authlib = ">=1.3.0"
 aiosqlite = ">=0.20.0"
@@ -63,11 +63,7 @@ pymdown-extensions = "10.13"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.14.1"
 pre-commit = "4.0.1"
-
-[tool.poetry.extras]
-django = ["Django", "djangorestframework"]
 
 [tool.ruff]
 fix = true
@@ -75,10 +71,10 @@ line-length = 120
 exclude = [
     "tests/*",
 ]
-typing-modules = [
+lint.typing-modules = [
     "dynamics.typing",
 ]
-select = [
+lint.select = [
     "A",        # flake8-builtins
     "ANN",      # flake8-annotations
     "ARG",      # flake8-unused-arguments
@@ -119,9 +115,8 @@ select = [
     "TRY",      # tryceratops
     "W",        # pycodestyle warnings
 ]
-ignore = [
-    "ANN101",   # Missing type annotation for `self` in method
-    "ANN102",   # Missing type annotation for `cls` in method
+lint.ignore = [
+    "A005",     # Allow shadowing builtin modules
     "ANN401",   # Any-typing allowed
     "FBT001",   # Boolean positional argument in function definition
     "FBT002",   # Boolean positional argument in method definition
@@ -144,11 +139,6 @@ ignore = [
     "W191",     # tab-indentation
 ]
 
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = "True"
-warn_unused_configs = "True"
-
 [tool.coverage.run]
 relative_files = true
 
@@ -166,7 +156,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-vv -s --log-cli-level=INFO"
+addopts = "-vv -s --log-cli-level=INFO --disable-warnings"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -188,7 +178,7 @@ setenv =
     PYTHONPATH = {toxinidir}
 commands =
     poetry install
-    poetry run coverage run -m pytest -vv -s --log-cli-level=INFO
+    poetry run coverage run -m pytest -vv -s --log-cli-level=INFO --disable-warnings
 """
 
 [build-system]

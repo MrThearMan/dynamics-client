@@ -6,7 +6,6 @@
 .PHONY: tox
 .PHONY: hook
 .PHONY: lint
-.PHONY: mypy
 .PHONY: Makefile
 
 # Trick to allow passing commands to make
@@ -28,7 +27,6 @@ define helptext
   tox                  Run all tests with tox.
   hook                 Install pre-commit hook.
   lint                 Run pre-commit hooks on all files.
-  mypy                 Run mypy on all files.
 
   Use quotes (" ") if command contains flags (-h / --help)
 endef
@@ -58,6 +56,3 @@ hook:
 
 lint:
 	@poetry run pre-commit run --all-files
-
-mypy:
-	@poetry run mypy dynamics/

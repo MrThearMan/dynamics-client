@@ -38,7 +38,7 @@ class ftr:  # noqa: N801
 
     @staticmethod
     def _listify(values: List[FieldType]) -> str:
-        return f"""[{','.join([f"{ftr._type(value, quotes=True)}" for value in values])}]"""
+        return f"""[{",".join([f"{ftr._type(value, quotes=True)}" for value in values])}]"""
 
     @staticmethod
     def _get_indicator(indicator: Optional[str]) -> str:
@@ -96,7 +96,7 @@ class ftr:  # noqa: N801
         group: bool,
     ) -> str:
         ind = ftr._get_indicator(lambda_indicator)
-        result = f"{ind}Microsoft.Dynamics.CRM.{operator}" f"(PropertyName={ftr._type(name, quotes=True)})"
+        result = f"{ind}Microsoft.Dynamics.CRM.{operator}(PropertyName={ftr._type(name, quotes=True)})"
         return ftr._group(result, group)
 
     @staticmethod
