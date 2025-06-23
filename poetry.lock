@@ -1019,14 +1019,14 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.15"
+version = "10.16"
 description = "Extension pack for Python Markdown."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["docs"]
 files = [
-    {file = "pymdown_extensions-10.15-py3-none-any.whl", hash = "sha256:46e99bb272612b0de3b7e7caf6da8dd5f4ca5212c0b273feb9304e236c484e5f"},
-    {file = "pymdown_extensions-10.15.tar.gz", hash = "sha256:0e5994e32155f4b03504f939e501b981d306daf7ec2aa1cd2eb6bd300784f8f7"},
+    {file = "pymdown_extensions-10.16-py3-none-any.whl", hash = "sha256:f5dd064a4db588cb2d95229fc4ee63a1b16cc8b4d0e6145c0899ed8723da1df2"},
+    {file = "pymdown_extensions-10.16.tar.gz", hash = "sha256:71dac4fca63fabeffd3eb9038b756161a33ec6e8d230853d3cecf562155ab3de"},
 ]
 
 [package.dependencies]
@@ -1058,14 +1058,14 @@ testing = ["covdefaults (>=2.3)", "pytest (>=8.3.3)", "pytest-cov (>=5)", "pytes
 
 [[package]]
 name = "pytest"
-version = "8.4.0"
+version = "8.4.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "pytest-8.4.0-py3-none-any.whl", hash = "sha256:f40f825768ad76c0977cbacdf1fd37c6f7a468e460ea6a0636078f8972d4517e"},
-    {file = "pytest-8.4.0.tar.gz", hash = "sha256:14d920b48472ea0dbf68e45b96cd1ffda4705f33307dcc86c676c1b5104838a6"},
+    {file = "pytest-8.4.1-py3-none-any.whl", hash = "sha256:539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7"},
+    {file = "pytest-8.4.1.tar.gz", hash = "sha256:7c67fd69174877359ed9371ec3af8a3d2b04741818c51e5e99cc1742251fa93c"},
 ]
 
 [package.dependencies]
@@ -1332,14 +1332,14 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.26.0"
+version = "4.27.0"
 description = "tox is a generic virtualenv management and test command line tool"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "tox-4.26.0-py3-none-any.whl", hash = "sha256:75f17aaf09face9b97bd41645028d9f722301e912be8b4c65a3f938024560224"},
-    {file = "tox-4.26.0.tar.gz", hash = "sha256:a83b3b67b0159fa58e44e646505079e35a43317a62d2ae94725e0586266faeca"},
+    {file = "tox-4.27.0-py3-none-any.whl", hash = "sha256:2b8a7fb986b82aa2c830c0615082a490d134e0626dbc9189986da46a313c4f20"},
+    {file = "tox-4.27.0.tar.gz", hash = "sha256:b97d5ecc0c0d5755bcc5348387fef793e1bfa68eb33746412f4c60881d7f5f57"},
 ]
 
 [package.dependencies]
@@ -1486,4 +1486,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "93959c128e15004f9fd09a76b33e43ec3f365561d3dd36feb571f649e6102def"
+content-hash = "8180700a0ef41fa09983f8a1d90cf5e587d17aceb1ed55087005baf224a72dd5"
