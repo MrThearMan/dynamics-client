@@ -52,7 +52,7 @@ djangorestframework = { version = ">=3.14.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.4.1"
-coverage = "7.9.1"
+coverage = "7.9.2"
 pytest-asyncio = "1.0.0"
 tox = "4.27.0"
 tox-gh-actions = "3.3.0"
