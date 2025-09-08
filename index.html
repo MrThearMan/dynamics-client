@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="None" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Dynamics Web API Client</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="css/docs.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/console.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Dynamics Web API Client
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic usage</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="docs/">Documentation</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Dynamics Web API Client</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="dynamics-web-api-client">Dynamics Web API Client</h1>
+<p><a href="https://coveralls.io/github/MrThearMan/dynamics-client?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/MrThearMan/dynamics-client/badge.svg?branch=main" /></a>
+<a href="https://github.com/MrThearMan/dynamics-client/actions/workflows/test.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/MrThearMan/dynamics-client/test.yml?branch=main" /></a>
+<a href="https://pypi.org/project/dynamics-client"><img alt="PyPI" src="https://img.shields.io/pypi/v/dynamics-client" /></a>
+<a href="https://github.com/MrThearMan/dynamics-client/blob/main/LICENSE"><img alt="GitHub" src="https://img.shields.io/github/license/MrThearMan/dynamics-client" /></a>
+<a href="https://github.com/MrThearMan/dynamics-client/commits/main"><img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/MrThearMan/dynamics-client" /></a>
+<a href="https://github.com/MrThearMan/dynamics-client/issues"><img alt="GitHub Issues" src="https://img.shields.io/github/issues-raw/MrThearMan/dynamics-client" /></a>
+<a href="https://pypi.org/project/dynamics-client"><img alt="Downloads" src="https://img.shields.io/pypi/dm/dynamics-client" /></a>
+<a href="https://pypi.org/project/dynamics-client"><img alt="Python Version" src="https://img.shields.io/pypi/pyversions/dynamics-client" /></a></p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>dynamics-client
+</code></pre></div>
+<hr />
+<p><strong>Documentation</strong>: <a href="https://mrthearman.github.io/dynamics-client/">https://mrthearman.github.io/dynamics-client/</a></p>
+<p><strong>Source Code</strong>: <a href="https://github.com/MrThearMan/dynamics-client/">https://github.com/MrThearMan/dynamics-client/</a></p>
+<p><strong>Contributing</strong>: <a href="https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md">https://github.com/MrThearMan/dynamics-client/blob/main/CONTRIBUTING.md</a></p>
+<hr />
+<h2 id="basic-usage">Basic usage</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dynamics</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicsClient</span><span class="p">,</span> <span class="n">ftr</span>
+
+<span class="c1"># Init the client:</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">DynamicsClient</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1">### Example GET request:</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;accounts&quot;</span>
+
+<span class="c1"># Get only these columns for the account.</span>
+<span class="n">client</span><span class="o">.</span><span class="n">select</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;accountid&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">]</span>
+
+<span class="c1"># Filter to only the accounts that have been created on or after the</span>
+<span class="c1"># given ISO date string, AND that have 200 or more employees.</span>
+<span class="n">client</span><span class="o">.</span><span class="n">filter</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ftr</span><span class="o">.</span><span class="n">on_or_after</span><span class="p">(</span><span class="s2">&quot;createdon&quot;</span><span class="p">,</span> <span class="s2">&quot;2020-01-01T00:00:00Z&quot;</span><span class="p">),</span>
+    <span class="n">ftr</span><span class="o">.</span><span class="n">ge</span><span class="p">(</span><span class="s2">&quot;numberofemployees&quot;</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="c1"># Expand to the contacts (collection-values navigation property)</span>
+<span class="c1"># on the account that have &#39;gmail.com&#39; in their email address 1 OR 2.</span>
+<span class="c1"># Get only the &#39;firstname&#39;, &#39;lastname&#39; and &#39;mobilephone&#39; columns for these contacts.</span>
+<span class="c1"># Also expand the primary contact (single-valued navigation property).</span>
+<span class="c1"># Get only the &#39;emailaddress1&#39; column for the primary contact.</span>
+<span class="n">client</span><span class="o">.</span><span class="n">expand</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;contact_customer_accounts&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;select&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;firstname&quot;</span><span class="p">,</span> <span class="s2">&quot;lastname&quot;</span><span class="p">,</span> <span class="s2">&quot;mobilephone&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="n">ftr</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;emailaddress1&quot;</span><span class="p">,</span> <span class="s2">&quot;gmail.com&quot;</span><span class="p">),</span>
+            <span class="n">ftr</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;emailaddress2&quot;</span><span class="p">,</span> <span class="s2">&quot;gmail.com&quot;</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;primarycontactid&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;select&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;emailaddress1&quot;</span><span class="p">],</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="c1"># [</span>
+<span class="c1">#     {</span>
+<span class="c1">#         &quot;accountid&quot;: ...,</span>
+<span class="c1">#         &quot;name&quot;: ...,</span>
+<span class="c1">#         &quot;contact_customer_accounts&quot;: [</span>
+<span class="c1">#             {</span>
+<span class="c1">#                 &quot;contactid&quot;: ...,  # id field is always given</span>
+<span class="c1">#                 &quot;firstname&quot;: ...,</span>
+<span class="c1">#                 &quot;lastname&quot;: ...,</span>
+<span class="c1">#                 &quot;mobilephone&quot;: ...</span>
+<span class="c1">#             },</span>
+<span class="c1">#             ...</span>
+<span class="c1">#         ],</span>
+<span class="c1">#         &quot;primarycontactid&quot;: {</span>
+<span class="c1">#             &quot;contactid&quot;: ...,</span>
+<span class="c1">#             &quot;emailaddress1&quot;: ...</span>
+<span class="c1">#         }</span>
+<span class="c1">#     },</span>
+<span class="c1">#     ...</span>
+<span class="c1"># ]</span>
+
+<span class="c1">### Example POST request</span>
+
+<span class="c1"># IMPORTANT!!!</span>
+<span class="n">client</span><span class="o">.</span><span class="n">reset_query</span><span class="p">()</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;contacts&quot;</span>
+
+<span class="c1"># Get only these columns from the created contact</span>
+<span class="n">client</span><span class="o">.</span><span class="n">select</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;firstname&quot;</span><span class="p">,</span> <span class="s2">&quot;lastname&quot;</span><span class="p">,</span> <span class="s2">&quot;emailaddress1&quot;</span><span class="p">]</span>
+
+<span class="c1"># The data to create the contact with. &#39;@odata.bind&#39; is used to link</span>
+<span class="c1"># the contact to the given navigation property.</span>
+<span class="n">accountid</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;firstname&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
+    <span class="s2">&quot;lastname&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
+    <span class="s2">&quot;emailaddress1&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
+    <span class="s2">&quot;parentcustomerid_account@odata.bind&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;/accounts(</span><span class="si">{</span><span class="n">accountid</span><span class="si">}</span><span class="s2">)&quot;</span>
+<span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="c1"># {</span>
+<span class="c1">#     &quot;contactid&quot;: ...,</span>
+<span class="c1">#     &quot;firstname&quot;: ...,</span>
+<span class="c1">#     &quot;lastname&quot;: ...,</span>
+<span class="c1">#     &quot;emailaddress1&quot;: ...</span>
+<span class="c1"># }</span>
+
+
+<span class="c1">### Example PATCH request</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">reset_query</span><span class="p">()</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;contacts&quot;</span>
+<span class="n">client</span><span class="o">.</span><span class="n">row_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;contactid&quot;</span><span class="p">]</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;firstname&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
+    <span class="s2">&quot;lastname&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="c1"># Return all rows on the updated contact,</span>
+<span class="c1"># since no select statement was given</span>
+<span class="c1">#</span>
+<span class="c1"># {</span>
+<span class="c1">#     ...</span>
+<span class="c1">#     &quot;contactid&quot;: ...,</span>
+<span class="c1">#     &quot;firstname&quot;: ...,</span>
+<span class="c1">#     &quot;lastname&quot;: ...,</span>
+<span class="c1">#     ...</span>
+<span class="c1"># }</span>
+
+
+<span class="c1">### Example DELETE request</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">reset_query</span><span class="p">()</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;contacts&quot;</span>
+<span class="n">client</span><span class="o">.</span><span class="n">row_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;contactid&quot;</span><span class="p">]</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="docs/" class="btn btn-neutral float-right" title="Documentation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="docs/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-09-08 17:18:41.914316+00:00
+-->
