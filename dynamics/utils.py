@@ -88,7 +88,7 @@ class Singletons:
     def cache() -> Union[SQLiteCache, "BaseCache"]:
         if Singletons._cache is None:
             try:
-                from django.core.cache import cache
+                from django.core.cache import cache  # noqa: PLC0415
             except ImportError:
                 cache = SQLiteCache(filename=Singletons.filename)
             Singletons._cache = cache
@@ -99,7 +99,7 @@ class Singletons:
     def async_cache() -> Union[AsyncSQLiteCache, "BaseCache"]:
         if Singletons._async_cache is None:
             try:
-                from django.core.cache import cache
+                from django.core.cache import cache  # noqa: PLC0415
             except ImportError:
                 cache = AsyncSQLiteCache(filename=Singletons.filename)
             Singletons._async_cache = cache

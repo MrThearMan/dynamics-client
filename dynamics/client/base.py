@@ -181,8 +181,8 @@ class BaseDynamicsClient(ABC):
         if scope is not None and "," in scope:
             scope = scope.split(",")  # only create list if a comma exists, otherwise keep as str.
 
-        cache_token = bool(int(os.environ.get("DYNAMICS_CACHE_TOKEN", 1)))
-        connection_timeout = int(os.environ.get("DYNAMICS_CONNECTION_TIMEOUT", 5))
+        cache_token = bool(int(os.environ.get("DYNAMICS_CACHE_TOKEN", 1)))  # noqa: PLW1508
+        connection_timeout = int(os.environ.get("DYNAMICS_CONNECTION_TIMEOUT", 5))  # noqa: PLW1508
 
         return cls(
             api_url,

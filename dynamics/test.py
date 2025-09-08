@@ -332,7 +332,7 @@ class AsyncMockClient(BaseASyncMockClient, aio.DynamicsClient):
 def _dynamics_cache_constructor() -> SQLiteCache:
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
-        from django.core.cache import cache
+        from django.core.cache import cache  # noqa: PLC0415
     except ImportError:
         return Singletons.cache()
     else:  # pragma: no cover
@@ -356,7 +356,7 @@ def dynamics_cache(_dynamics_cache_constructor: SQLiteCache) -> Generator[SQLite
 def _dynamics_async_cache_constructor() -> AsyncSQLiteCache:
     """Imports the django cache instance or creates a SQLiteCache instance."""
     try:
-        from django.core.cache import cache
+        from django.core.cache import cache  # noqa: PLC0415
     except ImportError:
         return Singletons.async_cache()
     else:  # pragma: no cover
