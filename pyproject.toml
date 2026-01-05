@@ -57,7 +57,7 @@ nox = "2025.11.12"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.19.1"
+pymdown-extensions = "10.20"
 mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
