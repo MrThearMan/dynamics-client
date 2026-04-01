@@ -161,7 +161,7 @@ class DynamicsClient(BaseDynamicsClient):
         )
         return self.process_delete_response(response)
 
-    async def __aenter__(self) -> "DynamicsClient":
+    async def __aenter__(self) -> "DynamicsClient":  # noqa: PYI034
         if hasattr(asyncio, "TaskGroup"):  # pragma: no cover; python >=3.11 only
             self.__tg = asyncio.TaskGroup()
             await self.__tg.__aenter__()

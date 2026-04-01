@@ -785,7 +785,7 @@ class BaseDynamicsClient(ABC):
         """Get current $filter statement"""
         return self._filter
 
-    @filter.setter
+    @filter.setter  # noqa: A003
     def filter(self, items: FilterType) -> None:
         """
         Set $filter statement. Sets the criteria for which entities will be returned.
