@@ -262,6 +262,7 @@ Set `$select` statement. Limits the properties returned from the current table.
 ```python
 from typing import List, Dict, TypedDict, Union, Set, Literal
 
+
 class ExpandType(TypedDict):
     select: List[str]
     filter: Union[Set[str], List[str]]
@@ -904,12 +905,15 @@ by inheriting from BaseMockClient and your custom DynamicsClient.
 from dynamics import DynamicsClient
 from dynamics.test import BaseMockClient
 
+
 class MyDynamicsClient(DynamicsClient):
     pass
 
+
 # Order is important, BaseMockClient first!
 class MyMockClient(BaseMockClient, MyDynamicsClient):
-     pass
+    pass
+
 
 client = MyMockClient()
 ```
