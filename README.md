@@ -61,7 +61,7 @@ client.expand = {
         "filter": {
             ftr.contains("emailaddress1", "gmail.com"),
             ftr.contains("emailaddress2", "gmail.com"),
-        }
+        },
     },
     "primarycontactid": {
         "select": ["emailaddress1"],
@@ -109,7 +109,7 @@ data = {
     "firstname": ...,
     "lastname": ...,
     "emailaddress1": ...,
-    "parentcustomerid_account@odata.bind": f"/accounts({accountid})"
+    "parentcustomerid_account@odata.bind": f"/accounts({accountid})",
 }
 
 result = client.post(data=data)
